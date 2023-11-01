@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/sandbox.css" type="text/css">
+    <script src="/khanpjs.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Khan/processing-js@master/processing.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jshint@2.13.6/dist/jshint.min.js"></script>
+</head>
+<body>
+
+    <div id="live-output-container">
+        <canvas id="output-canvas"></canvas>
+    </div>
+    <div id="warnings-container"></div>
+
+    <script src="/sandbox.js"></script>
+
+    <script>
+const Process = {
+    processingInstance: null,
+    width: 400,
+    height: 400,
+    sourceCode: "",
+    code: "",
+    codeInjector: "sikn",
+    lintingOn: true,
+    restart: function () { 
+        window.postMessage({
+            width: Process.width,
+            height: Process.height,
+            files: {
+                "index.js": Process.sourceCode
+            }
+        }, "*");
+    },
+    preload: {
+        imageAccessors: "animals/boxer-laying-down animals/butterfly animals/cat animals/collies animals/dog_sleeping-puppy animals/fox animals/kangaroos animals/rabbit animals/shark animals/sleeping-puppy creatures/Hopper-Jumping avatars/aqualine-sapling avatars/aqualine-seed avatars/aqualine-seedling avatars/aqualine-tree avatars/aqualine-ultimate avatars/avatar-team avatars/cs-hopper-cool avatars/cs-hopper-happy avatars/cs-hopper-jumping avatars/cs-ohnoes avatars/cs-winston-baby avatars/cs-winston avatars/duskpin-sapling avatars/duskpin-seed avatars/duskpin-seedling avatars/duskpin-tree avatars/duskpin-ultimate avatars/leaf-blue avatars/leaf-green avatars/leaf-grey avatars/leaf-orange avatars/leaf-red avatars/leaf-yellow avatars/leafers-sapling avatars/leafers-seed avatars/leafers-seedling avatars/leafers-tree avatars/leafers-ultimate avatars/marcimus-orange avatars/marcimus-purple avatars/marcimus-red avatars/marcimus avatars/mr-pants-green avatars/mr-pants-orange avatars/mr-pants-pink avatars/mr-pants-purple avatars/mr-pants-with-hat avatars/mr-pants avatars/mr-pink-green avatars/mr-pink-orange avatars/mr-pink avatars/mystery-2 avatars/old-spice-man-blue avatars/old-spice-man avatars/orange-juice-squid avatars/piceratops-sapling avatars/piceratops-seed avatars/piceratops-seedling avatars/piceratops-tree avatars/piceratops-ultimate avatars/primosaur-sapling avatars/primosaur-seed avatars/primosaur-seedling avatars/primosaur-tree avatars/primosaur-ultimate avatars/purple-pi-pink avatars/purple-pi-teal avatars/purple-pi avatars/questionmark avatars/robot_female_1 avatars/robot_female_2 avatars/robot_female_3 avatars/robot_male_1 avatars/robot_male_2 avatars/robot_male_3 avatars/spunky-sam-green avatars/spunky-sam-orange avatars/spunky-sam-red avatars/spunky-sam avatars/starky-sapling avatars/starky-seed avatars/starky-seedling avatars/starky-tree avatars/starky-ultimate creatures/BabyWinston creatures/Hopper-Cool creatures/Hopper-Happy creatures/OhNoes-Happy creatures/OhNoes-Hmm creatures/OhNoes creatures/Winston cute/Blank cute/BrownBlock cute/CharacterBoy cute/CharacterCatGirl cute/CharacterHornGirl cute/CharacterPinkGirl cute/CharacterPrincessGirl cute/ChestClosed cute/ChestLid cute/ChestOpen cute/DirtBlock cute/DoorTallClosed cute/DoorTallOpen cute/EnemyBug cute/GemBlue cute/GemGreen cute/GemOrange cute/GrassBlock cute/Heart cute/Key cute/None cute/PlainBlock cute/RampEast cute/RampNorth cute/RampSouth cute/RampWest cute/Rock cute/RoofEast cute/RoofNorth cute/RoofNorthEast cute/RoofNorthWest cute/RoofSouth cute/RoofSouthEast cute/RoofSouthWest cute/RoofWest cute/Selector cute/ShadowEast cute/ShadowNorth cute/ShadowNorthEast cute/ShadowNorthWest cute/ShadowSideWest cute/ShadowSouth cute/ShadowSouthEast cute/ShadowSouthWest cute/ShadowWest cute/Star cute/StoneBlock cute/StoneBlockTall cute/TreeShort cute/TreeTall cute/TreeUgly cute/WallBlock cute/WallBlockTall cute/WaterBlock cute/WindowTall cute/WoodBlock food/berries food/brussels-sprouts food/coffee-beans food/fish_grilled-snapper food/grapes food/ice-cream food/oysters food/potato-chips food/shish-kebab food/tomatoes insideout/layer0blur0 insideout/layer0blur10 insideout/layer0blur20 insideout/layer0blur40 insideout/layer0blur80 insideout/layer1blur0 insideout/layer1blur10 insideout/layer1blur20 insideout/layer1blur40 insideout/layer1blur80 insideout/layer2blur0 insideout/layer2blur10 insideout/layer2blur20 insideout/layer2blur40 insideout/layer2blur80 insideout/layer3blur0 insideout/layer3blur10 insideout/layer3blur100 insideout/layer3blur20 insideout/layer3blur40 insideout/layer3blur80 insideout/shot1_layer0blur0 insideout/shot1_layer0blur10 insideout/shot1_layer0blur20 insideout/shot1_layer0blur40 insideout/shot1_layer0blur80 insideout/shot1_layer1blur0 insideout/shot1_layer1blur10 insideout/shot1_layer1blur20 insideout/shot1_layer1blur40 insideout/shot1_layer1blur80 insideout/shot1_layer2blur0 insideout/shot1_layer2blur10 insideout/shot1_layer2blur20 insideout/shot1_layer2blur40 insideout/shot1_layer2blur80 insideout/shot1_layer3blur0 insideout/shot1_layer3blur10 insideout/shot1_layer3blur20 insideout/shot1_layer3blur40 insideout/shot1_layer3blur80 insideout/shot1_layer4blur0 insideout/shot1_layer4blur10 insideout/shot1_layer4blur20 insideout/shot1_layer4blur40 insideout/shot1_layer4blur80 insideout/shot1_layer5blur0 insideout/shot1_layer5blur10 insideout/shot1_layer5blur20 insideout/shot1_layer5blur40 insideout/shot1_layer5blur80 insideout/shot2_layer0blur10 insideout/shot2_layer0blur20 insideout/shot2_layer0blur40 insideout/shot2_layer0blur80 insideout/shot2_layer1blur10 insideout/shot2_layer1blur20 insideout/shot2_layer1blur40 insideout/shot2_layer1blur80 insideout/shot2_layer2blur10 insideout/shot2_layer2blur20 insideout/shot2_layer2blur40 insideout/shot2_layer2blur80 insideout/shot2_layer3blur10 insideout/shot2_layer3blur20 insideout/shot2_layer3blur40 insideout/shot2_layer3blur80 insideout/shot2_layer4blur10 insideout/shot2_layer4blur20 insideout/shot2_layer4blur40 insideout/shot2_layer4blur80 landscapes/beach-in-hawaii landscapes/beach-waves-at-sunset landscapes/beach-waves-at-sunset2 landscapes/beach-waves-daytime landscapes/clouds-from-plane landscapes/fields-of-grain landscapes/lake-steam-rising landscapes/lava landscapes/mountain_matterhorn landscapes/mountains-and-lake landscapes/sand-dunes misc/tim-berners-lee pixar/Incredibles_a_fill pixar/Incredibles_a_fill_wFog pixar/Incredibles_a_key pixar/Incredibles_a_key_wFog pixar/Incredibles_bnc pixar/Incredibles_fillExt pixar/Incredibles_fillInt pixar/Incredibles_fill_wFog pixar/Incredibles_kck pixar/Incredibles_key pixar/Incredibles_key_wFog pixar/Incredibles_target pixar/army2 pixar/bing1 pixar/bing2 pixar/cars1 pixar/food1 pixar/lamp pixar/rat_1 pixar/rat_2 pixar/rat_3 scratchpads/colorpicker_hsb_b scratchpads/colorpicker_hsb_s scratchpads/colorpicker_overlay scratchpads/colorpicker_rgb_g scratchpads/colorpicker_select scratchpads/cool-critter scratchpads/error-buddy scratchpads/happy-critter scratchpads/jumping-critter scratchpads/leaf-green scratchpads/leaf-orange scratchpads/leaf-red scratchpads/leaf-yellow scratchpads/speech-arrow scratchpads/topic-drawing scratchpads/topic-user-interaction seasonal/father-winston seasonal/fireworks-in-sky seasonal/fireworks-scattered seasonal/gingerbread-house seasonal/gingerbread-man seasonal/hannukah-menorah seasonal/hopper-partying seasonal/house-with-lights seasonal/reindeer-with-hat seasonal/snow-crystal1 seasonal/snow-crystal3 seasonal/snownoes seasonal/stocking-empty seasonal/xmas-ornament-boat seasonal/xmas-ornaments seasonal/xmas-scene-holly-border seasonal/xmas-tree space/0 space/1 space/2 space/3 space/4 space/5 space/6 space/7 space/8 space/9 space/background space/beetleship space/collisioncircle space/girl1 space/girl2 space/girl3 space/girl4 space/girl5 space/healthheart space/minus space/octopus space/planet space/plus space/rocketship space/star animals/birds_rainbow-lorakeets animals/komodo-dragon animals/snake_green-tree-boa landscapes/beach-sunset landscapes/beach-with-palm-trees landscapes/fields-of-wine landscapes/mountains-in-hawaii food/bananas food/cake food/croissant food/fruits food/strawberries animals/cheetah animals/butterfly_monarch animals/crocodiles animals/dogs_collies animals/horse animals/penguins animals/retriever animals/spider landscapes/beach-at-dusk landscapes/beach landscapes/crop-circle landscapes/lake landscapes/lotus-garden landscapes/mountains-sunset landscapes/waterfall_niagara-falls food/broccoli food/chocolates food/dumplings food/hamburger food/mushroom food/pasta food/potatoes food/sushi seasonal/fireworks-2015 seasonal/fireworks-over-harbor seasonal/gingerbread-family seasonal/gingerbread-houses seasonal/hannukah-dreidel seasonal/hopper-elfer seasonal/hopper-reindeer seasonal/reindeer seasonal/snow-crystal2 seasonal/snowy-slope-with-trees seasonal/xmas-cookies seasonal/xmas-ornament-on-tree seasonal/xmas-presents seasonal/xmas-tree-with-presents seasonal/xmas-wreath pixar/army1 pixar/bedspread pixar/bopeep pixar/floorplanes scratchpads/colorpicker_background scratchpads/colorpicker_submit scratchpads/colorpicker_rgb_r scratchpads/colorpicker_rgb_b scratchpads/colorpicker_hsb_h scratchpads/colorpicker_hex scratchpads/colorpicker_indic scratchpads/ui-icons_808080_256x240 scratchpads/topic-programming-basics scratchpads/topic-animation scratchpads/select seasonal/disco-ball misc/boxmodel seasonal/snowman seasonal/santa-with-bag seasonal/penguin-with-presents animals/boxer-getting-tan animals/boxer-wagging-tongue misc/tim-berners-lee-webpage seasonal/red-nosed-winston avatars/mystery-1 insideout/shot2_layer0blur0 insideout/shot2_layer1blur0 insideout/shot2_layer2blur0 insideout/shot2_layer4blur0 insideout/shot2_layer3blur0 pixar/rat_2 pixar/luxoball pixar/buzz pixar/ham".split(" "),
+        imagesExpected: 0,
+        imagesLoaded: 0,
+        audioAccessors: "rpg/battle-magic rpg/battle-spell rpg/battle-swing rpg/coin-jingle rpg/door-open rpg/giant-hyah rpg/giant-no rpg/giant-yah rpg/hit-clop rpg/hit-splat rpg/hit-thud rpg/hit-whack rpg/metal-chime rpg/metal-clink rpg/step-heavy rpg/water-bubble rpg/water-slosh retro/boom1 retro/boom2 retro/coin retro/hit1 retro/hit2 retro/jump1 retro/jump2 retro/laser1 retro/laser2 retro/laser3 retro/laser4 retro/rumble retro/thruster-short retro/thruster-long retro/whistle1 retro/whistle2".split(" "),
+        audiosExpected: 0,
+        audiosLoaded: 0
+    },
+    audioCache: {},
+    imageCache: {},
+    injector: new KhanPJS({
+        enableLoopProtect: true,
+        infiniteLoopCallback: function(error){console.log("INF LOOP", error)},
+        startupTimeout: 2000,
+        programTimeout: 500,
+        loopCheck: 1000,
+    }).injector
+};
+        
+// avoid polluting global namespace
+(() => {
+    const JSHINT = window.JSHINT;
+    window.JSHINT = undefined;
+    
+    let liveOutputCanvas = document.getElementById("output-canvas");
+
+    // so we can clear old intervals
+    const _setInterval = window.setInterval;
+    let intervals = [];
+    window.setInterval = function(fxn, time) {
+        let interval = _setInterval(fxn, time);
+        intervals.push(interval);
+        return interval;
+    };
+
+    // so we can clear old animation frames
+    const _requestAnimationFrame = window.requestAnimationFrame;
+    let animeFrameReq = 0;
+    window.requestAnimationFrame = function(fxn) {
+        animeFrameReq = _requestAnimationFrame(fxn);
+        return animeFrameReq;
+    };
+
+    function generateCode() {
+        return `
+window.parent = window;
+
+const processingInstance = Process.processingInstance;
+const __env__ = processingInstance;
+
+// Polyfills for Khan Academy programs
+var getImage = function (file) { 
+    file = 'https://cdn.kastatic.org/third_party/javascript-khansrc/live-editor/build/images/' + file + '.png';
+
+    let PImageCache = processingInstance.externals.sketch.imageCache;
+
+    let pimg;
+    
+    if (PImageCache.images[file]) {
+        pimg = new processingInstance.PImage(PImageCache.images[file]);
+        pimg.loaded = true;
+        Process.preload.imagesLoaded++;
+    } else if (Process.imageCache[file]) {
+        PImageCache.add(file, Process.imageCache[file]);
+        pimg = new processingInstance.PImage(PImageCache.images[file]);
+        pimg.loaded = true;
+        Process.preload.imagesLoaded++;
+    } else {
+        let img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = file;
+
+        pimg = new processingInstance.PImage();
+        pimg.sourceImg = img;
+        
+        img.onload = function () {
+            // change the <img> object into a PImage now that its loaded
+            pimg.fromHTMLImageData(img);
+            pimg.loaded = true;
+            PImageCache.add(file, img);
+            Process.imageCache[file] = img;
+            Process.preload.imagesLoaded++;
+        };
+
+        img.onerror = function () {
+            createWarning("Error loading image from " + file);
+            Process.preload.imagesLoaded++;
+        };
+    }
+
+    return pimg;
+};
+
+var getSound = function(file) {
+    file = "https://cdn.kastatic.org/third_party/javascript-khansrc/live-editor/sounds/" + file + ".mp3";
+    
+    if (!Process.audioCache[file]) {
+        let aud = new Audio(file);
+        
+        Process.audioCache[file] = {
+            audio: aud
+        };
+        
+        aud.onload = function () {
+            Process.preload.audiosLoaded++;
+        };
+
+        aud.onerror = function () {
+            createWarning("Error loading audio from " + file);
+            Process.preload.audiosLoaded++;
+        };
+    }
+    
+    return Process.audioCache[file];
+};
+
+var playSound = function(e) {
+    if (!(e && e.audio && e.audio.play)) {
+        throw {
+            message: "No sound file provided."
+        };
+    }
+    e.audio.currentTime = 0;
+    e.audio.play();
+};
+
+
+processingInstance.angleMode = 'degrees';
+processingInstance.draw = function() {};
+
+processingInstance.size(${Process.width}, ${Process.height}); 
+processingInstance.background(0xFFF);
+processingInstance._clearLogs();
+
+Process.preload.imagesLoaded = 0;
+Process.preload.imagesExpected = 0;
+for (let i = 0; i < Process.preload.imageAccessors.length; i++) {
+    let s = Process.preload.imageAccessors[i];
+    if (Process.code.includes(s)) {
+        Process.preload.imagesExpected++;
+        getImage(s);
+    }
+}
+
+processingInstance.getImage = getImage;
+processingInstance.getSound = getSound;
+processingInstance.playSound = playSound;
+
+processingInstance.KAInfiniteLoopMaxTime = 500;
+processingInstance.KAInfiniteLoopSetTimeout = function(limit) {
+    processingInstance.KAInfiniteLoopMaxTime = limit;
+};
+processingInstance.KAInfiniteLoopCount = 0;
+processingInstance.loopCounts = [];
+processingInstance.KAInfiniteLoopProtect = function(location) {
+    if (location) {
+        if (!processingInstance.loopCounts[location]) {
+            processingInstance.loopCounts[location] = 0;
+        }
+        processingInstance.loopCounts[location] += 1;
+    }
+    
+    let now = Date.now();
+    if (!Process.branchStartTime) {
+        Process.branchStartTime = now;
+        setTimeout(() => Process.branchStartTime = 0, 0);
+    }
+
+    if (now - Process.branchStartTime > processingInstance.KAInfiniteLoopMaxTime) {
+        throw "Code taking too long to run";
+    }
+};
+
+// for KA compatability
+processingInstance.Program = {
+    restart() {
+        Process.restart();
+    }
+};
+processingInstance.debug = console.log;
+
+let runStartInterval = setInterval(function() {
+    if (Process.preload.imagesLoaded >= Process.preload.imagesExpected) {
+        clearInterval(runStartInterval);
+
+        with (processingInstance) {
+            // vvvvv USER SUPPLIED CODE vvvvv
+            ${Process.code}
+            // ^^^^^ USER SUPPLIED CODE ^^^^^
+        }
+
+        if (typeof draw !== 'undefined') processingInstance.draw = draw;
+        if (typeof keyReleased !== 'undefined') processingInstance.keyReleased = keyReleased;
+        if (typeof keyPressed !== 'undefined') processingInstance.keyPressed = keyPressed;
+        if (typeof keyTyped !== 'undefined') processingInstance.keyTyped = keyTyped;
+        if (typeof mouseClicked !== 'undefined') processingInstance.mouseClicked = mouseClicked;
+        if (typeof mouseReleased !== 'undefined') processingInstance.mouseReleased = mouseReleased;
+        if (typeof mouseDragged !== 'undefined') processingInstance.mouseDragged = mouseDragged;
+        if (typeof mouseOut !== 'undefined') processingInstance.mouseOut = mouseOut;
+        if (typeof mousePressed !== 'undefined') processingInstance.mousePressed = mousePressed;
+        if (typeof mouseMoved !== 'undefined') processingInstance.mouseMoved = mouseMoved;
+        if (typeof mouseOver !== 'undefined') processingInstance.mouseOver = mouseOver;
+    } else {
+        console.log(Process.preload.imagesLoaded, Process.preload.imagesExpected)
+    }
+});
+        `
+    }
+    
+    window.addEventListener("message", function (event) {
+        if (event.data === "ping") {
+            window.top.postMessage({
+                "sender": "sandbox"
+            }, "*");
+            return;
+        }
+    
+        if (event.data === "thumbnail") {
+            sendThumnailFromCanvas(liveOutputCanvas);
+            return;
+        }
+        
+        warningsBox.innerHTML = "";
+        
+        let data = event.data;
+        let files = data.files;
+
+        // lint code
+        for (let fileName in files) {
+            if (fileName.toLowerCase().endsWith(".js")) {
+                JSHINT("// jshint -W082\n// jshint -W079\n" + files["index.js"], {
+                    esversion: 11,
+                    asi: true,
+                    boss: true,
+                    eqnull: true,
+                    evil: true,
+                    expr: true,
+                    funcscope: true,
+                    loopfunc: true,
+                    proto: true,
+                    supernew: true,
+                    withstmt: true,
+                    browser: true,
+                    devel: true,
+                    shadow: true
+                }, {});
+            }
+        }
+
+        let syntaxErrors = JSHINT.data().errors;
+        if (syntaxErrors && syntaxErrors.length > 0) {
+            for (let i = 0; i < Math.min(syntaxErrors.length, 5); i++) {
+                console.log(syntaxErrors[i])
+                createWarning(syntaxErrors[i].raw + " on line " + (syntaxErrors[i].line - 2) + "\n `" + syntaxErrors[i].evidence + "`");
+            }
+        } else {
+            if (Process.processingInstance) {
+                // clear old intervals
+                for (var i = 0; i < intervals.length; i++) {
+                    clearInterval(intervals[i]);
+                }
+                intervals = [];
+    
+                // cancel old animation frames
+                cancelAnimationFrame(animeFrameReq);
+            
+                // delete old Processing instances
+                for (let i = 0; i < Processing.instances.length; i++) {
+                    Processing.instances[i].exit();
+                    if (Processing.instances[i] === Process.processingInstance) {
+                        continue;
+                    }
+                }
+            }
+
+            // reset canvas
+            liveOutputContainer.innerHTML = "";
+            liveOutputCanvas = document.createElement("canvas");
+            liveOutputContainer.append(liveOutputCanvas);
+            
+            // create new Processing instance
+            Process.processingInstance = new Processing(liveOutputCanvas, inst => {
+                inst.draw = () => {};
+            });
+            
+            Process.width = data.width;
+            Process.height = data.height;
+            
+            Process.sourceCode = files["index.js"];
+            try {
+                switch (Process.codeInjector) {
+                    case "vexcess":
+                        Process.code = preprocessJS(Process.sourceCode, {
+                            PJS: true,
+                            loopProtect: true,
+                            topScope: true
+                        });
+                        break;
+                    case "sikn":
+                        Process.code = Process.injector.transformCode(Process.sourceCode, Process.processingInstance, null);
+                        break;
+                    default:
+                        Process.code = Process.sourceCode;
+                        break;
+                }
+            } catch (err) {
+                createWarning(syntaxErrors[i].dscription + " on line " + syntaxErrors[i].lineNumber);
+            }
+
+            // run new code
+            let runFxn;
+            try {
+                eval(generateCode());
+            } catch (err) {
+                console.log(err);
+                createWarning(err);
+            }
+            
+        }
+    });
+})();
+    </script>
+    
+</body>
+</html>

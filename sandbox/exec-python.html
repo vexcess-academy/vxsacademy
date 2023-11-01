@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/sandbox.css" type="text/css">
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="./terminal.js"></script>
+</head>
+<body>
+    
+    <!-- Live Output -->
+    <div id="live-output-container"></div>
+    <div id="warnings-container"></div>
+
+    <script src="/sandbox.js"></script>
+
+    <!-- Live Output Control Script -->
+    <script>
+let terminal = new Terminal(document.getElementById("live-output-container"));
+
+const wait = () => new Promise(resolve => setTimeout(resolve, 1000));
+
+window.addEventListener("message", async function (event) {
+    if (event.data === "ping") {
+        window.top.postMessage({
+            "sender": "sandbox"
+        }, "*");
+        return;
+    }
+
+    if (event.data === "thumbnail") {        
+        html2canvas(document.body, {
+            width: window.innerWidth,
+            height: window.innerHeight
+        }).then(sendThumnailFromCanvas);
+        return;
+    }
+    
+    let data = event.data;
+    let files = data.files;
+    let mainCode = files["main.py"];
+
+    
+    function start() {
+        if (!window.pyodide) {
+            return setTimeout(start, 32);
+        }
+                
+        // lets light this candle
+        try {
+            pyodide.globals.set("input", async a => {
+                if (a) {
+                    terminal.out(a);
+                }
+                return await terminal.in();
+            });
+
+            let code = "async def __main__():\n    abs(0)\n" + mainCode.split("\n").map(s => "    " + s).join("\n").replaceAll("input(", "await input(") + "\n__main__()";
+            
+            warningsBox.innerHTML = "";
+            liveOutputContainer.style.width = data.width + "px";
+            liveOutputContainer.style.height = data.height + "px";
+            liveOutputContainer.innerHTML = "";
+            
+            pyodide.runPython(code);
+        } catch (err) {
+            terminal.err(err.toString());
+        }
+    }
+    start();
+});
+
+terminal.out("Installing Python...");
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.21.2/full/pyodide.js"></script>
+
+    <script>
+async function initPyodide() {
+    window.pyodide = await loadPyodide({
+        stdin: function () {
+            return "async input not supported"
+        },
+        stdout: str => {
+            terminal.out(str);
+        },
+        stderr: str => {
+            terminal.err(str);
+        }
+    });
+
+    liveOutputContainer.innerHTML = "";
+    pyodide.runPython("import sys\nsys.version");
+};
+initPyodide();
+    </script>
+    
+</body>
+</html>

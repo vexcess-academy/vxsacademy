@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/sandbox.css" type="text/css">
+    <script src="./terminal.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/WebAssembly/wabt/docs/demo/libwabt.js"></script>
+</head>
+<body>
+    
+    <!-- Live Output -->
+    <div id="live-output-container"></div>
+    <div id="warnings-container"></div>
+
+    <script src="./sandbox.js"></script>
+
+    <!-- Live Output Control Script -->
+    <script>
+let terminal = new Terminal(document.getElementById("live-output-container"));
+
+function runBinary(compiledSource) {
+    let memory;
+    
+    // virtual drivers
+    const importObject = {
+        env: {
+            printf(...args) {
+                if (memory) {
+                    let view = new Uint8Array(memory.buffer);
+                    let i = args[0];
+                    let j = i;
+                    while (view[j] !== 0 && j < view.length) {
+                        j++;
+                    }
+                    console.log(memory)
+                    console.log("printf", args, view.slice(i, j));
+                    let out = "";
+                    for (let k = i; k < j; k++) {
+                        out += String.fromCharCode(view[k]);
+                    }
+                    terminal.out(out);
+                }
+            },
+            putchar(ch) {
+                terminal.out(String.fromCharCode(ch));
+            }
+        },
+    };
+
+    // run binary
+    const wasm = new WebAssembly.Module(compiledSource);
+    const wasmInstance = new WebAssembly.Instance(wasm, importObject);
+    memory = wasmInstance.exports.memory ?? null;
+
+    terminal.out("Process exited with code " + wasmInstance.exports.main());
+}
+
+window.addEventListener("message", event => {
+    if (event.data === "ping") {
+        window.top.postMessage({
+            "sender": "sandbox"
+        }, "*");
+        return;
+    }
+
+    if (event.data === "thumbnail") {        
+        html2canvas(document.body, {
+            width: window.innerWidth,
+            height: window.innerHeight
+        }).then(sendThumnailFromCanvas);
+        return;
+    }
+    
+    let data = event.data;
+    let files = data.files;
+    let mainCode = files["main.cpp"];
+
+    liveOutputContainer.style.width = data.width + "px";
+    liveOutputContainer.style.height = data.height + "px";
+    liveOutputContainer.innerHTML = "";
+    
+    // lets light this candle
+    setTimeout(function () {
+        terminal.out("Compiling...");
+
+        fetch("https://vxsacademy.org/API/compile_cpp", {
+            method: "POST",
+            body: mainCode
+        }).then(res => res.text()).then(watSrc => {
+            if (watSrc[0] !== "(") {
+                return terminal.err(watSrc);
+            }
+
+            watSrc = watSrc.replace("(table 0 anyfunc)", "");
+            
+            WabtModule().then(wabt => {
+                let module;
+                let binaryBuffer = null;
+                try {
+                    const features = {
+                        'exceptions': false,
+                        'mutable_globals': false,
+                        'sat_float_to_int': false,
+                        'sign_extension': false,
+                        'simd': false,
+                        'threads': false,
+                        'multi_value': false,
+                        'tail_call': false,
+                        'bulk_memory': false,
+                        'reference_types': false,
+                    };
+            
+                    // Assemble source code
+                    module = wabt.parseWat("main.wat", watSrc, features);
+                    module.resolveNames();
+                    module.validate(features);
+                    binaryBuffer = module.toBinary({
+                        log: false,
+                        write_debug_names:false
+                    }).buffer;
+                } catch (e) {
+                    console.error(e);
+                }
+            
+                // free memory
+                if (module) module.destroy();
+                
+                if (binaryBuffer instanceof Uint8Array) {
+                    // init
+                    runBinary(binaryBuffer);
+                }
+            });
+
+            // res = new Uint8Array(res);
+            // if (res[0] === 0xCA && res[0] === 0xFE && res[0] === 0xBA && res[0] === 0xBE) {
+            //     terminal.out("Compilation success!");
+                
+            //     // run java
+            //     let myJVM = new JavaVM.VM();
+            //     if (mainCode.split("\n").map(s => s.replaceAll(" ", "")).includes("//javavm:debug")) {
+            //         myJVM.debugMode = true;
+            //     }
+            //     myJVM.attachMethod("println", a => terminal.out(a));
+            //     myJVM.attachMethod("debug", a => terminal.out(a));
+            //     myJVM.attachMethod("throwError", a => terminal.err(a));
+            //     myJVM.loadByteCode(res);
+            //     myJVM.init();
+
+            // } else {
+            //     terminal.err(res);
+            // }
+        }).catch(err => terminal.err(err));
+    }, 250);
+
+});
+    </script>
+    
+</body>
+</html>

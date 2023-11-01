@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/sandbox.css" type="text/css">
+    <script src="./JavaVM/bytecodeCompiler.js"></script>
+    <script src="./JavaVM/VM.js"></script>
+    <script src="./terminal.js"></script>
+</head>
+<body>
+    
+    <!-- Live Output -->
+    <div id="live-output-container"></div>
+    <div id="warnings-container"></div>
+
+    <script src="./sandbox.js"></script>
+
+    <!-- Live Output Control Script -->
+    <script>
+let terminal = new Terminal(document.getElementById("live-output-container"));
+
+window.addEventListener("message", event => {
+    if (event.data === "ping") {
+        window.top.postMessage({
+            "sender": "sandbox"
+        }, "*");
+        return;
+    }
+
+    if (event.data === "thumbnail") {        
+        html2canvas(document.body, {
+            width: window.innerWidth,
+            height: window.innerHeight
+        }).then(sendThumnailFromCanvas);
+        return;
+    }
+    
+    let data = event.data;
+    let files = data.files;
+    let mainCode = files["Main.java"].data;
+
+    liveOutputContainer.style.width = data.width + "px";
+    liveOutputContainer.style.height = data.height + "px";
+    liveOutputContainer.innerHTML = "";
+    
+    // lets light this candle
+    let responseRecieved = false;
+    setTimeout(function () {
+        terminal.out("Compiling...");
+
+        fetch("https://remote-javac.vexcess.repl.co/javac", {
+            method: "POST",
+            body: JSON.stringify({
+                javap: false,
+                code: `class Main {
+                    public static void main(String[] args) {
+                        
+                    }
+                }`
+            })
+        }).then(res => res.arrayBuffer()).then(res => {
+            responseRecieved = true;
+            console.log(res);
+
+            res = new Uint8Array(res);
+            if (res[0] === 0xCA && res[0] === 0xFE && res[0] === 0xBA && res[0] === 0xBE) {
+                terminal.out("Compilation success!");
+                
+                // run java
+                let myJVM = new JavaVM.VM();
+                if (mainCode.split("\n").map(s => s.replaceAll(" ", "")).includes("//javavm:debug")) {
+                    myJVM.debugMode = true;
+                }
+                myJVM.attachMethod("println", a => terminal.out(a));
+                myJVM.attachMethod("debug", a => terminal.out(a));
+                myJVM.attachMethod("throwError", a => terminal.err(a));
+                myJVM.loadByteCode(res);
+                myJVM.init();
+
+            } else {
+                terminal.err(res);
+            }
+        }).catch(err => terminal.err(err));
+    }, 250);
+
+});
+    </script>
+    
+</body>
+</html>

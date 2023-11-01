@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism-okaidia.min.css" type="text/css">
+<script src="https://cdn.jsdelivr.net/gh/vExcess/libraries@main/prism.js"></script>
+<style>
+    .seg {
+        font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+        background-color: rgb(39, 40, 34);
+        border-radius: 4px;
+        padding: 2px;
+        color: rgb(248, 248, 242);
+    }
+</style>
+
+<div id="page-middle-container" style="padding: 20px;">
+    <h1>Var, Let, and Const</h1>
+    
+    <p>
+        There are three keywords you can use to declare a variable in JavaScript:
+        <span class="seg">var</span>, <span class="seg">let</span>, and <span class="seg">const</span>.
+        A long time ago in the the primitive versions of JavaScript the only way to create a variable
+        was using "var". However people didn't like the way that variables created with var were
+        scoped. Scope is the area in the code where the variable exists. A variable does not 
+        exist outside of it's scope.
+    </p>
+
+    <p>
+        "var" is function scoped, while the newer "let" is block scoped. Try out the following piece of code.
+        You will see that the program runs just fine and 123 is printed to the console.
+    </p>
+
+    <pre><code class="language-javascript">{
+    var test = 123;
+}
+println(test);
+</code></pre>
+
+    <p>
+        Now replace "var" with "let". You will notice that the program now gives an error saying that
+        "test is not defined"
+    </p>
+
+    <pre><code class="language-javascript">{
+    let test = 123;
+}
+println(test);
+</code></pre>
+
+    <p>
+        The curly brackets aka braces {} define a block. A variable declared in the block using "var"
+        will be useable outside of the block, but variables declared using "let" are only available
+        inside of the block.
+    </p>
+
+    <p>
+        "const" is the same as "let" except that the variable you put into a "const" variable can
+        NOT be changed. You can change variables created using "var" and "let", but if you try
+        to put a new value into a constant variable it will throw an error.
+    </p>
+    
+</div>
