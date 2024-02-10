@@ -1,0 +1,10 @@
+node_modules
+
+package-lock.json
+rathole
+
+client.toml
+secrets.js
+server.cert
+server.csr
+server.key

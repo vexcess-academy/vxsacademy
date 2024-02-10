@@ -1,0 +1,18 @@
+{
+  "name": "vxsacademy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "cd src; node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@types/node": "^18.0.6",
+    "bson": "^6.1.0",
+    "crypto-js": "^4.1.1",
+    "mongodb": "^6.1.0"
+  }
+}

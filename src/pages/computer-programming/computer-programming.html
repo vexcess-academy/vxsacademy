@@ -1,0 +1,90 @@
+<link rel="stylesheet" href="/CDN/pages/computer-programming/computer-programming.css" type="text/css">
+
+<div id="page-middle-container">
+
+    <h2>Computer Programming</h2>
+
+    <p>
+        These programming courses aim to teach a person who has no programming 
+        experience to be able to create complex programs. The recommended place
+        to start for beginners is the "Introduction to JavaScript" course.
+    </p>
+
+    <script>
+        const pageBody = $("#page-middle-container")
+        
+        const COURSES = [
+            {
+                title: "JavaScript w/ Processing.js",
+                endpoint: "javascript",
+                about: "JavaScript is an imperative scripting language used mainly for adding functionality to websites and for creating backends using Node JS. Processing.js is an obsolete graphics library written in JavaScript.",
+                sections: []
+            },
+            {
+                title: "HTML/CSS",
+                endpoint: "html-css",
+                about: "HTML is a markup language used to define the structure and content of websites. CSS is a style sheet language used for describing the presentation and layout of websites",
+                sections: []
+            },
+            {
+                title: "WebGL",
+                endpoint: "webgl",
+                about: "WebGL is a JavaScript API that uses OpenGL to render GPU-accelerated graphics in a web browser",
+                sections: [
+                    "WebGL"
+                ]
+            },
+            {
+                title: "Python",
+                endpoint: "python",
+                about: "Python is a high level general purpose programming language known for its use of significant indentation as opposed to code blocks designated by curly braces",
+                sections: []
+            },
+            {
+                title: "Java",
+                endpoint: "java",
+                about: "Java is a high level, general purpose, object oriented programing language known for it's ability to run virtually anywhere along with being extremely verbose and forcing you to use classes for everything",
+                sections: []
+            },
+            {
+                title: "C++",
+                endpoint: "cpp",
+                about: "C++, somtimes known as C with classes, is a statically typed compiled programming language used anywhere where efficiency is key such as operating systems, video games, and web browsers",
+                sections: []
+            },
+            {
+                title: "JITLang",
+                endpoint: "jitlang",
+                about: "JITLang is a new programming language that is still under development that aims to be an improved version of JavaScript that is both faster and more flexible",
+                sections: []
+            },
+        ];
+        
+        $.createComponent("course", $.html`
+            <div class="course-div">
+                <h3>\{title}</h3>
+                <p>\{about}</p>
+            </div>
+        `, function(course) {
+            const sections = course.sections;
+            for (let i = 0; i < sections.length; i++) {
+                const UrlName = sections[i].toLowerCase().split(" ").join("-");
+                $("a")
+                    .text(sections[i])
+                    .attr({
+                        href: `/computer-programming/${course.endpoint}#0-0`,
+                        target: "_self"
+                    })
+                    .appendTo(this)
+                this.append($("div").css("height: 8px;"))
+            }
+        })
+
+        COURSES.forEach(course => {
+            $("course", course).appendTo(pageBody)
+        })
+
+        // https://github.com/Dddatt
+    </script>
+    
+</div>

@@ -1,0 +1,261 @@
+<style>
+    #page-middle-container {
+        margin: 20px;
+    }
+</style>
+
+<div id="page-middle-container">
+    <h1>Dev Logs</h1>
+
+    <h2>Yet To Do</h2>
+    <p>
+        Avatars<br>
+        Fix profile project displays<br>
+        Fix all the execution environments<br>
+    </p>
+
+    <h2>7/1/22</h2>
+    <p>Project started</p>
+    
+    <h2>3/30/23</h2>
+    <p>
+        Patched multiple XSS vulnerabilities; 
+        Added dev log; 
+        Improved input validation for projects; 
+        Patched vulnerability where naming a file "../../../" makes it get saved outside of its project directory;
+        Added error reporting;
+        Switched to using srcdoc instead of the deprecated document.write();
+        Fixed project titles not being displayed properly;
+    </p>
+
+    <h2>3/31/23</h2>
+    <p>
+        Patched multiple XSS vulnerabilities; 
+        Fixed a bunch of CSS issues;
+        Improved input validation for projects;
+        Started adding project thumbnails;
+    </p>
+
+    <h2>4/1/23</h2>
+    <p>
+        Fixed bug that broke the editor;
+        Fixed some CSS issues;
+        Added the ability to rename files by double-clicking the file's tab
+        Added the ability to delete files;
+        Fixed path bug in backend;
+        Cleaned up both backend and front end code;
+        Added pages and sorting to hotlist;
+        Improve Barbequery library to make my life easier;
+        Display loading icons while images are loading;
+        Fixed code editor;
+    </p>
+
+    <h2>4/2/23</h2>
+    <p>
+        Re-wrote the entire server backend to fix a login bug;
+        Cleaned AES encryption code;
+        Improved project GUI;
+    </p>
+
+    <h2>4/2/23</h2>
+    <p>
+        Fixed variable scoping bug;
+    </p>
+
+    <h2>4/14/23</h2>
+    <p>
+        Updated Barbequery library and then fixed the entire frontend after the update broke it;
+        Improved like button;
+        Removed Applesoft Basic;
+        Improved sandbox security;
+        Fixed code pre-processor bugs;
+    </p>
+
+    <h2>4/16/23</h2>
+    <p>
+        Started cleaning sandbox code;
+        Worked on fixing environment error detection and loop protection;
+    </p>
+
+    <h2>4/23/23</h2>
+    <p>
+        Updated Barbequery library;
+        Improved code using new Barbequery features;
+    </p>
+
+    <h2>4/27/23</h2>
+    <p>
+        Thumbnails work now;
+        Did a bunch of debugging on the JS code preprocessor;
+    </p>
+
+    <h2>5/2/23</h2>
+    <p>
+        Fixed CDN headers;
+    </p>
+
+    <h2>5/6/23</h2>
+    <p>
+        Added JITLang environment;
+        Fixed programs display on profile page;
+        Added JavaScript linting;
+    </p>
+
+    <h2>5/9/23</h2>
+    <p>
+        Did some JITLang patches;
+        Fixed vulnerability that allowed attacker to crash the server by passing invalid data to JSON.parse;
+    </p>
+
+    <h2>5/21/23</h2>
+    <p>
+        Wrote a junky patch for the Python environment;
+        Did maintenence updates to the other execution environments;
+    </p>
+
+    <h2>6/10/23</h2>
+    <p>
+        Make home page not look ugly
+    </p>
+
+    <h2>6/13/23</h2>
+    <p>
+        Fix vulnerability of using cryptographically insecure PRNG for generating tokens;
+    </p>
+
+    <h2>6/14/23</h2>
+    <p>
+        Make auth tokens expire after 7 days or after the user signs out;
+    </p>
+
+    <h2>7/1/23</h2>
+    <p>
+        Fixed the file system got messed up from moving from Linux to Windows and then back to Linux due to Windows thinking that character number 67 and character number 97 are the same character (stupid Windows).
+    </p>
+
+    <h2>7/12/23</h2>
+    <p>
+        Made stuff more responsively designed;
+        Added functionality for users to update their profile info;
+    </p>
+
+    <h2>7/13/23</h2>
+    <p>
+        Users can now change their profile background;
+    </p>
+
+    <h2>7/14/23</h2>
+    <p>
+        Fix signup bug;
+    </p>
+
+    <h2>7/31/23</h2>
+    <p>
+        Added Terms of Service;
+    </p>
+
+    <h2>8/28/23</h2>
+    <p>
+        Started adding dark mode;
+    </p>
+
+    <h2>8/30/23</h2>
+    <p>
+        Worked more on dark mode;
+        Adding number scrubbing;
+        Fixed fonts being messed up on Firefox;
+        Started implemented C++;
+    </p>
+
+    <h2>9/4/23</h2>
+    <p>
+        Made new programs get saved to localStorage;
+        Made code editor tabs draggable;
+    </p>
+
+    <h2>9/17/23</h2>
+    <p>
+        Fix vulnerability where programs can sign users out of their accounts;
+        Made background of PJS logo transparent;
+        Project output dimensions must now be integers;
+        Adding project forks;
+    </p>
+
+    <h2>9/18/23</h2>
+    <p>
+        Fixed several minor bugs;
+    </p>
+
+    <h2>9/19/23</h2>
+    <p>
+        Fixed PJS environment (mostly);
+    </p>
+
+    <h2>9/20/23</h2>
+    <p>
+        Migrated main website from Replit hosting to self hosting;
+    </p>
+
+    <h2>9/30/23</h2>
+    <p>
+        Shut down server and started migratation to MongoDB;
+    </p>
+
+    <h2>10/1/23</h2>
+    <p>
+        Finished migrating data to MongoDB and server is back online;
+        Migrated execution environment sandbox from Replit to self hosted;
+    </p>
+
+    <h2>10/6/23</h2>
+    <p>
+        Fix XSS vulnerability;
+    </p>
+
+    <h2>10/7/23</h2>
+    <p>
+        Fix bug where programs run twice on startup;
+    </p>
+
+    <h2>10/27/23</h2>
+    <p>
+        Fix 404 not found thumbnail bug;
+        Improve internal error handling;
+    </p>
+
+    <h2>11/1/23</h2>
+    <p>
+        Fixed vulnerability (for real this time) where programs can make POST requests for the user from the sandbox;
+    </p>
+
+    <h2>11/6/23</h2>
+    <p>
+        Start implementing discussion features
+    </p>
+
+    <h2>11/16/23</h2>
+    <p>
+        Increase account per IP limit;
+        Temporarily remove sign up with Google;
+        Fix can't read properties of undefined bugs;
+    </p>
+
+    <h2>12/30/23</h2>
+    <p>
+        Continue work on the discussion front end;
+    </p>
+    
+    <h2>12/31/23</h2>
+    <p>
+        Continue work on the discussion front end;
+        Create discussions backend;
+    </p>
+
+    <h2>2/10/24</h2>
+    <p>
+        Create fullscreen button for saved programs;
+        Continue work on discussions;
+        Update to latest Barbequery version;
+    </p>
+
+</div>

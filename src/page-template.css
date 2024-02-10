@@ -1,0 +1,289 @@
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: rgb(40 40 40);
+        --background2: rgb(52 52 52);
+        --background3: rgb(37 37 37);
+        --transparent-background: rgb(255 255 255 / 15%);
+        --text-color: rgb(255 255 255);
+        --link-color: rgb(50, 120, 255);
+        --tile-background: rgb(17, 21, 20);
+        --borders: rgb(70, 70, 70);
+        --borders2: rgb(67 67 67);
+        --borders3: rgb(128, 128, 128);
+        --borders4: rgb(0 0 0);
+
+        --dropdown-back: rgb(17, 17, 17);
+        --dropdown-back-hover: rgb(10, 10, 10);
+        --dropdown-border: rgb(40, 40, 40);
+        --dropdown-subjects-text-color: rgb(150, 150, 150);
+        --dropdown-profile-text-color: rgb(21, 149, 69);
+    }
+}
+@media (prefers-color-scheme: light) {
+    :root {
+        --background: rgb(255, 255, 255);
+        --background2: rgb(241, 241, 241);
+        --background3: rgb(221, 221, 221);
+        --transparent-background: rgba(0, 0, 0, 0.15);
+        --text-color: rgb(45, 45, 45);
+        --link-color: rgb(50, 120, 255);
+        --tile-background: rgb(222, 222, 222);
+        --borders: rgb(207, 207, 207);
+        --borders2: rgb(235, 235, 235);
+        --borders3: rgb(128, 128, 128);
+        --borders4: rgb(160, 160, 160);
+
+        --dropdown-back: rgb(250, 250, 250);
+        --dropdown-back-hover: rgb(245, 245, 245);
+        --dropdown-border: rgb(215, 215, 215);
+        --dropdown-subjects-text-color: rgb(65, 65, 65);
+        --dropdown-profile-text-color: rgb(0, 50, 50);
+    }
+}
+
+/* General */
+body {
+    background-color: var(--background);
+    color: var(--text-color);
+    margin: 0px;
+    font-family: Arial, "Arimo", sans-serif;
+    overflow-x: hidden;
+}
+
+a {
+    color: var(--link-color);
+}
+
+/* Navbar */
+#page-top-container {
+    background-color: rgb(31, 171, 84);
+    height: 62px;
+    line-height: 63px;
+    padding-left: 20px;
+    padding-right: 20px;
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
+    border-bottom: 1px solid rgb(99, 196, 136);
+    user-select: none;
+}
+
+#page-top-container div {
+    display: inline;
+    cursor: pointer;
+}
+
+/** navbar search **/
+#navbar-search {
+    background-color: rgb(57, 182, 93);
+    margin-left: 30px;
+    padding: 10px;
+    border-radius: 4px;
+}
+#navbar-search input {
+    background-color: transparent; 
+    height: 35px;
+    margin: -10px;
+    margin-right: 4px;
+    padding-left: 10px;
+    border: none;
+    outline: none;
+    font-weight: bold;
+    font-size: 15px;
+    color: white;
+    width: max(80px, 15vw);
+}
+#navbar-search input::placeholder {
+    color: var(--c, rgba(255, 255, 255, 0.8));
+}
+
+
+/** subjects menu **/
+#navbar-drop-down-menu {
+    background-color: var(--dropdown-back);
+    display: var(--show, none) !important;
+    position: absolute;
+    left: 10px;
+    margin-top: 5px;
+    width: calc(100% - 45px);
+    height: 400px;
+    color: var(--dropdown-subjects-text-color);
+    border-top: 1px solid var(--dropdown-border);
+    border-bottom: 1px solid var(--dropdown-border);
+    border-radius: 2px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    padding: 12px;
+    padding-top: 2px;
+    overflow: hidden;
+    cursor: default !important;
+}
+#navbar-drop-down-menu ul {
+    border-top: 1px solid var(--dropdown-border);
+    color: rgb(21, 149, 69);
+    list-style-type: none;
+    padding: 4px;
+    margin: 0px;
+    margin-bottom: 4px;
+}
+#navbar-drop-down-menu li {
+    height: 35px;
+    line-height: 35px;
+    display: inline-block;
+    margin-left: 22px;
+}
+#navbar-drop-down-menu li:hover {
+    text-decoration: underline;
+}
+#navbar-drop-down-menu a {
+    text-decoration: none;
+    color: rgb(21, 149, 69);
+}
+
+.navbar-drop-down-subject-category {
+    display: block;
+    width: 200px;
+    height: 200px;
+}
+.navbar-drop-down-subject-category strong {
+    font-size: 20px;
+}
+
+/** profile menu **/
+#profile-dropdown-menu {
+    display: none;
+    background-color: var(--dropdown-back);
+    width: 300px;
+    margin-top: 4px;
+    border: 1px solid var(--dropdown-border);
+    border-radius: 2px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+    position: absolute;
+    right: 10px;
+    cursor: pointer;
+    z-index: 1000;
+}
+#profile-dropdown-menu a {
+    text-decoration: none;
+}
+#profile-dropdown-menu .dropdown-btn {
+    display: block;
+    margin: 0px;
+    padding: 10px;
+    font-size: 16px;
+    height: 40px;
+    line-height: 40px;
+    color: var(--dropdown-profile-text-color);
+}
+#profile-dropdown-menu .dropdown-btn:hover {
+    background-color: var(--dropdown-back-hover);
+    text-decoration: underline;
+}
+
+/* notifs css */
+.notif-post {
+    display: block !important;
+    font-weight: normal;
+    line-height: 1.5em;
+    margin: 6px;
+    border-bottom: 2px solid gray;
+    cursor: pointer;
+    div {
+        color: gray;
+        display: block !important;
+    }
+}
+.notif-post:hover {
+    color: var(--dropdown-profile-text-color);
+}
+
+#notif-counter {
+    display: none;
+    text-align: center;
+    margin-right: -6px;
+    background: green;
+    border-radius: 100px;
+    height: 20px;
+    line-height: 20px;
+    padding: 1px;
+    padding-left: 6px;
+    padding-right: 6px;
+    position: relative;
+    left: -7px;
+    top: -7px;
+}
+
+/* Page Middle */
+#page-middle-container {
+    min-height: calc(100vh - 143px);
+}
+
+/* Page Bottom */
+#page-bottom-container {
+    background-color: rgb(49, 68, 83);
+    color: white;
+    padding: 10px;
+    padding-left: 20px;
+    font-size: 14px;
+}
+#page-bottom-container a {
+    color: white;
+    text-decoration: none;
+}
+#page-bottom-container a:hover {
+    text-decoration: underline;
+}
+
+#page-darken {
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+}
+
+/* Program Grids */
+.programs-grid {
+    display: grid;
+    justify-content: center;
+    grid-template-columns: repeat(auto-fill, 225px);
+    gap: 1rem;
+}
+.program-link {
+    display: block;
+    color: var(--text-color);
+    text-decoration: none;
+}
+.program {
+    border: 2px solid var(--borders);
+    border-radius: 6px;
+    padding: .5rem;
+    background-color: var(--tile-background);
+    text-align: center;
+    overflow: hidden;
+}
+.program_thumbnail {
+    width: 100%;
+    height: auto;
+    border-radius: .25rem;
+}
+.program_title {
+    margin: 0px;
+    margin-bottom: 6px;
+    color: var(--text-color);
+    text-align: center;
+    font-family: sans-serif;
+    font-weight: bold;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.program_metadata-wrapper {
+    text-align: left;
+    padding: 2px;
+}
+.thumbnail-img {
+    margin-bottom: 4px;
+}

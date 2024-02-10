@@ -1,0 +1,132 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism-okaidia.min.css" type="text/css">
+<script src="https://cdn.jsdelivr.net/gh/vExcess/libraries@main/prism.js"></script>
+<style>
+    .seg {
+        font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+        background-color: rgb(39, 40, 34);
+        border-radius: 4px;
+        padding: 2px;
+        color: rgb(248, 248, 242);
+    }
+</style>
+
+<div id="page-middle-container" style="padding: 20px;">
+    <h1>Console Output</h1>
+
+    <p>
+        Being able to create numbers, text, and boolean values is useless unless
+        you have a way to view that data. This is where the <span class="seg">console.log</span>
+        function comes into play. This function will take whatever input you have it
+        and then print it into your browser console. Your browser console is inside 
+        the browser's developer tools. You can open your dev tools by right clicking a 
+        website and selecting "Inspect" or my pressing F12 on your keyboard. From there
+        you can navigate to the console tab of the dev tools.
+    </p>
+
+    <p>
+        However the browser console is annoying to open, and most of the time there
+        will be other junk being logged in there. Not to mention that schools often
+        block the dev tools from being opened. Therefore for these tutorials I will  
+        use the <span class="seg">println</span> function using the Processing.js library.
+        A library is basically a collection of code we can import into our programs
+        We can then use the code without having to write it ourselves. My Processing.js
+        editor is here:
+    </p>
+
+    <a href="/computer-programming/new/pjs">New Processing.js Program</a>
+
+    <p>
+        Open the editor. You will be able to write your code in left side of the editor
+        and can view the output of your program in the right side of the program.
+    </p>
+
+    <p>
+        A function can be called (aka executed aka run) by typing the name of the function, then typing an
+        open parenthesis, a close parenthesis, and a semicolon. Go ahead and type the following line of 
+        code into the editor (linked above). It should open a black box in the output side of the editor.
+    </p>
+
+    <pre><code class="language-javascript">println();</code></pre>
+
+    <p>
+        To give input to a function you can type an expression between the open and close parenthesis.
+        Go ahead and try typing some numbers between the open and close parenthesis.
+    </p>
+
+    <pre><code class="language-javascript">println(123);</code></pre>
+
+    <p>
+        You should see the number you typed between the parenthesis now printed out in the console
+        simulation (the black box) on the right side of the editor. Not only can you input a single number
+        to the println function, but you can input an entire expression (think back to Algebra).
+        For example you can do the following:
+    </p>
+
+    <pre><code class="language-javascript">println(2 + 7);</code></pre>
+
+    <p>
+        You will notice that the computer will add the 2 and the 7 together before printing out the result.
+        There are many operations you can do on two numbers, but those will be covered later. For now you can 
+        stick to using addition (+), subtraction (-), multiplication (*), and division (/). Addition and subtraction
+        are done using the plus and minus sign obviously enough. Division is also pretty common sense; you use
+        the slash aka fraction bar symbol. Multiplication on the other than is not immediately obvious. You would
+        think that you multiply two numbers you would put an "x" between them, but that is wrong. Rather you must
+        use an asterisk (the star character by pressing SHIFT + 8). Not only can 
+        you input an expression that performs and operation on two numbers, you can make the expression as 
+        complicated as you want:
+    </p>
+
+    <pre><code class="language-javascript">println((2 + 3 * 2) - 1 / 2 + 0.25);</code></pre>
+
+    <p>
+        You should get 7.75 in your console simulation. You will notice that the computer follows order of operations.
+        So multiplication and division get calculated before addition and subtraction do. You can also group 
+        operations together using parenthesis and the computer will calculate whatever is in the innermost
+        parenthesis first (once again following PEMDAS).
+        So our input would get evaluated like so:
+        <br><br>
+        <strong>(2 + 3 * 2) - 1 / 2 + 0.25</strong>
+        <br>
+        <strong>(2 + 6) - 1 / 2 + 0.25</strong>
+        <br>
+        <strong>(8) - 1 / 2 + 0.25</strong>
+        <br>
+        <strong>8 - 0.5 + 0.25</strong>
+        <br>
+        <strong>7.5 + 0.25</strong>
+        <br>
+        <strong>7.75</strong>
+    </p>
+
+    <p>
+        Printing numbers to our console is cool, but it'd be nice to print out text too. You may have
+        already tried doing this just to realize that it results in an error (errors in our code are bad!!!)
+        This is because if you type text as input to the println function, the computer thinks that the 
+        text is a variable (which we will cover in a future lesson). To tell the computer that the text
+        is not a variable, but rather a string (pieces of text are called strings in computer programming) 
+        that we want to get printed out we can put the piece of text in double-quotes like so:
+    </p>
+
+    <pre><code class="language-javascript">println("Hello World!!!");</code></pre>
+
+    <p>
+        That should print out the words Hello World!!! into your console. You will notice that the double quotes
+        do not get printed out, rather only whatever is between the quotes gets printed out.
+        There is a lot more detail and rules to consider when using strings of text in JavaScript, but those 
+        rules will be covered in a future lesson.
+    </p>
+
+    <p>
+        Now try the following code:
+    </p>
+
+    <pre><code class="language-javascript">println(true);</code></pre>
+
+    <p>
+        Hold up! It printed out true into the console without throwing an error even though the
+        text wasn't between strings! This is because <span class="seg">true</span> is a boolean primitive data type.
+        <span class="seg">false</span> is also a boolean value. You can also try out <span class="seg">null</span>
+        and <span class="seg">undefined</span> both of which are also primitive data types
+    </p>
+
+</div>
