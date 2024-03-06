@@ -35,6 +35,15 @@ window.addEventListener("message", async function (event) {
         }).then(sendThumnailFromCanvas);
         return;
     }
+
+    if (event.data.event === "eval") {
+        window.top.postMessage({
+            "sender": "sandbox",
+            "event": "evalResult",
+            data: serializeVal(pyodide.runPython(event.data.data))
+        }, "*");
+        return;
+    }
     
     let data = event.data;
     let files = data.files;

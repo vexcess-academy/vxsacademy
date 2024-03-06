@@ -9,107 +9,22 @@
     
     <div id="page-flex" style="display: flex;">
         <div id="left">
-            <div></div>
-            <div></div>
+            <!-- Course Title -->
+            <div style="font-size: 24px;"></div>
+            <!-- Section Box -->
+            <div id="section-box" class="section-div">
+                <!-- Section Header -->
+                <div id="section-header">
+                    <div class="section-button" style="margin-right: 8px;">&lt;</div>
+                    <div id="section-title"></div>
+                    <div class="section-button" style="margin-left: 8px;">&gt;</div>
+                </div>
+                <!-- Section Body -->
+                <div id="section-body"></div>
+            </div>
         </div>
-        <div id="right">
-            
-        </div>
+        <div id="right"></div>
     </div>
-
-    <script>
-const left = $("#left");
-const right = $("#right");
-
-const sectionCache = {};
-
-const courses = {
-    "javascript": "JavaScript & Programming Fundamentals",
-    "webgl": "WebGL"
-};
-
-const reader = new commonmark.Parser();
-const writer = new commonmark.HtmlRenderer();
-
-const course_section = window.location.href.split("/")[4].split("#")[0];
-let hash = window.location.hash.slice(1).split("-");
-if (hash.length !== 2) hash = ["0", "0"];
-
-left.$("*div")[0].html(`<h2 class="section-div">${courses[course_section]}</h2>`)
-
-$.createComponent("course-section", $.html`
-    <div class="section-div"'>
-        <strong style="font-size: 24px; margin-top: 8px;">\{title}</strong>
-        <br><br>
-    </div>
-`)
-
-function urlify (txt) {
-    return txt.toLowerCase().replaceAll(" ", "-").replaceAll(".", "-");
-}
-
-function renderMD(txt) {
-    let parsed = reader.parse(txt);    
-    right.innerHTML = writer.render(parsed);
-
-    $(".language-js").forEach(el => {
-        el.classList.add("language-javascript");
-    })
-
-    Prism.highlightAllUnder(right.el);
-}
-
-// get all sections in course
-$.getJSON("/CDN/pages/computer-programming/" + course_section + "/course.json", function (res) {
-    let sections = res.sections;
-    for (let sectionNum in sections) {
-        let section = sections[sectionNum];
-
-        // add section element
-        let el = $("course-section", {
-            title: "Section " + sectionNum + ": " + section.title
-        })
-
-        // add all lessons
-        for (let i = 0; i < section.lessons.length; i++) {
-            $("span")
-                .html(section.lessons[i])
-                .css({
-                    display: "inline-block",
-                    marginBottom: "4px"
-                })
-                .addClass("lesson-link")
-                .on("click", () => {
-                    console.log(i)
-                    let path = `/CDN/pages/computer-programming/${course_section}/${hash[0]}-${i}.md`;
-                    window.location.hash = hash[0] + "-" + i;
-                    if (sectionCache[path]) {
-                        renderMD(sectionCache[path]);
-                    } else {
-                        fetch(path)
-                            .then(res => res.text())
-                            .then(txt => {
-                                sectionCache[path] = txt;
-                                renderMD(txt);
-                                right.scroll(0, 0);
-                            })
-                    }
-                })
-                .appendTo(el)
-            $("br").appendTo(el)
-        }
-            
-        left.$("*div")[1].append(el);
-    }
-
-    let path = `/CDN/pages/computer-programming/${course_section}/${hash.join("-")}.md`;
-    fetch(path)
-        .then(res => res.text())
-        .then(txt => {
-            sectionCache[path] = txt;
-            renderMD(txt);
-        })
-})
-    </script>
-    
 </div>
+
+<script src="/CDN/pages/computer-programming/course.js"></script>

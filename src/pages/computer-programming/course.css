@@ -4,13 +4,37 @@
     width: calc(100% - 30px);
 }
 
+#section-header {
+    font-size: 22px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+#section-title {
+    width: 100%;
+    font-size: 22px;
+    margin-top: 8px;
+    min-height: 34px;
+}
+
+.section-button {
+    user-select: none;
+    transform: scale(1, 1.75);
+    cursor: pointer;
+}
+.section-button:hover {
+    color: #16803e;
+}
+
 .section-div {
     background-color: var(--background2);
     border: 2px solid var(--borders2);
     border-radius: 5px;
     padding: 14px;
     margin-bottom: 28px;
-    width: 230px;
+    width: 250px;
 }
 
 .lesson-link {

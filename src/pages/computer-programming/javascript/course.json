@@ -1,26 +1,110 @@
 {
     "sections": [
         {
-            "title": "Intro to Programming",
+            "title": "Intro",
             "lessons": [
-                "What is Programming"
+                "Intro"
             ]
         },
         {
-            "title": "Intro to JavaScript",
+            "title": "Drawing Basics",
             "lessons": [
-                "What is JavaScript",
-                "The History of JavaScript",
-                "Data Types",
-                "Console Output"
+                "Drawing Basic Shapes",
+                "Coloring the Shapes"
             ]
         },
         {
             "title": "Variables",
             "lessons": [
-                "What are Variables",
-                "Variable Naming Rules",
-                "var, let, const"
+                "Variables",
+                "The Docs",
+                "More on Variables"
+            ]
+        },
+        {
+            "title": "Animation",
+            "lessons": [
+                "Animation"
+            ]
+        },
+        {
+            "title": "Resizing with Math",
+            "lessons": [
+                "Resizing with Math"
+            ]
+        },
+        {
+            "title": "Text",
+            "lessons": [
+                "Text",
+                "More on Text"
+            ]
+        },
+        {
+            "title": "Functions",
+            "lessons": [
+                "Functions",
+                "Global vs Local Variables",
+                "return Statements"
+            ]
+        },
+        {
+            "title": "Special Processing.js Features",
+            "lessons": [
+                "Special Processing.js Features"
+            ]
+        },
+        {
+            "title": "Logic and if Statements",
+            "lessons": [
+                "if Statements",
+                "Booleans",
+                "Logical Operators",
+                "Mouse Interaction",
+                "if else",
+                "if else if",
+                "switch",
+                "Button with if Statements"
+            ]
+        },
+        {
+            "title": "Debugging & Writing Clean Code",
+            "lessons": [
+                "Debugging",
+                "Writing Clean Code"
+            ]
+        },
+        {
+            "title": "Loops",
+            "lessons": [
+                "while Loops",
+                "for Loops",
+                "Nested Loops"
+            ]
+        },
+        {
+            "title": "Arrays",
+            "lessons": [
+                "Arrays",
+                "Looping with Arrays",
+                "break and continue",
+                "Modifying Arrays",
+                "forEach"
+            ]
+        },
+        {
+            "title": "Objects",
+            "lessons": [
+                "Objects",
+                "Modifying Objects",
+                "Arrays of Objects"
+            ]
+        },
+        {
+            "title": "Object Oriented Design",
+            "lessons": [
+                "Object Oriented Design",
+                "Object Methods"
             ]
         }
     ]

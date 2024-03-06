@@ -1,5 +1,6 @@
 <!-- Import Monaco Editor -->
-<script src="https://cdn.jsdelivr.net/npm/monaco-editor/min/vs/loader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.46.0/min/vs/loader.js"></script>
+<script src="/CDN/lib/terminal.js"></script>
 <link rel="stylesheet" href="/CDN/pages/computer-programming/program.css" type="text/css">
 
 <div id="page-middle-container">
@@ -21,6 +22,9 @@
             <div id="editor" style="width: 800px; height: 400px; border: none;"></div>
             <div id="output-frame" style="width: 400px; height: 400px;"></div>
         </div>
+
+        <!-- Debug Console -->
+        <div id="debug-console"></div>
 
         <!-- Editor Buttons -->
         <div id="editor-buttons">
@@ -278,11 +282,27 @@
                     </tr>
                     <tr>
                         <td>CTRL + ALT + UP</td>
-                        <td>add multi-cursor above</td>
+                        <td>add multi-cursor above on Windows</td>
                     </tr>
                     <tr>
                         <td>CTRL + ALT + DOWN</td>
-                        <td>add multi-cursor below</td>
+                        <td>add multi-cursor below on Windows</td>
+                    </tr>
+                    <tr>
+                        <td>CTRL + SHIFT + UP</td>
+                        <td>add multi-cursor above on Linux</td>
+                    </tr>
+                    <tr>
+                        <td>CTRL + SHIFT + DOWN</td>
+                        <td>add multi-cursor below on Linux</td>
+                    </tr>
+                    <tr>
+                        <td>CTRL + K + 0</td>
+                        <td>collapse all code blocks</td>
+                    </tr>
+                    <tr>
+                        <td>CTRL + K + J</td>
+                        <td>uncollapse all code blocks</td>
                     </tr>
                     <tr>
                         <td>ESC</td>

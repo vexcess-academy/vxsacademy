@@ -148,9 +148,10 @@
 /* Editor Buttons */
 #editor-buttons {
     transform: translate(0px, -1px);
-    border: 1px solid rgb(200, 200, 200);
+    border: 1px solid var(--borders3);
     padding: 10px;
     padding-bottom: 3px;
+    margin-right: 1px;
 }
 .button {
     background-color: rgb(13, 146, 63);
@@ -231,14 +232,14 @@ input:checked + .slider:before {
 }
 
 #editor-settings {
-    background-color: rgb(255, 255, 255);
+    background-color: var(--background);
     position: fixed;
     width: 50%;
     max-height: 90vh;
     left: 25%;
     top: 50%;
     transform: translateY(-50%);
-    color: black;
+    color: var(--text-color);
     border: 1px solid black;
     border-radius: 10px;
     padding: 20px;
@@ -259,11 +260,13 @@ input:checked + .slider:before {
     margin-bottom: 5px;
 }
 #editor-settings select, #editor-settings input {
+    background-color: var(--background2);
     margin: 0px;
     width: 100px;
     height: 30px;
-    border: 1px black solid;
+    border: 2px solid var(--borders);
     border-radius: 4px;
+    color: var(--text-color);
 }
 #editor-settings select:hover {
     margin: 0px;
@@ -277,6 +280,13 @@ input:checked + .slider:before {
     height: 28px;
     border: 2px rgb(13, 146, 63) solid;
     border-radius: 4px;
+}
+
+#debug-console {
+    width: 100%;
+    height: 150px;
+    border-top: 1px solid var(--borders3);
+    overflow-y: auto;
 }
 
 #tab-bar {

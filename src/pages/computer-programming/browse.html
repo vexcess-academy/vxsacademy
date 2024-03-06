@@ -1,7 +1,7 @@
 <link rel="stylesheet" href="/CDN/pages/computer-programming/browse.css" type="text/css">
 
 <div id="page-middle-container">
-    <h1 style="margin-top: 32px;">Browse Projects</h1>
+    <h1 id="hotlist-label" style="margin-top: 32px;">Browse Projects</h1>
     
     <div style="margin-top: -40px; text-align: right;">
         <span class="list-tab-btn" id="hot-btn">Hot</span>
@@ -19,6 +19,12 @@
     <br><br>
     
     <script>
+const isKA = window.location.href.split("/").reverse()[0].startsWith("ka-");
+
+if (isKA) {
+    $("#hotlist-label").text("Browse KA Projects");
+}
+
 const grid = $(".programs-grid")[0];
 let allPrograms = [];
 let sort = "";
@@ -29,8 +35,11 @@ function displayPrograms(programs) {
 }
 
 function loadPrograms(sort, page) {
-    $.getJSON(`/API/projects?sort=${sort}&page=${page}`, programs => {
+    $.getJSON(`/API/${isKA ? "ka-" : ""}projects?sort=${sort}&page=${page}`, programs => {
         for (var i = 0; i < programs.length; i++) {
+            if (isKA) {
+                programs[i].isKA = true;
+            }
             allPrograms.push(programs[i]);
         }
         displayPrograms(programs);

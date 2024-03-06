@@ -1,8 +1,5 @@
 console.log("Program Initiated!");
 
-// For when I'm doing updates
-const SERVER_DOWN = false;
-
 // import dependencies
 const http = require("node:https");
 const fs = require("node:fs");
@@ -15,7 +12,7 @@ const { MongoClient } = require("mongodb");
 const bson = require("bson");
 
 // it'd be very bad if these were publicly available
-const secrets = require("../secrets");
+const secrets = require("../secrets").getSecrets("../");
 
 const myMongo = new MongoClient(`mongodb://${secrets.MONGO_IP}:${secrets.MONGO_PORT}`);
 
@@ -341,7 +338,7 @@ function calculateHotness(upvotes, uploadedOn) {
     const z = 1.96; // 95% confidence interval
     
     // Calculate the fraction of upvotes
-    const p = upvotes / (upvotes + 1); // Adding 1 to avoid division by zero
+    const p = upvotes / (upvotes + 1); // Adding 0.1 to avoid division by zero
     
     // Calculate the "score"
     const score =
@@ -353,6 +350,213 @@ function calculateHotness(upvotes, uploadedOn) {
     const hotness = score / elapsedTime;
     
     return hotness;
+}
+function calculateKAHotness(upvotes, uploadedOn) {
+    // Constants for the Wilson Score Interval
+    const z = 1.96; // 95% confidence interval
+    
+    // Calculate the fraction of upvotes
+    const p = upvotes / (upvotes + 0.1); // Adding 0.1 to avoid division by zero
+    
+    // Calculate the "score"
+    const score =
+    (p + (z * z) / (2 * (upvotes + 0.1)) - z * Math.sqrt((p * (0.1 - p) + (z * z) / (4 * (upvotes + 0.1))) / (upvotes + 0.1))) /
+    (0.1 + (z * z) / (upvotes + 0.1));
+    
+    // Calculate the hotness by considering the time elapsed
+    const elapsedTime = (Date.now() - uploadedOn) / (1000 * 60 * 60); // Convert milliseconds to hours
+    const hotness = score / elapsedTime;
+    
+    return hotness;
+}
+
+let KAAPIHashes = readJSON("./ka-api-hashes.json") ?? null;
+const KAProgramsCache = {};
+let KA_allPrograms = [];
+let KA_hotListData = [];
+let KA_recentListData = [];
+let KA_topListData = [];
+async function getKAProgram(id) {
+    // KA_ + originalProgramId
+    if (!KAProgramsCache[id]) {
+        let programRes, programJSON;
+        try {
+            programRes = await fetch("https://www.khanacademy.org/api/internal/graphql/programQuery", {
+                "headers": {
+                    "accept": "*/*",
+                    "accept-language": "en-US,en;q=0.9",
+                    "content-type": "application/json",
+                    "x-ka-fkey": "0"
+                },
+                "body": "{\"operationName\":\"programQuery\",\"query\":\"query programQuery($programId: String!) {\\n  programById(id: $programId) {\\n    byChild\\n    category\\n    created\\n    creatorProfile: author {\\n      id\\n      nickname\\n      profileRoot\\n      profile {\\n        accessLevel\\n        __typename\\n      }\\n      __typename\\n    }\\n    deleted\\n    description\\n    spinoffCount: displayableSpinoffCount\\n    docsUrlPath\\n    flags\\n    flaggedBy: flaggedByKaids\\n    flaggedByUser: isFlaggedByCurrentUser\\n    height\\n    hideFromHotlist\\n    id\\n    imagePath\\n    isProjectOrFork: originIsProject\\n    isOwner\\n    kaid: authorKaid\\n    key\\n    newUrlPath\\n    originScratchpad: originProgram {\\n      deleted\\n      translatedTitle\\n      url\\n      __typename\\n    }\\n    restrictPosting\\n    revision: latestRevision {\\n      id\\n      code\\n      configVersion\\n      created\\n      editorType\\n      folds\\n      __typename\\n    }\\n    slug\\n    sumVotesIncremented\\n    title\\n    topic: parentCurationNode {\\n      id\\n      nodeSlug: slug\\n      relativeUrl\\n      slug\\n      translatedTitle\\n      __typename\\n    }\\n    translatedTitle\\n    url\\n    userAuthoredContentType\\n    upVoted\\n    width\\n    __typename\\n  }\\n}\",\"variables\":{\"programId\":\"" + id.slice(3) + "\"}}",
+                "method": "POST"
+            });
+            programJSON = (await programRes.json()).data.programById;
+        } catch (err) {
+            console.error(err);
+        }
+
+        const KAprogramType = programJSON?.userAuthoredContentType;
+        const profileRoot = programJSON?.creatorProfile?.profileRoot;
+        const programType = KAprogramType === "WEBPAGE" ? "html" : (KAprogramType === "PJS" ? "pjs" : null);
+        const programCreated = new Date(programJSON?.created).getTime();
+        const programUpdated = new Date(programJSON?.revision?.created).getTime();
+        const authorUsername = typeof profileRoot === "string" ? profileRoot.split("/")[2] : undefined;
+        const programFileName = programType === "html" ? "index.html" : "index.js";
+
+        KAProgramsCache[id] = {
+            "id": id,
+            "title": programJSON?.title,
+            "type": programType,
+            "forks": [
+                // {
+                //     "id": "osjamxlmp81jfs",
+                //     "created": 1695061820584,
+                //     "likeCount": 0
+                // },
+                // {
+                //     "id": "5Kjhm6lonohkkn",
+                //     "created": 1699322074718,
+                //     "likeCount": 0
+                // }
+            ],
+            "created": programCreated,
+            "lastSaved": programUpdated,
+            "flags": [],
+            "width": programType === "html" ? 600 : programJSON?.width,
+            "height": programJSON?.height,
+            "fileNames": [
+                programFileName
+            ],
+            "author": {
+                "username": authorUsername,
+                "id": programJSON?.creatorProfile?.id,
+                "nickname": programJSON?.creatorProfile?.nickname
+            },
+            "parent": null,
+            "thumbnail": null,
+            "files": {
+                [programFileName]: programJSON?.revision?.code
+            },
+            "discussions": [
+                // "vbEyWelsp8ecx0",
+                // "TvM9Bhlsp8h23w",
+                // "gOZmUglspjox79"
+            ],
+            "likeCount": programJSON?.sumVotesIncremented,
+            "forkCount": programJSON?.spinoffCount
+        };
+    }
+
+    return KAProgramsCache[id];
+}
+function updateKAAPIHashes() {
+    fetch("https://cdn.jsdelivr.net/gh/bhavjitChauhan/khan-api@safelist/hashes.json")
+        .then(res => res.json())
+        .then(json => {
+            KAAPIHashes = json;
+            fs.writeFileSync("./ka-api-hashes.json", JSON.stringify(json, "", "  "))
+        })
+        .catch(console.log);
+}
+if (KAAPIHashes === null) {
+    updateKAAPIHashes();
+}
+async function updateKAProjectsList() {
+    const programs = [];
+    
+    try {
+        async function getList(sortOrder, amt) {
+            let res = await fetch("https://www.khanacademy.org/api/internal/graphql/hotlist", {
+                "headers": {
+                    "accept": "*/*",
+                    "accept-language": "en-US,en;q=0.9",
+                    "content-type": "application/json",
+                    "x-ka-fkey": "0"
+                },
+                "body": "{\"operationName\":\"hotlist\",\"query\":\"query hotlist($curationNodeId: String, $onlyOfficialProjectSpinoffs: Boolean!, $sort: ListProgramSortOrder, $pageInfo: ListProgramsPageInfo) {\\n  listTopPrograms(\\n    curationNodeId: $curationNodeId\\n    onlyOfficialProjectSpinoffs: $onlyOfficialProjectSpinoffs\\n    sort: $sort\\n    pageInfo: $pageInfo\\n  ) {\\n    complete\\n    cursor\\n    programs {\\n      id\\n      key\\n      authorKaid\\n      authorNickname\\n      displayableSpinoffCount\\n      imagePath\\n      sumVotesIncremented\\n      translatedTitle: title\\n      url\\n      __typename\\n    }\\n    __typename\\n  }\\n}\",\"variables\":{\"curationNodeId\":\"xffde7c31\",\"onlyOfficialProjectSpinoffs\":false,\"sort\":\"" + sortOrder + "\",\"pageInfo\":{\"itemsPerPage\":" + amt + ",\"cursor\":\"\"}}}",
+                "method": "POST"
+            });
+            let json = await res.json();
+            return json?.data?.listTopPrograms?.programs;
+        }
+        
+        const loadAmount = 50;
+
+        let reqPrograms = await getList("HOT", loadAmount);
+        if (reqPrograms) {
+            for (let i = 0; i < reqPrograms.length; i++) {
+                programs.push(reqPrograms[i]);
+            }
+        }
+
+        reqPrograms = await getList("RECENT", loadAmount);
+        if (reqPrograms) {
+            for (let i = 0; i < reqPrograms.length; i++) {
+                programs.push(reqPrograms[i]);
+            }
+        }
+        
+        reqPrograms = await getList("UPVOTE", loadAmount);
+        if (reqPrograms) {
+            for (let i = 0; i < reqPrograms.length; i++) {
+                programs.push(reqPrograms[i]);
+            }
+        }        
+    } catch (err) {
+        return null;
+    }
+    
+    KA_allPrograms = [];
+    for (let i = 0; i < programs.length; i++) {
+        const program = programs[i];
+        const formattedProgram = await getKAProgram("KA_" + program.id);
+        
+        KA_allPrograms.push({
+            "id": formattedProgram.id,
+            "title": formattedProgram.title,
+            "type": formattedProgram.type,
+            "forks": formattedProgram.forks,
+            "created": formattedProgram.created,
+            "author": {
+                "username": formattedProgram.author.username,
+                "id": formattedProgram.author.id,
+                "nickname": formattedProgram.author.nickname
+            },
+            "likeCount": formattedProgram.likeCount,
+            "forkCount": formattedProgram.forkCount,
+        });
+    }
+
+    KA_hotListData = KA_allPrograms.slice();
+    KA_recentListData = KA_allPrograms.slice();
+    KA_topListData = KA_allPrograms.slice();
+
+    KA_hotListData.sort((a, b) => calculateKAHotness(b.likeCount + b.forkCount, b.created) - calculateHotness(a.likeCount + a.forkCount, a.created));
+    KA_recentListData.sort((a, b) => b.created - a.created);
+    KA_topListData.sort((a, b) => b.likeCount - a.likeCount);
+}
+updateKAProjectsList().then(() => {
+    console.log("Loaded KA Hotlist");
+});
+async function khanAPI(endpoint) {
+    if (endpoint === "hotlist") {
+        
+    } else {
+        return null;
+    }
+    
+    // fetch("https://www.khanacademy.org/api/internal/_mt/graphql/updateUserVideoProgress?hash=1299053045&variables="+JSON.stringify({
+    //     "input": {
+    //         "contentId": "x6cc4162aedf4ce93",
+    //         "secondsWatched": 351,
+    //         "lastSecondWatched": 351,
+    //         "durationSeconds": 352,
+    //         "captionsLocale": "en",
+    //         "fallbackPlayer": false,
+    //         "localTimezoneOffsetSeconds": 10800
+    //     }
+    // }), {headers: {"x-ka-fkey": document.cookie.match(/(?<=fkey=)(.*?)(?=;)/)[0]}})
 }
 
 
@@ -477,8 +681,8 @@ async function updateProjectLists() {
         id: 1,
         type: 1,
         title: 1,
-        likes: 1,
-        forks: 1,
+        likeCount: 1,
+        forkCount: 1,
         created: 1,
         author: 1,
         code: 1,
@@ -489,16 +693,18 @@ async function updateProjectLists() {
     recentListData = allPrograms.slice();
     topListData = allPrograms.slice();
 
-    hotListData.sort((a, b) => calculateHotness(b.likes.length + b.forks.length * 2, b.created) - calculateHotness(a.likes.length + a.forks.length * 2, a.created));
+    hotListData.sort((a, b) => calculateHotness(b.likeCount + b.forkCount, b.created) - calculateHotness(a.likeCount + a.forkCount, a.created));
     recentListData.sort((a, b) => b.created - a.created);
-    topListData.sort((a, b) => b.likes.length - a.likes.length);
+    topListData.sort((a, b) => b.likeCount - a.likeCount);
 }
 
 
 // tree specifying the routes for the project
 const projectTree = {
-    "/clearCache": (path, out, data) => {
+    "/clearCache": async (path, out, data) => {
         fileCache.clear();
+        await fetch("http://127.0.0.1:" + secrets.SANDBOX_PORT + "/clearCache");
+        out.write("Cache Cleared");
     },
     "/": (path, out, data) => {
         // main path
@@ -537,6 +743,11 @@ const projectTree = {
     },
     "/computer-programming/": {
         "browse": (path, out, data) => {
+            // browse projects
+            out.writeHead(200, { "Content-Type": "text/html" });
+            out.write(createHTMLPage("browse", data.userData, DEFAULT_OG_TAGS));
+        },
+        "ka-browse": (path, out, data) => {
             // browse projects
             out.writeHead(200, { "Content-Type": "text/html" });
             out.write(createHTMLPage("browse", data.userData, DEFAULT_OG_TAGS));
@@ -581,17 +792,25 @@ const projectTree = {
                 let splitPath = path.split("/");
                 let programId = splitPath[0];
                 let isFullScreen = splitPath.length > 1 && splitPath[1] === "fullscreen";
-                let programData = await programs.findOne({id: programId}/*, {projection: {id: 1, _id: 0}}*/);
-                
+
+                const isKAProgram = programId.startsWith("KA_") && programId.length !== 14;
+                let programData = null;
+                if (isKAProgram) {
+                    programData = await getKAProgram(programId);
+                } else {
+                    programData = await programs.findOne({id: programId}/*, {projection: {id: 1, _id: 0}}*/);
+                }
+
                 if (programData === null) {
                     // exit if program not found
                     return out.write("404");
                 } else {
                     let webpageCode;
+                    const thumbnailURL = isKAProgram ? `https://www.khanacademy.org/computer-programming/i/${programData.id.slice(3)}/latest.png` : `/CDN/programs/${programData.id}.jpg`;
                     const openGraphInsert = `
                         <meta content="${programData.title.replaceAll('"', '\\"')}" property="og:title" />
                         <meta content="Made by ${programData.author.nickname.replaceAll('"', '\\"')}" property="og:description" />
-                        <meta content="/CDN/programs/${programData.id}.jpg" property="og:image" />
+                        <meta content="${thumbnailURL}" property="og:image" />
                     `;
                     
                     if (isFullScreen) {
@@ -826,6 +1045,8 @@ const projectTree = {
                     type: json.type,
                     likes: [],
                     forks: [],
+                    likeCount: 0,
+                    forkCount: 0,
                     created: Date.now(),
                     lastSaved: Date.now(),
                     flags: [],
@@ -868,7 +1089,7 @@ const projectTree = {
                             forks: {
                                 id: programData.id,
                                 created: programData.created,
-                                likeCount: programData.likes.length
+                                likeCount: programData.likeCount
                             }
                         }});
                     }
@@ -1005,13 +1226,23 @@ const projectTree = {
 
                     // update program data
                     if (!programData.likes.includes(data.userData.id)) {
-                        programs.updateOne({ id: data.postData }, {$push: {
-                            likes: data.userData.id
-                        }});
+                        programs.updateOne({ id: data.postData }, {
+                            $push: {
+                                likes: data.userData.id
+                            },
+                            $inc: {
+                                likeCount: 1
+                            }
+                        });
                     } else {
-                        programs.updateOne({ id: data.postData }, {$pull: {
-                            likes: data.userData.id
-                        }});
+                        programs.updateOne({ id: data.postData }, {
+                            $pull: {
+                                likes: data.userData.id
+                            },
+                            $inc: {
+                                likeCount: -1
+                            }
+                        });
                     }
 
                     // update parent forks array
@@ -1022,7 +1253,7 @@ const projectTree = {
                             for (let i = 0; i < parentProgram.forks.length; i++) {
                                 let fork = parentProgram.forks[i];
                                 if (fork.id === programData.id) {
-                                    fork.likeCount = programData.likes.length;
+                                    fork.likeCount = programData.likeCount;
                                 }
                             }
 
@@ -1077,6 +1308,10 @@ const projectTree = {
                     }, {
                         projection: { discussions: 1, _id: 0 }
                     });
+                    if (!author) {
+                        out.write("error: invalid user id");
+                        return;
+                    }
                     if (author.discussions.length > 100) {
                         out.write("error: discussion quota reached");
                         return;
@@ -1128,6 +1363,20 @@ const projectTree = {
                     out.write("error: error while creating discussion");
                     return;
                 }
+            },
+            "clear_notifs": async (path, out, data) => {
+                // mark notifs as read endpoint
+                if (!data.hasPermission || !data.allowRequest) {
+                    out.write("error: access denied");
+                    return;
+                }
+
+                // clear notifs
+                users.updateOne({ id: data.userData.id }, {$set: {
+                    newNotifs: 0
+                }});
+ 
+                out.write("OK");
             },
             "update_profile": async (path, out, data) => {
                 // change nickname endpoint
@@ -1253,6 +1502,28 @@ const projectTree = {
             ":ACTION": (path, out, data) => {
                 out.writeHead(200, { "Content-Type": "application/json" });
             },
+            "ka-projects?": (path, out, data) => {
+                let query = parseQuery("?" + path);
+                let sort = query.sort ?? "hot";
+                let page = query.page ?? 0;
+
+                let list;
+                switch (sort) {
+                    case "hot":
+                        list = KA_hotListData;
+                        break;
+                    case "recent":
+                        list = KA_recentListData;
+                        break;
+                    case "top":
+                        list = KA_topListData;
+                        break;
+                }
+
+                page *= 16;
+
+                out.write(JSON.stringify(list.slice(page, page + 16)));
+            },
             "projects?": (path, out, data) => {
                 let query = parseQuery("?" + path);
                 let sort = query.sort ?? "hot";
@@ -1277,7 +1548,6 @@ const projectTree = {
                 let listClone = structuredClone(list.slice(page, page + 16));
                 for (let i = 0; i < listClone.length; i++) {
                     // hide sensitive data from front end
-                    listClone[i].likeCount = listClone[i].likes.length;
                     delete listClone[i].likes;
                 }
 
@@ -1360,16 +1630,23 @@ const projectTree = {
         if (fetchPath.startsWith("./programs/")) {
             if (fetchPath.endsWith(".json")) {
                 let id = fetchPath.slice("./programs/".length, fetchPath.length - ".json".length);
-                let programData = await programs.findOne({ id });
                 
+                const isKAProgram = id.startsWith("KA_") && id.length !== 14;
+                let programData = null;
+                if (isKAProgram) {
+                    programData = await getKAProgram(id);
+                } else {
+                    programData = await programs.findOne({ id });
+                }
+
                 if (programData !== null) {
                     // hide sensitive data from front end
-                    programData.likeCount = programData.likes.length;
-                    if (data.userData && programData.likes.includes(data.userData.id)) {
-                        programData.hasLiked = true;
+                    if (!isKAProgram) {
+                        if (data.userData && programData.likes.includes(data.userData.id)) {
+                            programData.hasLiked = true;
+                        }
+                        delete programData.likes;
                     }
-                    delete programData.likes;
-
                     dataOut = JSON.stringify(programData);
                 }
             } else if (fetchPath.endsWith(".jpg")) {
@@ -1467,13 +1744,8 @@ async function useTree(path, tree, data, response) {
 }
 
 const server = http.createServer({key: secrets.KEY, cert: secrets.CERT}, async (request, response) => {
-    // For when I'm editing the source code
-    if (SERVER_DOWN) {
-        response.write("Server down for maintenance");
-        return response.end();
-    }
-
     // proxy the sandbox domain to the sandbox server
+    
     if (request.headers["host"] && request.headers["host"].startsWith("sandbox.")) {
         try {
             let res = await fetch("http://127.0.0.1:" + secrets.SANDBOX_PORT + request.url);
@@ -1487,7 +1759,6 @@ const server = http.createServer({key: secrets.KEY, cert: secrets.CERT}, async (
             response.end();
             return;
         }
-        
     }
 
     // detect spam
@@ -1575,10 +1846,11 @@ async function main() {
 
     // !!! DANGER !!! for manually updating each item in a collection
     // {
-    //     const useCollection = users;
-    //     (await useCollection.find({}).project({ id: 1, _id: 0}).toArray()).forEach(item => {
+    //     const useCollection = programs;
+    //     (await useCollection.find({}).project({ id: 1, likes: 1, forks: 1, _id: 0}).toArray()).forEach(item => {
     //         useCollection.updateOne({ id: item.id }, {$set: {
-    //             newNotifs: 0,
+    //             likeCount: item.likes.length,
+    //             forkCount: item.forks.length
     //         }});
     //     });
     // }
@@ -1587,7 +1859,10 @@ async function main() {
     await updateProjectLists();
 
     // update browse projects every 10 minutes
-    setInterval(updateProjectLists, 1000 * 60 * 10);
+    setInterval(() => {
+        updateProjectLists();
+        updateKAProjectsList();
+    }, 1000 * 60 * 10);
 
     // lets light this candle!
     server.listen(secrets.PORT, function() {

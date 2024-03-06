@@ -255,6 +255,15 @@ let runStartInterval = setInterval(function() {
             sendThumnailFromCanvas(liveOutputCanvas);
             return;
         }
+
+        if (event.data.event === "eval") {
+            window.top.postMessage({
+                "sender": "sandbox",
+                "event": "evalResult",
+                data: serializeVal(eval(event.data.data))
+            }, "*");
+            return;
+        }
         
         warningsBox.innerHTML = "";
         
@@ -264,7 +273,7 @@ let runStartInterval = setInterval(function() {
         // lint code
         for (let fileName in files) {
             if (fileName.toLowerCase().endsWith(".js")) {
-                JSHINT("// jshint -W082\n// jshint -W079\n" + files["index.js"], {
+                JSHINT("// jshint -W082\n// jshint -W079\n//jshint -W080\n" + files["index.js"], {
                     esversion: 11,
                     asi: true,
                     boss: true,

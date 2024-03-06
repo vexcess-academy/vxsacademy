@@ -3,20 +3,43 @@ let warningsBox = document.getElementById("warnings-container");
 
 let blobFiles = [];
 
+function serializeVal(val) {
+    if (typeof val === "undefined") {
+        val = "undefined";
+    } else if (typeof val === "object" && val !== null) {
+        val = JSON.stringify(val, null, "    ");
+    } else if (typeof val === "function") {
+        val = "ƒ " + val.toString();
+    }
+    return val;
+}
+
+const oldConsoleLog = console.log;
+console.log = function(...args) {
+    // print data
+    oldConsoleLog(...args);
+
+    // serialize data
+    for (let i = 0; i < args.length; i++) {
+        args[i] = serializeVal(args[i]);
+    }
+
+    // send data to console
+    window.top.postMessage({
+        sender: "sandbox",
+        event: "stdout",
+        data: args
+    }, "*");
+};
+console.log.toString = () => "function log() { [native code] }";
+
 // warning
 function createWarning(txt) {
-    let warning = document.createElement("div");
-    warning.className = "process-warning";
-
-    let warnImg = document.createElement("img");
-    warnImg.src = "/warning_sign.png";
-    warning.appendChild(warnImg);
-
-    let warnTxt = document.createElement("div");
-    warnTxt.innerText = txt;
-    warning.appendChild(warnTxt);
-    
-    warningsBox.appendChild(warning);
+    window.top.postMessage({
+        sender: "sandbox",
+        event: "stderr",
+        data: txt
+    }, "*");
 }
 
 // code pre-processor

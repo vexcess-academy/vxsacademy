@@ -65,8 +65,9 @@ async function loadDiscussions(page) {
 }
 
 onProgramInfoReady(() => {
-    loadDiscussions(0);
-    
+    if (programData.id) {
+        loadDiscussions(0);
+    }
 });
 
 
@@ -75,6 +76,16 @@ let discussionParent = $(discussionInput.parentElement);
 let commentBtn = $("#comment-btn");
 let questionBtn = $("#question-btn");
 function createDiscussion(type) {
+    if (isKAProgram) {
+        alert("Cannot comment on KA program from vxsacademy");
+        return;
+    }
+
+    if (!programData.id) {
+        alert("Cannot comment on a new program");
+        return;
+    }
+
     commentBtn.disabled = true;
     questionBtn.disabled = true;
     

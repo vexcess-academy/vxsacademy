@@ -11,7 +11,7 @@ $.createComponent("program-element", $.html`
                     <span class="program_likes">\{likeCount}</span>
                     <span class="program_likes-title">Likes</span>
                     <span> · </span>
-                    <span class="program_forks">\{forks.length}</span>
+                    <span class="program_forks">\{forkCount}</span>
                     <span class="program_forks-title">Forks</span>
                 </div>
                 <div class="program_metadata-wrapper">
@@ -26,16 +26,20 @@ $.createComponent("program-element", $.html`
     
     let img = this.$(".program_thumbnail")[0];
     img.dataset.failed = "false";
-    img.css("display: none")
-        .attr("src", `/CDN/programs/${program.id}.jpg`)
-        .on("error", () => {
-            if (img.dataset.failed === "false") {
-                img.src = "/CDN/images/404_image.jpg";
-            }
-            img.dataset.failed = "true";
-        })
-        .on("load", () => {
-            loadIconManager.delete(loadIcon);
-            img.css("display: inline");
-        });
+    img.css("display: none");
+    if (program.isKA) {
+        img.attr("src", `https://www.khanacademy.org/computer-programming/i/${program.id.slice(3)}/latest.png`);
+        this.$(".author-link")[0].attr("href", "https://www.khanacademy.org/profile/" + program.author.id);
+    } else {
+        img.attr("src", `/CDN/programs/${program.id}.jpg`);
+    }
+    img.on("error", () => {
+        if (img.dataset.failed === "false") {
+            img.src = "/CDN/images/404_image.jpg";
+        }
+        img.dataset.failed = "true";
+    }).on("load", () => {
+        loadIconManager.delete(loadIcon);
+        img.css("display: inline");
+    });
 });

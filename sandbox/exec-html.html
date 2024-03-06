@@ -91,6 +91,15 @@ window.addEventListener("message", function (event) {
         });
         return;
     }
+
+    if (event.data.event === "eval") {
+        window.top.postMessage({
+            "sender": "sandbox",
+            "event": "evalResult",
+            data: serializeVal(eval(event.data.data))
+        }, "*");
+        return;
+    }
     
     warningsBox.innerHTML = "";
     

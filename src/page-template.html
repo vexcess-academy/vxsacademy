@@ -72,9 +72,10 @@
             let notifsContainer = $("#notifs-container");
 
             $.createComponent("notif-post", $.html`
-                <a href="/computer-programming/\{program}" target="_blank" style="color: white; text-decoration: none;"><div class="notif-post">
-                    <strong>\{nickname} says:</strong> \{content}
-                    <div>\{time}</div>
+                <a href="/computer-programming/\{program}" target="_blank" style="text-decoration: none;"><div class="notif-post">
+                    <strong>\{nickname} says:</strong>
+                    <div>\{content}</div>
+                    <div class="notif-time">\{time}</div>
                 </div></a>
             `);
 
@@ -90,8 +91,35 @@
                 notifsContainer.css({ display: "none" });
             }
 
+            // notif counter
+            const oldTitle = document.title;
+            function updateNotifCounter() {
+                if (userData && userData.newNotifs > 0) {
+                    $("#notif-counter")
+                        .text(userData.newNotifs)
+                        .css("display: inline-block;")
+                    document.title = `(${userData.newNotifs}) ${oldTitle}`;
+                } else {
+                    $("#notif-counter")
+                        .css("display: none;")
+                    document.title = oldTitle;
+                }
+            }
+            updateNotifCounter();
+
             // notifications
             profileMenuEls[0].on("click", () => {
+                fetch("/API/clear_notifs", {
+                    method: "POST"
+                }).then(res => res.text()).then(res => {
+                    if (res === "OK") {
+                        userData.newNotifs = 0;
+                        updateNotifCounter();
+                    } else {
+                        alert(res);
+                    }
+                });
+
                 for (let i = 0; i < 4; i++) {
                     let div = profileMenuEls[i];
                     if (div.parentElement.tagName === "A") {
@@ -118,15 +146,18 @@
                         $.getJSON(`/API/getDiscussion?id=${notifId}`, json => {
                             numNotifsLoaded++;
 
-                            notifEls.push($("notif-post", {
+                            const notificationEl = $("notif-post", {
                                 avatar: json.author.avatar,
                                 nickname: json.author.nickname,
                                 time: new Date(json.created).toDateString(),
                                 content: json.content.slice(0, 100).replaceAll("\n", " "),
                                 program: json.program
-                            }));
+                            });
+                            notificationEl.timestamp = json.created;
+                            notifEls.push(notificationEl);
 
                             if (numNotifsLoaded === numNotifstoLoad) {
+                                notifEls.sort((a, b) => b.created - a.created);
                                 notifEls.forEach(el => el.appendTo(notifsContainer));
                             }
                         });
@@ -177,16 +208,7 @@
                 })
             }
 
-            // notif counter
-            if (userData && userData.newNotifs > 0) {
-                $("#notif-counter")
-                    .text(userData.newNotifs)
-                    .css("display: inline-block;")
-                document.title = `(${userData.newNotifs}) ${document.title}`;
-            } else {
-                $("#notif-counter")
-                    .css("display: none;")
-            }
+            
         </script>
     	
     	<br>
@@ -209,23 +231,31 @@
         </div>
 
         <script>
-let topContainer = $("#page-top-container");
-let magnifyingGlassSVG = topContainer.$("*svg")[1];
-let searchBar = $("#navbar-search");
-let searchBarInput = searchBar.$("*input")[0];
-let dropDownMenu = $("#navbar-drop-down-menu");
+            let topContainer = $("#page-top-container");
+            let magnifyingGlassSVG = topContainer.$("*svg")[1];
+            let searchBar = $("#navbar-search");
+            let searchBarInput = searchBar.$("*input")[0];
+            let dropDownMenu = $("#navbar-drop-down-menu");
 
-let dropDownMenuOpen = false;
+            let dropDownMenuOpen = false;
 
-topContainer.$("*div")[0].on("click", function () {
-    dropDownMenu.style.setProperty("--show", dropDownMenuOpen ? "none" : "block");
-    dropDownMenuOpen = !dropDownMenuOpen;
-});
-
+            topContainer.$("*div")[0].on("click", () => {
+                dropDownMenu.style.setProperty("--show", dropDownMenuOpen ? "none" : "block");
+                dropDownMenuOpen = !dropDownMenuOpen;
+            });
         </script>
     </div>
 
     <!-- PAGE CONTENT INSERT -->
+
+    <script>
+        $("#page-middle-container").on("click", () => {
+            dropDownMenu.style.setProperty("--show", "none");
+            dropDownMenuOpen = false;
+            
+            profileDropDownMenu.css("display: none");
+        });
+    </script>
     
     <div id="page-bottom-container">
     	<p style="font-size: 18px;">Our goal is to create a high quality free online education environment focused on computer science.</p>

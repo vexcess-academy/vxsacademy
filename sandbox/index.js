@@ -3,7 +3,7 @@ const http = require('http');
 const fs = require('fs');
 
 // it'd be very bad if these were publicly available
-const secrets = require("../secrets");
+const secrets = require("../secrets").getSecrets("../");
 
 function parseQuery(url) {
     let quesIdx = url.indexOf("?");
@@ -33,7 +33,7 @@ function parseQuery(url) {
     }
 }
 
-const cache = {};
+let cache = {};
 
 const blacklist = [
     "cloudflareworkers.com",
@@ -51,6 +51,12 @@ const server = http.createServer((req, res) => {
         }
 
         let fetchPath = "./" + req.url.slice(1);
+
+        if (fetchPath === "./clearCache") {
+            cache = {};
+            res.write("Cache Cleared");
+            return res.end();
+        }
 
         if (fetchPath.length > 2 && fs.existsSync(fetchPath)) {
             let dataType = fetchPath.split(".").reverse()[0];

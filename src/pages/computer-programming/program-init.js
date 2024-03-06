@@ -6,12 +6,17 @@ const sandboxURL =
 const PROGRAM_ID = window.location.pathname.split("/")[2];
 
 let onProgramInfoReadyEvents = [];
+let programInfoReady = false;
+let programData = null;
 function onProgramInfoReady(fxn) {
-    onProgramInfoReadyEvents.push(fxn);
+    if (programInfoReady) {
+        fxn(programData);
+    } else {
+        onProgramInfoReadyEvents.push(fxn);
+    }
 }
 
 // load program info from server
-let programData = null;
 if (PROGRAM_ID === "new") {
     // boilerplate code for new programs
     const boilerplate = {
@@ -142,6 +147,8 @@ if (PROGRAM_ID === "new") {
     }
 
     setTimeout(() => {
+        programInfoReady = true;
+        console.log("Program Info Ready");
         for (let i = 0; i < onProgramInfoReadyEvents.length; i++) {
             onProgramInfoReadyEvents[i](programData);
         }
@@ -149,6 +156,8 @@ if (PROGRAM_ID === "new") {
 } else {
     $.getJSON(`/CDN/programs/${PROGRAM_ID}.json`).then(data => {
         programData = data;
+        programInfoReady = true;
+        console.log("Program Info Ready");
         for (let i = 0; i < onProgramInfoReadyEvents.length; i++) {
             onProgramInfoReadyEvents[i](programData);
         }

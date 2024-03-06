@@ -1,4 +1,5 @@
-onProgramInfoReady(main);
+let main1Complete = false;
+let isKAProgram = false;
 
 // set program title
 let programTitleEl = $("#program-title").$("*span")[0];
@@ -9,6 +10,7 @@ function setProgramTitle (title) {
 }
 
 editTitleBtn.on("click", () => {
+    if (!main1Complete) { return; }
     let title = window.prompt("Enter a new title:", "New Program");
     if (title.length === 0) title = "New Program";
     setProgramTitle(title);
@@ -71,7 +73,10 @@ outputFrame.attr({
     height: editorSettings.height
 }).css({
     backgroundColor: "white",
-    border: "1px solid rgb(200, 200, 200)",
+    borderTop: "none",
+    borderRight: "none",
+    borderLeft: "1px solid var(--borders3)",
+    borderBottom: "none",
     marginLeft: "auto",
     order: "2"
 });
@@ -91,6 +96,11 @@ let localStorageKey = null;
 
 let expectingSave = false;
 function saveProgram() {
+    if (isKAProgram) {
+        alert("KA programs cannot be saved or forked from vxsacademy");
+        return;
+    }
+
     programData.files[currFileName] = editor.getValue();
 
     if (!userData) {
@@ -190,7 +200,13 @@ function saveProgram() {
     }
 }
 
-// listen for thumbnail events
+// the output window
+let ifrWin = outputFrame.contentWindow || outputFrame.window;
+
+let debugConsole = null;
+let evalResult;
+
+// listen for sandbox messages
 window.addEventListener("message", event => {
     let data = event.data;
 
@@ -200,19 +216,27 @@ window.addEventListener("message", event => {
             loadIcon = null;
         }
 
-        if (data.event === "thumbnail") {
-            programData.thumbnail = data.thumbnail;
+        switch (data.event) {
+            case "thumbnail":
+                programData.thumbnail = data.thumbnail;
 
-            if (expectingSave) {
-                saveProgram();
-                expectingSave = false;
-            }
+                if (expectingSave) {
+                    saveProgram();
+                    expectingSave = false;
+                }
+            break;
+            case "stderr":
+                debugConsole.out(data.data, Terminal.STDERR);
+            break;
+            case "stdout":
+                debugConsole.out(data.data, Terminal.STDOUT);
+            break;
+            case "evalResult":
+                evalResult = data.data;
+            break;
         }
     }
 });
-
-// the output window
-let ifrWin = outputFrame.contentWindow || outputFrame.window;
 
 // run the program once the environment loads
 let outputFrameLoaded = false;
@@ -359,6 +383,8 @@ function confirmLeavePage () {
 
 function runProgram() {
     ifrWin.postMessage("ping", "*");
+
+    debugConsole.clear();
     
     var mainCode;
     switch (programData.type) {
@@ -514,16 +540,19 @@ function changeForksSort(newSort) {
 }
 
 $("#load-more-forks-btn").on("click", () => {
+    if (!main1Complete) { return; }
     loadForks(forksPage++);
 });
 
 recentBtn.on("click", e => {
+    if (!main1Complete) { return; }
     if (forksSort !== "recent") {
         changeForksSort("recent");   
     }
 });
 
 topBtn.on("click", e => {
+    if (!main1Complete) { return; }
     if (forksSort !== "top") {
         changeForksSort("top");   
     }
@@ -536,7 +565,8 @@ function resizePage () {
 
     editorDiv.style.width = (window.innerWidth - (editorSettings.width + 41)) + "px";
     editorDiv.style.height = editorSettings.height + "px";
-    editorContainer.style.height = editorSettings.height + 72 + "px";
+    const debugConsoleHeight = 150;
+    editorContainer.style.height = editorSettings.height + 72 + debugConsoleHeight + "px";
 
     if (loadIcon) {
         outputFrameBox = outputFrame.getBoundingClientRect();
@@ -551,6 +581,34 @@ function resizePage () {
 window.addEventListener('resize', resizePage, true);
 
 function main() {
+    if (programData.id) {
+        isKAProgram = programData.id.startsWith("KA_") && programData.id.length !== 14;
+    }
+
+    const useRepl = ["html", "pjs", "python"].includes(programData.type);
+    debugConsole = new Terminal($("#debug-console").el, useRepl);
+    debugConsole.styles.background = "var(--themeColor)";
+    debugConsole.useDarkStyles();
+    debugConsole.eval = async function(code) {
+        evalResult = undefined;
+
+        return new Promise(resolve => {
+            ifrWin.postMessage({
+                event: "eval",
+                data: code
+            }, "*");
+
+            function check() {
+                if (evalResult !== undefined) {
+                    resolve(evalResult);
+                } else {
+                    setTimeout(check, 4);
+                }
+            }
+            check();
+        });
+    };
+
     setProgramTitle(programData.title);
     editorSettings.width = programData.width;
     editorSettings.height = programData.height;
@@ -598,7 +656,7 @@ function main() {
                     .text(programData.author.nickname)
                     .attr({
                         target: "_blank",
-                        href: "/profile/id_" + programData.author.id
+                        href: (isKAProgram ? "https://www.khanacademy.org/profile/" : "/profile/id_") + programData.author.id
                     })
             );
         programAuthorEl.innerHTML += " (Updated " + timeSince(programData.lastSaved - 30 * 1000) + " ago)";
@@ -623,6 +681,11 @@ function main() {
         
         // handle like button click
         likeProgramBtn.on("click", () => {
+            if (isKAProgram) {
+                alert("KA programs cannot be liked from vxsacademy");
+                return;
+            }
+
             if (!userData) {
                 alert("You must be logged in to like a program");
                 return;
@@ -684,6 +747,8 @@ function main() {
 
     // size the webpage
     resizePage();
+
+    main1Complete = true;
 }
 
 function main2() {
@@ -1525,13 +1590,16 @@ require.config({
    paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor/min/vs" }
 });
 
+onProgramInfoReady(main);
+
 // Monaco init
 require(["vs/editor/editor.main"], () => {
+    console.log("Monaco Editor Loaded");
     function waitTillReady() {
-        if (programData === null) {
-            setTimeout(waitTillReady, 100);
-        } else {
+        if (main1Complete) {
             main2();
+        } else {
+            setTimeout(waitTillReady, 100);
         }
     }
     waitTillReady();
