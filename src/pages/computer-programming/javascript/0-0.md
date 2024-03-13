@@ -18,6 +18,10 @@ programs, even Artificial Intelligence which will take over the world.
 
 # What will I need?
 For this course, all you will need is a computer, and [a programming environment](https://vxsacademy.org/computer-programming/new/pjs), which is just a place to write programs.
+The big text box is the text editor. That is where you will be writing your code. To the right is a white square, which is the canvas.
+That is where your pgoram will show. Below both of them is the console. If your code has any problems, you will see them in there.
+Last but not least, below the console and to the right, you have the run and save buttons. The run button will restart your project,
+and the save button will save your code so you don't lose it.
 
-Other than that, you will also need typing skills and a basic understanding of math. But don't worry, I'll keep the math as
-simple as possible, and have the explanations easy to understand.
+Other than a computer and a programming environment, you will also need typing skills and a basic understanding of math. But don't
+worry, I'll keep the math as simple as possible, and have the explanations easy to understand.

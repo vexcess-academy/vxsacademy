@@ -29,8 +29,33 @@ class BashShell {
         });
     }
 
-    send(data) {
+    async send(data, maxHold) {
         this.terminal.stdin.write(data + "\n");
+        if (maxHold) {
+            const id = Math.random().toString().replace(".", "");
+            const that = this;
+
+            return new Promise(resolve => {
+                const oldHandler = that.handler;
+                that.handler = e => {
+                    if (e.type === "data" && e.data.endsWith(id+"\n")) {
+                        e.data = e.data.slice(0, e.data.length - (id.length + 1));
+                        oldHandler(e);
+                        that.handler = oldHandler;
+                        resolve(e);
+                    } else {
+                        oldHandler(e);
+                    }
+                };
+
+                setTimeout(() => {
+                    that.handler = oldHandler;
+                    resolve();
+                }, maxHold);
+
+                that.terminal.stdin.write(`echo ${id}\n`);
+            });
+        }
     }
 
     cwd() {

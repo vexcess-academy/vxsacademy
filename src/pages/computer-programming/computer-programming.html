@@ -4,6 +4,8 @@
 
     <h2>Computer Programming</h2>
 
+    <h3>View community programs at <a href="/computer-programming/browse">Browse Projects</a> or <a href="/computer-programming/ka-browse">Browse KA Projects</a></h3>
+
     <p>
         These programming courses aim to teach a person who has no programming 
         experience to be able to create complex programs. The recommended place
@@ -97,7 +99,7 @@
                         const el = $("a")
                             .text(sections[i])
                             .attr({
-                                href: `/computer-programming/${course.endpoint}#0-0`,
+                                href: `/computer-programming/${course.endpoint}#${i}-0`,
                                 target: "_self"
                             })
                         if (i < sections.length / 2) {

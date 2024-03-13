@@ -1,4 +1,4 @@
-const BashShell = require("./BashShell.js");
+const BashShell = require("./src/lib/BashShell.js");
 const fs = require("fs");
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));

@@ -1,4 +1,5 @@
 node_modules
+program-zig-out
 
 package-lock.json
 rathole

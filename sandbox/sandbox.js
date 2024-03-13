@@ -3,35 +3,120 @@ let warningsBox = document.getElementById("warnings-container");
 
 let blobFiles = [];
 
-function serializeVal(val) {
-    if (typeof val === "undefined") {
-        val = "undefined";
-    } else if (typeof val === "object" && val !== null) {
-        val = JSON.stringify(val, null, "    ");
-    } else if (typeof val === "function") {
-        val = "ƒ " + val.toString();
-    }
-    return val;
-}
-
 const oldConsoleLog = console.log;
 console.log = function(...args) {
     // print data
     oldConsoleLog(...args);
 
-    // serialize data
-    for (let i = 0; i < args.length; i++) {
-        args[i] = serializeVal(args[i]);
-    }
-
     // send data to console
     window.top.postMessage({
         sender: "sandbox",
         event: "stdout",
-        data: args
+        data: serializeObject(args)
     }, "*");
 };
-console.log.toString = () => "function log() { [native code] }";
+
+const oldConsoleError = console.error;
+console.error = function(...args) {
+    // print data
+    oldConsoleError(...args);
+
+    // send data to console
+    window.top.postMessage({
+        sender: "sandbox",
+        event: "stderr",
+        data: serializeObject(args)
+    }, "*");
+};
+
+let serializeCache = [];
+let serializedLen = 0;
+const maxDepth = 3;
+function serializeObject(obj, depth=0) {
+    if (depth === 0) {
+        serializeCache = [obj];
+    }
+
+    const PLAIN = 0,
+        NUMBER = 1,
+        STRING = 2,
+        BOOLEAN = 3,
+        UNDEFINED = 4,
+        FUNCTION = 5,
+        OBJECT = 6,
+        ERROR = 7,
+        CIRCULAR = 8,
+        TIMEOUT = 9;
+
+    let newObj, typeObj;
+    if (Array.isArray(obj)) {
+        newObj = [];
+        typeObj = [];
+    } else {
+        newObj = {};
+        typeObj = {};
+    }
+
+    for (let prop in obj) {
+        let value = obj[prop];
+
+        switch (typeof value) {
+            case "number":
+                if (value === Infinity) {
+                    newObj[prop] = "Infinity";
+                } else if (value !== value) {
+                    newObj[prop] = "NaN";
+                } else {
+                    newObj[prop] = "" + value;
+                }
+                typeObj[prop] = NUMBER;
+                break;
+            case "string":
+                newObj[prop] = "" + value;
+                typeObj[prop] = STRING;
+                break;
+            case "boolean":
+                newObj[prop] = value ? "1" : "0";
+                typeObj[prop] = BOOLEAN;
+                break;
+            case "undefined":
+                typeObj[prop] = UNDEFINED;
+                break;
+            case "function":
+                newObj[prop] = value.toString();
+                typeObj[prop] = FUNCTION;
+                break;
+            case "object":
+                if (value === null) {
+                    newObj[prop] = "null";
+                    typeObj[prop] = OBJECT;
+                } else if (value instanceof Error) {
+                    newObj[prop] = value.stack ?? value.toString();
+                    typeObj[prop] = ERROR;
+                } else {
+                    // if not previously visited
+                    if (serializeCache.indexOf(value) === -1) {
+                        serializeCache.push(value);
+                        if (depth < maxDepth) {
+                            const subTree = serializeObject(value, depth+1);
+                            newObj[prop] = subTree.obj;
+                            typeObj[prop] = subTree.types;
+                        } else {
+                            typeObj[prop] = TIMEOUT;
+                        }
+                    } else {
+                        typeObj[prop] = CIRCULAR;
+                    }
+                }
+                break;
+        }
+    }
+
+    return {
+        obj: newObj,
+        types: typeObj
+    };
+}
 
 // warning
 function createWarning(txt) {

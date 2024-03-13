@@ -1,5 +1,6 @@
 let main1Complete = false;
 let isKAProgram = false;
+const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
 // set program title
 let programTitleEl = $("#program-title").$("*span")[0];
@@ -22,7 +23,7 @@ let editorSettings = {
     height: 400,
     indentSize: 4,
     fontSize: 13,
-    theme: "vs-dark",
+    theme: prefersDarkMode ? "vs-dark" : "vs",
     wrap: true
 };
 
@@ -75,7 +76,6 @@ outputFrame.attr({
     backgroundColor: "white",
     borderTop: "none",
     borderRight: "none",
-    borderLeft: "1px solid var(--borders3)",
     borderBottom: "none",
     marginLeft: "auto",
     order: "2"
@@ -216,6 +216,7 @@ window.addEventListener("message", event => {
             loadIcon = null;
         }
 
+        const values = data.data;
         switch (data.event) {
             case "thumbnail":
                 programData.thumbnail = data.thumbnail;
@@ -226,10 +227,23 @@ window.addEventListener("message", event => {
                 }
             break;
             case "stderr":
-                debugConsole.out(data.data, Terminal.STDERR);
+                if (values !== null) {
+                    try {
+                        for (var i = 0; i < values.types.length; i++) {
+                            debugConsole.err(values.obj[i], values.types[i], Terminal.STDOUT);
+                        }
+                    } catch (er) {
+                        console.log("OUTTERR", values)
+                    }
+                    
+                }
             break;
             case "stdout":
-                debugConsole.out(data.data, Terminal.STDOUT);
+                if (values !== null) {
+                    for (var i = 0; i < values.types.length; i++) {
+                        debugConsole.out(values.obj[i], values.types[i], Terminal.STDOUT);
+                    }
+                }
             break;
             case "evalResult":
                 evalResult = data.data;
@@ -285,7 +299,7 @@ function validateProgramData(data) {
         typeof data.title === "string"
     ) {
         // check if program is a valid type
-        if (!["html", "pjs", "python", "glsl", "jitlang", "cpp", "java"].includes(data.type)) {
+        if (!["html", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(data.type)) {
             return e + "invalid project type";
         }
 
@@ -405,6 +419,9 @@ function runProgram() {
         break;
         case "cpp":
             mainCode = getFile("main.cpp");
+        break;
+        case "zig":
+            mainCode = getFile("main.zig");
         break;
         case "python":
             mainCode = getFile("main.py");
@@ -563,7 +580,8 @@ function resizePage () {
     outputFrame.width = editorSettings.width;
     outputFrame.height = editorSettings.height;
 
-    editorDiv.style.width = (window.innerWidth - (editorSettings.width + 41)) + "px";
+    // screen width - editor padding - output width
+    editorDiv.style.width = `calc(100vw - 20px - ${editorSettings.width}px)`;
     editorDiv.style.height = editorSettings.height + "px";
     const debugConsoleHeight = 150;
     editorContainer.style.height = editorSettings.height + 72 + debugConsoleHeight + "px";
@@ -588,7 +606,12 @@ function main() {
     const useRepl = ["html", "pjs", "python"].includes(programData.type);
     debugConsole = new Terminal($("#debug-console").el, useRepl);
     debugConsole.styles.background = "var(--themeColor)";
-    debugConsole.useDarkStyles();
+    if (prefersDarkMode) {
+        debugConsole.useDarkStyles();
+    } else {
+        debugConsole.useLightStyles();
+    }
+    
     debugConsole.eval = async function(code) {
         evalResult = undefined;
 
@@ -598,11 +621,14 @@ function main() {
                 data: code
             }, "*");
 
+            const start = Date.now();
             function check() {
                 if (evalResult !== undefined) {
                     resolve(evalResult);
-                } else {
+                } else if (Date.now() - start < 3000) {
                     setTimeout(check, 4);
+                } else {
+                    console.log("Console Eval Timed Out");
                 }
             }
             check();
@@ -773,6 +799,8 @@ function main2() {
             break;
             case "cpp":
                 type = "cpp";
+            case "zig":
+                type = "rust";
             case "jitl":
                 type = "go";
             break;
@@ -853,8 +881,41 @@ function main2() {
         editor.setModel(currModel);
     }
 
+    function updateTheme(dark) {
+        const cssTag = $("link")
+            .attr({
+                rel: "stylesheet",
+                type: "text/css"
+            });
+        window.cssTag = cssTag;
+        if (dark) {
+            cssTag.attr("href", "https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism-okaidia.min.css");
+            monaco.editor.setTheme("vs-dark");
+            document.querySelector(':root').style.setProperty('--themeColor', 'rgb(30, 30, 30)');
+            document.querySelector(':root').style.setProperty('--fadedThemeColor', 'rgb(60, 60, 60)');
+            document.querySelector(':root').style.setProperty('--hoverThemeColor', 'rgb(50, 50, 50)');
+            document.querySelector(':root').style.setProperty('--themeTextColor', 'rgb(248, 248, 242)');
+            debugConsole.useDarkStyles();
+            outputFrame.css({
+                borderLeft: "1px solid rgb(70, 70, 70)",
+            });
+        } else {
+            cssTag.attr("href", "https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism.min.css");
+            monaco.editor.setTheme("vs");
+            document.querySelector(':root').style.setProperty('--themeColor', 'rgb(230, 230, 230)');
+            document.querySelector(':root').style.setProperty('--fadedThemeColor', 'rgb(190, 190, 190)');
+            document.querySelector(':root').style.setProperty('--hoverThemeColor', 'rgb(220, 220, 220)');
+            document.querySelector(':root').style.setProperty('--themeTextColor', 'rgb(50, 50, 50)');
+            debugConsole.useLightStyles();
+            outputFrame.css({
+                borderLeft: "1px solid rgb(207, 207, 207)",
+            });
+        }
+        cssTag.appendTo(document.body);
+    }
+
     // customize editor
-    monaco.editor.setTheme("vs-dark");
+    updateTheme(prefersDarkMode);
 
     // keep track of mouse presses for scrubber
     let mouseX = 0;
@@ -1298,7 +1359,7 @@ function main2() {
         // run code live
         editor.onDidChangeModelContent(() => {
             if (autoRefresh) {
-                if (!["java", "cpp"].includes(programData.type)) {
+                if (!["java", "cpp", "zig"].includes(programData.type)) {
                     runProgram();
                 }
             }
@@ -1493,16 +1554,7 @@ function main2() {
                 fontSize: editorSettings.fontSize + "px",
             });
         
-            monaco.editor.setTheme(editorSettings.theme);
-            if (editorSettings.theme === "vs") {
-                document.querySelector(':root').style.setProperty('--themeColor', 'rgb(230, 230, 230)');
-                document.querySelector(':root').style.setProperty('--hoverThemeColor', 'rgb(220, 220, 220)');
-                document.querySelector(':root').style.setProperty('--themeTextColor', 'rgb(0, 0, 0)');
-            } else if (editorSettings.theme === "vs-dark") {
-                document.querySelector(':root').style.setProperty('--themeColor', 'rgb(30, 30, 30)');
-                document.querySelector(':root').style.setProperty('--hoverThemeColor', 'rgb(50, 50, 50)');
-                document.querySelector(':root').style.setProperty('--themeTextColor', 'rgb(248, 248, 242)');
-            }
+            updateTheme(editorSettings.theme === "vs-dark");
         
             resizePage();
         

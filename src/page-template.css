@@ -202,7 +202,7 @@ a {
     line-height: 1.5em;
     margin: 6px;
     cursor: pointer;
-    color: #fff;
+    color: var(--text-color);
     padding: .5em;
     border-left: 2px solid transparent;
     border-bottom: 1px solid #ffffff15;

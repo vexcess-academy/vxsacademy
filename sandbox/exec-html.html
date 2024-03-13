@@ -93,11 +93,19 @@ window.addEventListener("message", function (event) {
     }
 
     if (event.data.event === "eval") {
+        const code = event.data.data;
+        let res = undefined;
+        try {
+            res = eval(code);
+        } catch (err) {
+            console.error(err);
+        }
         window.top.postMessage({
             "sender": "sandbox",
             "event": "evalResult",
-            data: serializeVal(eval(event.data.data))
+            data: serializeObject([res])
         }, "*");
+        
         return;
     }
     
@@ -128,6 +136,18 @@ window.addEventListener("message", function (event) {
     }
 
     let mainCode = files["index.html"];
+
+    {
+        // injection script
+        let idx = mainCode.indexOf("<html");
+        idx = idx + mainCode.slice(idx).indexOf(">") + 1;
+        mainCode = mainCode.slice(0, idx) + `
+            <script id="vxsacademy-injection-script">
+                console.log = parent.console.log;
+                console.error = parent.console.error;
+                document.getElementById("vxsacademy-injection-script").remove();
+            <\/script>` + mainCode.slice(idx);
+    }
 
     // delete old blob files
     for (let i = 0; i < blobFiles.length; i++) {

@@ -10,6 +10,7 @@ const Crypto_Base64 = require("crypto-js/enc-base64");
 const Crypto_Utf8 = require("crypto-js/enc-utf8");
 const { MongoClient } = require("mongodb");
 const bson = require("bson");
+const BashShell = require("./lib/BashShell.js");
 
 // it'd be very bad if these were publicly available
 const secrets = require("../secrets").getSecrets("../");
@@ -186,7 +187,7 @@ function validateProgramData(data) {
         typeof data.title === "string"
     ) {
         // check if program is a valid type
-        if (!["html", "pjs", "python", "glsl", "jitlang", "cpp", "java"].includes(data.type)) {
+        if (!["html", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(data.type)) {
             return e + "invalid project type";
         }
 
@@ -406,7 +407,7 @@ async function getKAProgram(id) {
 
         KAProgramsCache[id] = {
             "id": id,
-            "title": programJSON?.title,
+            "title": programJSON?.title ?? "",
             "type": programType,
             "forks": [
                 // {
@@ -423,8 +424,8 @@ async function getKAProgram(id) {
             "created": programCreated,
             "lastSaved": programUpdated,
             "flags": [],
-            "width": programType === "html" ? 600 : programJSON?.width,
-            "height": programJSON?.height,
+            "width": programType === "html" ? 600 : (programJSON?.width ?? 400),
+            "height": programJSON?.height ?? 400,
             "fileNames": [
                 programFileName
             ],
@@ -436,7 +437,7 @@ async function getKAProgram(id) {
             "parent": null,
             "thumbnail": null,
             "files": {
-                [programFileName]: programJSON?.revision?.code
+                [programFileName]: programJSON?.revision?.code ?? ""
             },
             "discussions": [
                 // "vbEyWelsp8ecx0",
@@ -481,7 +482,7 @@ async function updateKAProjectsList() {
             return json?.data?.listTopPrograms?.programs;
         }
         
-        const loadAmount = 50;
+        const loadAmount = 2;
 
         let reqPrograms = await getList("HOT", loadAmount);
         if (reqPrograms) {
@@ -698,7 +699,6 @@ async function updateProjectLists() {
     topListData.sort((a, b) => b.likeCount - a.likeCount);
 }
 
-
 // tree specifying the routes for the project
 const projectTree = {
     "/clearCache": async (path, out, data) => {
@@ -779,7 +779,7 @@ const projectTree = {
         "new/": (path, out, data) => {
             // new program path
             let programType = path;
-            if (["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java"].includes(programType)) {
+            if (["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(programType)) {
                 let webpageCode = createHTMLPage("program", data.userData, DEFAULT_OG_TAGS);
 
                 out.writeHead(200, { 'Content-Type': 'text/html' });
@@ -840,7 +840,7 @@ const projectTree = {
             // ignore
             const origin = data.request.headers.origin;
             const validOrigin = typeof origin === "string" && (origin === "https://vxsacademy.org" || origin.startsWith("https://127.0.0.1") || origin.startsWith("http://127.0.0.1"));
-            const sensitiveEndpoint = ["signup", "login", "create_program", "save_program", "delete_program", "like_program", "update_profile", "compile_cpp", "sign_out"].includes(path.slice(5));
+            const sensitiveEndpoint = ["signup", "login", "create_program", "save_program", "delete_program", "like_program", "update_profile", "compile_cpp", "sign_out", "compile_zig"].includes(path.slice(5));
             // console.log(origin)
             if (sensitiveEndpoint && !validOrigin) {
                 allowRequest = false;
@@ -1466,6 +1466,58 @@ const projectTree = {
                 });
                 let body = await res.text();
                 out.write(body);
+            },
+            "compile_zig": async (path, out, data) => {
+                let sourceCode = parseJSON(data.postData);
+                if (sourceCode && sourceCode["main.zig"]) {
+                    if (!fs.existsSync("./program-zig-out")) {
+                        fs.mkdirSync("./program-zig-out");
+                    }
+
+                    const id = Math.random().toString().replace(".", "");
+                    const path = `./program-zig-out/${id}`;
+                    fs.mkdirSync(path);
+
+                    let checkName = false;
+                    for (const fileName in sourceCode) {
+                        checkName = validateFileName(fileName);
+                        if (checkName === "OK") {
+                            fs.writeFileSync(`${path}/${fileName}`, sourceCode[fileName]);
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if (checkName === "OK") {
+                        const zigCompiler = new BashShell("ZigCompiler");
+                        zigCompiler.handler = function(event) {
+                            const printData = event.data.split("\n").map(ln => "    " + ln).join("\n");
+                            if (event.type === "err") {
+                                out.write(printData);
+                            } else {
+                                console.log(printData);
+                            }
+                        };
+                        zigCompiler.send(`cd program-zig-out/${id}`);
+                        let res = await zigCompiler.send(`zig build-exe -fno-entry -rdynamic -O ReleaseSmall -target wasm32-freestanding --name ${id} main.zig`, 5000);
+                        console.log("MYRES", id, res)
+                        
+                        let output;
+                        if (fs.existsSync(`${path}/${id}.wasm`)) {
+                            console.log("SUCESS")
+                            output = fs.readFileSync(`${path}/${id}.wasm`);
+                            out.writeHead(200, { 'Content-Type': 'application/wasm' });
+                            out.write(output);
+                            console.log(output)
+                        }
+
+                        fs.rmSync(path, { recursive: true });
+                    } else {
+                        out.write(checkName);
+                    }                    
+                } else {
+                    out.write("error: invalid source code");
+                }
             },
             "sign_out": async (path, out, data) => {
                 // sign out endpoint

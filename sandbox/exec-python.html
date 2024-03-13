@@ -37,11 +37,19 @@ window.addEventListener("message", async function (event) {
     }
 
     if (event.data.event === "eval") {
+        const code = event.data.data;
+        let res = undefined;
+        try {
+            res = pyodide.runPython(code);
+        } catch (err) {
+            console.error(err);
+        }
         window.top.postMessage({
             "sender": "sandbox",
             "event": "evalResult",
-            data: serializeVal(pyodide.runPython(event.data.data))
+            data: serializeObject([res])
         }, "*");
+        
         return;
     }
     

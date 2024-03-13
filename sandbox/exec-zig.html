@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/sandbox.css" type="text/css">
+    <script src="./terminal.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/WebAssembly/wabt/docs/demo/libwabt.js"></script>
+</head>
+<body>
+    
+    <!-- Live Output -->
+    <div id="live-output-container"></div>
+    <div id="warnings-container"></div>
+
+    <script src="./sandbox.js"></script>
+
+    <!-- Live Output Control Script -->
+    <script>
+let terminal = new Terminal(document.getElementById("live-output-container"));
+
+function runBinary(compiledSource) {
+    let memory = null;
+    const importObject = {
+        env: {
+            fs_write(fid, addr, len) {
+                let buff = memory.buffer.slice(addr, addr + len);
+                let decoder = new TextDecoder();
+                if (fid === 1) {
+                    console.log(decoder.decode(buff));
+                }
+            }
+        },
+    };
+
+    // run binary
+    const wasm = new WebAssembly.Module(compiledSource);
+    const wasmInstance = new WebAssembly.Instance(wasm, importObject);
+    memory = wasmInstance.exports.memory ?? null;
+    wasmInstance.exports._start();
+}
+
+window.addEventListener("message", event => {
+    if (event.data === "ping") {
+        window.top.postMessage({
+            "sender": "sandbox"
+        }, "*");
+        return;
+    }
+
+    if (event.data === "thumbnail") {        
+        html2canvas(document.body, {
+            width: window.innerWidth,
+            height: window.innerHeight
+        }).then(sendThumnailFromCanvas);
+        return;
+    }
+    
+    let data = event.data;
+    let files = data.files;
+
+    liveOutputContainer.style.width = data.width + "px";
+    liveOutputContainer.style.height = data.height + "px";
+    liveOutputContainer.innerHTML = "";
+    
+    // lets light this candle
+    setTimeout(() => {
+        console.log("Compiling...");
+
+        fetch(`${event.origin}/API/compile_zig`, {
+            method: "POST",
+            body: JSON.stringify(files)
+        }).then(async res => {
+            const mimeType = res.headers.get("content-type");
+            if (mimeType === "application/wasm") {
+                let buff = await res.arrayBuffer();
+                runBinary(buff);
+            } else {
+                let txt = await res.text();
+                console.error(txt);
+            }
+            
+        }).catch(err => console.error(err));
+    }, 250);
+
+});
+    </script>
+    
+</body>
+</html>

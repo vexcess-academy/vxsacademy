@@ -47,7 +47,15 @@ if (PROGRAM_ID === "new") {
             using namespace std;
             
             int main() {
+
                 return 0;
+            }
+        `,
+        zig: `
+            const std = @import("std");
+
+            pub fn main() void {
+                
             }
         `,
         glsl: `
@@ -137,6 +145,12 @@ if (PROGRAM_ID === "new") {
             programData.type = "cpp";
             programData.fileNames = ["main.cpp"];
             programData.files["main.cpp"] = boilerplate.cpp;
+            break;
+
+        case "zig":
+            programData.type = "zig";
+            programData.fileNames = ["main.zig"];
+            programData.files["main.zig"] = boilerplate.zig;
             break;
 
         case "java":

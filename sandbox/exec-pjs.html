@@ -77,7 +77,16 @@ const Process = {
         return animeFrameReq;
     };
 
-    function generateCode() {
+    function generateCode(width, height, code, preservePJS) {
+        const resetCode = `
+            processingInstance.angleMode = 'degrees';
+            processingInstance.draw = function() {};
+
+            processingInstance.size(${width}, ${height}); 
+            processingInstance.background(0xFFF);
+            processingInstance._clearLogs();
+        `;
+
         return `
 window.parent = window;
 
@@ -160,13 +169,7 @@ var playSound = function(e) {
     e.audio.play();
 };
 
-
-processingInstance.angleMode = 'degrees';
-processingInstance.draw = function() {};
-
-processingInstance.size(${Process.width}, ${Process.height}); 
-processingInstance.background(0xFFF);
-processingInstance._clearLogs();
+${preservePJS ? "" : resetCode}
 
 Process.preload.imagesLoaded = 0;
 Process.preload.imagesExpected = 0;
@@ -221,7 +224,7 @@ let runStartInterval = setInterval(function() {
 
         with (processingInstance) {
             // vvvvv USER SUPPLIED CODE vvvvv
-            ${Process.code}
+            ${code}
             // ^^^^^ USER SUPPLIED CODE ^^^^^
         }
 
@@ -255,16 +258,75 @@ let runStartInterval = setInterval(function() {
             sendThumnailFromCanvas(liveOutputCanvas);
             return;
         }
-
+        
         if (event.data.event === "eval") {
+            function checkIsExpression(str) {
+                let idx = str.indexOf("(");
+                if (idx === -1) {
+                    return true;
+                } else {
+                    let count = 1;
+                    let hitZero = false;
+                    for (let i = idx + 1; i < str.length; i++) {
+                        if (str[i] === "(") {
+                            count++;
+                        } else if (str[i] === ")") {
+                            if (hitZero) {
+                                return false;
+                            }
+                            count--;
+                            if (count === 0) {
+                                hitZero = true;
+                            }
+                        }
+                    }
+                    return true;
+                }
+            }
+
+            let code = event.data.data;
+            const isExpression = checkIsExpression(code);
+            if (!isExpression) {
+                code = Process.injector.transformCode(code, Process.processingInstance, null);
+                code = generateCode(Process.width, Process.height, code, true);
+            } else {
+                let keys = Object.keys(Process.processingInstance).sort((a, b) => b.length - a.length);
+                let toks = code.split(" ").map(sub => {
+                    return sub.split(",").map(sub2 => {
+                        return sub2.split("(").map(sub3 => {
+                            for (let i = 0; i < keys.length; i++) {
+                                let prop = keys[i];
+                                if (sub3.includes(prop)) {
+                                    if (!sub3.includes(".")) {
+                                        sub3 = sub3.replace(prop, "Process.processingInstance." + prop);
+                                    }
+                                    break;
+                                }
+                            }
+                            return sub3;
+                        });
+                    })
+                });
+                
+                toks = toks.map(sub => sub.map(sub2 => sub2.join("(")));
+                toks = toks.map(sub => sub.join(","));
+                code = toks.join(" ");
+            }
+
+            let res = undefined;
+            try {
+                res = eval(code);
+            } catch (err) {
+                console.error(err);
+            }
             window.top.postMessage({
                 "sender": "sandbox",
                 "event": "evalResult",
-                data: serializeVal(eval(event.data.data))
+                data: isExpression ? serializeObject([res]) : null
             }, "*");
             return;
         }
-        
+
         warningsBox.innerHTML = "";
         
         let data = event.data;
@@ -273,7 +335,8 @@ let runStartInterval = setInterval(function() {
         // lint code
         for (let fileName in files) {
             if (fileName.toLowerCase().endsWith(".js")) {
-                JSHINT("// jshint -W082\n// jshint -W079\n//jshint -W080\n" + files["index.js"], {
+                // if(0){} required to bypass JSHINT bug
+                JSHINT("// jshint -W082\n// jshint -W079\n//jshint -W080\nif(0){}\n" + files["index.js"], {
                     esversion: 11,
                     asi: true,
                     boss: true,
@@ -355,7 +418,7 @@ let runStartInterval = setInterval(function() {
             // run new code
             let runFxn;
             try {
-                eval(generateCode());
+                eval(generateCode(Process.width, Process.height, Process.code));
             } catch (err) {
                 console.log(err);
                 createWarning(err);

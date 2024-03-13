@@ -1,4 +1,4 @@
-const BashShell = require("./BashShell.js");
+const BashShell = require("./src/lib/BashShell.js");
 const secrets = require("./secrets").getSecrets("./");
 
 function myHandler(event) {
@@ -12,7 +12,6 @@ function myHandler(event) {
 }
 
 if (secrets.USE_PROXY) {
-    console.log("PROXYYYYYY")
     const ratholeProxy = new BashShell("RatholeProxy");
     ratholeProxy.handler = myHandler;
     ratholeProxy.send("./rathole client.toml");
