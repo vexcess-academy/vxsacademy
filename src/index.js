@@ -1392,7 +1392,7 @@ const projectTree = {
                 }
 
                 const validAvatars = ["bobert-cool","bobert-pixelated","boberta","bobert-approved","bobert-chad","bobert-cringe","bobert-flexing","bobert-hacker","bobert-high","bobert-troll-nose","bobert-troll","bobert-wide","bobert","rock-thonk","floof1","floof2","floof3","floof4","floof5","pyro1","pyro2","pyro3","pyro4","pyro5"];
-                const validBackgrounds = ["blue","cosmos","electric-blue","fbm","fractal-1","green","julia-rainbow","julia","magenta","photon-1","photon-2","transparent"];
+                const validBackgrounds = ["blue","bobert","cosmos","cyber","electric-blue","fbm","fractal-1","green","julia-rainbow","julia","magenta","photon-1","photon-2","transparent"];
                 
                 // validate input
                 if (json.nickname && validateNickname(json.nickname) !== "OK") {
