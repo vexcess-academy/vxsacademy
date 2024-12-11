@@ -7,14 +7,7 @@ An open source website where anyone can learn computer science for free and shar
 VExcess Academy requires Node JS v15.8.0 or higher to run.  
 Follow the instructions in `Setup Guide.md`.  
 
-In `secrets.js` you will need to assign values to `MASTER_KEY`, `RECAPTCHA_KEY`, `key`, `cert`, `port`, `sandboxPort`, and `databaseURL`.  
-`MASTER_KEY` is the encryption key used to encrypt profiles and stuff.  
-`RECAPTCHA_KEY` is the key for validating the Google Recaptcha on the sign up page.  
-`key` is the SSL key used for HTTPS encryption. You don't need this if you change the code to use a plain HTTP server instead.  
-`cert` is the SSL certificate used for HTTPS encryption. You don't need this if you change the code to use a plain HTTP server instead.  
-`port` is an integer specifying which port to open the server on.  
-`sandboxPort` is an integer specifying which port to open the sandbox server on.  
-`databaseURL` is a string containing a URL on which the MongoDB instance is running.  
+You will need to create the `secrets.js` file for yourself. You can find a sample and explanation for configuring the secrets.js file in the `sample.secrets.js` file.
 
 ## Contributors
 [VExcess](https://github.com/vExcess) - I wrote nearly all the code  

@@ -1,13 +1,9 @@
-console.log("Program Initiated!");
+console.log("Starting Server...");
 
 // import dependencies
 const http = require("node:https");
 const fs = require("node:fs");
-const crypto = require("node:crypto");
-const Crypto_AES = require("crypto-js/aes");
-const Crypto_SHA256 = require("crypto-js/sha256");
-const Crypto_Base64 = require("crypto-js/enc-base64");
-const Crypto_Utf8 = require("crypto-js/enc-utf8");
+
 const { MongoClient } = require("mongodb");
 const bson = require("bson");
 const BashShell = require("./lib/BashShell.js");
@@ -15,7 +11,13 @@ const BashShell = require("./lib/BashShell.js");
 // it'd be very bad if these were publicly available
 const secrets = require("../secrets").getSecrets("../");
 
-const myMongo = new MongoClient(`mongodb://${secrets.MONGO_IP}:${secrets.MONGO_PORT}`);
+let myMongo;
+if (secrets.MONGO_PASSWORD) {
+    myMongo = new MongoClient(`mongodb://vxsacademyuser:${secrets.MONGO_PASSWORD}@${secrets.MONGO_IP}:${secrets.MONGO_PORT}/?authSource=vxsacademy`);
+} else {
+    console.log("WARNING: MongoDB is running without authentication");
+    myMongo = new MongoClient(`mongodb://${secrets.MONGO_IP}:${secrets.MONGO_PORT}`);
+}
 
 let db = null;
 let users = null;
@@ -23,623 +25,52 @@ let programs = null;
 let salts = null;
 let discussions = null;
 
-function SHA256(str) {
-    return Crypto_Base64.stringify(Crypto_SHA256(str));
-}
-function AES_encrypt(txt, key) {
-    let obj = Crypto_AES.encrypt(txt, key);
-    return Crypto_Base64.stringify(obj.ciphertext) + "," + Crypto_Base64.stringify(obj.iv) + "," + Crypto_Base64.stringify(obj.salt);
-}
-function AES_decrypt(ctxt, key) {
-    ctxt = ctxt.split(",");
-    for (var i = 0; i < 3; i++) {
-        ctxt[i] = Crypto_Base64.parse(ctxt[i]);
-    }
-    return Crypto_Utf8.stringify(Crypto_AES.decrypt({
-        ciphertext: ctxt[0],
-        iv: ctxt[1],
-        salt: ctxt[2]
-    }, key));
-}
 
-// some constants
-const dontEscapeChars = " !#$%&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const numbers = "0123456789";
+// utility functions
+const {
+    SHA256,
+    AES_encrypt,
+    AES_decrypt,
+    genRandomToken,
+    parseJSON,
+    readJSON,
+    parseCookies,
+    parseQuery
+} = require("./utils.js");
 
-// utilities
-function random(start, stop) {
-    if (!stop) {
-        stop = start;
-        start = 0;
-    }
-    return Math.random() * (stop - start) + start;
-}
-function genRandomToken(length) {
-    const possibles = letters + numbers;
-    const randVals = new Uint8Array(length);
-    crypto.getRandomValues(randVals);
-    
-    let out = "";
-    for (let i = 0; i < length; i++) {
-        out += possibles[randVals[i] % possibles.length];
-    }
-    return out;
-}
 
-function sliceOut(str1, str2) {
-    var idx = str1.indexOf(str2);
-    return str1.slice(0, idx) + str1.slice(idx + str2.length, str1.length);
-}
+// validating user input is essential
+const {
+    validateFileName,
+    validateProgramData,
+    validateNickname,
+    validateBio,
+    validateUsername,
+    validatePassword,
+    validateDiscussion
+} = require("./validators.js");
 
-function parseJSON(str) {
-    try {
-        return JSON.parse(str);
-    } catch (err) {
-        return null;
-    }
-}
-function readJSON(path) {
-    let data, res;
-    try {
-        data = fs.readFileSync(path, {
-            encoding: "utf8"
-        }).toString();
-
-        res = JSON.parse(data);
-
-        return res;
-    } catch (err) {
-        return null;
-    }
-}
-
-function unicodeEscape(str, allowedChars) {
-    allowedChars = allowedChars ?? "";
-    let newStr = "";
-
-    for (var i = 0; i < str.length; i++) {
-        var c = str.charAt(i);
-        newStr += allowedChars.includes(c) ? c : "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0");
-    }
-
-    return newStr;
-}
-
-function parseCookies(cookies) {
-    return Object.fromEntries(cookies.split("; ").map(s => {
-        var e = s.indexOf("=");
-        return [s.slice(0, e), s.slice(e + 1, s.length)];
-    }));
-}
-
-function parseQuery(url) {
-    let quesIdx = url.indexOf("?");
-    if (quesIdx === -1) {
-        return {};
-    } else {
-        let end = url.slice(quesIdx + 1);
-        if (end.length > 2) {
-            let vars = end.split("&");
-            let keys = {};
-            for (var i = 0; i < vars.length; i++) {
-                var eqIdx = vars[i].indexOf("=");
-                vars[i] = [
-                    decodeURIComponent(vars[i].slice(0, eqIdx)),
-                    decodeURIComponent(vars[i].slice(eqIdx + 1))
-                ];
-                var number = Number(vars[i][1]);
-                if (!Number.isNaN(number)) {
-                    vars[i][1] = number;
-                }
-                keys[vars[i][0]] = vars[i][1];
-            }
-            return keys;
-        } else {
-            return {};
-        }
-    }
-}
-
-function escapeHTML(text) {
-    var replacements = {
-        "<": "&lt;",
-        ">": "&gt;",
-        "&": "&amp;",
-        "\"": "&quot;"
-    };
-    return text.replace(/[<>&"]/g, function(character) {
-        return replacements[character];
-    });
-}
-
-function calcStrSz(str) {
-    var sz = 0;
-    for (var i = 0; i < str.length; i++) {
-        sz += str.charCodeAt(i) > 255 ? 2 : 1;
-    }
-    return sz;
-}
-
-function validateFileName(name) {
-    var illegal = "/\\:*?\"<>|\n";
-    if (name.length === 0) { // empty names are not allowed
-        return "can't be empty";
-    } else if (calcStrSz(name.length) >= 256) { // names can't be longer than 256 bytes
-        return "must be less than 256 bytes";
-    }
-    if (name[0] === " " || name[0] === ".") { // names can't start with a period or space
-        return "can't start with a period or space";
-    }
-    for (var i = 0; i < illegal.length; i++) {
-        if (name.includes(illegal[i])) { // names can't contain illegal characters
-            return "can't contain /\\:*?\"<>| or newline";
-        }
-    }
-    return "OK";
-}
-function validateProgramData(data) {
-    let e = "error: ";
-    if (
-        typeof data.files === "object" &&
-        typeof data.width === "number" &&
-        typeof data.height === "number" &&
-        typeof data.title === "string"
-    ) {
-        // check if program is a valid type
-        if (!["html", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(data.type)) {
-            return e + "invalid project type";
-        }
-
-        // validate forks
-        if (data.parent && data.parent !== null && typeof data.parent !== "string") {
-            return e + "invalid parent";
-        }
-
-        // limit size
-        if (data.width % 1 !== 0 || data.height % 1 !== 0) {
-            return e + "project dimensions must be integers";
-        }
-        if (data.width < 400 || data.height < 400) {
-            return e + "project dimensions can't be less than 400";
-        }
-        if (data.width > 16384 || data.height > 16384) {
-            return e + "project dimensions can't be larger than 16384";
-        }
-
-        if (data.thumbnail === null) {
-            // do nothing
-        } else if (typeof data.thumbnail === "string") {
-            // validate thumbnail type
-            if (!(
-                data.thumbnail.startsWith("data:image/jpg;base64,") ||
-                data.thumbnail.startsWith("data:image/jpeg;base64,") ||
-                data.thumbnail.startsWith("data:image/jfif;base64,")
-            )) {
-                return e + "project thumbnail must be a jpg/jpeg/jfif";
-            }
-            // validate thumbnail size to 128 KB
-            if (data.thumbnail.length > 128 * 1024) {
-                return e + "project thumbnail is too big; 128 KB allowed";
-            }
-        } else if (typeof data.thumbnail === "object") {
-            // validate thumbnail type
-            if (!(
-                data.thumbnail.buffer[0] === 0xFF &&
-                data.thumbnail.buffer[1] === 0xD8 &&
-                data.thumbnail.buffer[2] === 0xFF
-            )) {
-                return e + "project thumbnail must be a jpg/jpeg/jfif";
-            }
-            // validate thumbnail size to 128 KB
-            if (data.thumbnail.length > 128 * 1024) {
-                return e + "project thumbnail is too big; 128 KB allowed";
-            }
-        } else {
-            return e + "project thumbnail is corrupted";
-        }
-
-        // validate title
-        var checkTitle = validateFileName(data.title);
-        if (checkTitle !== "OK") {
-            return e + "project title " + checkTitle;
-        }
-
-        // 8 files allowed
-        if (Object.keys(data.files).length > 8) {
-            return e + "project has too many files; 8 allowed";
-        }
-
-        let projectSize = 0;
-        for (var filename in data.files) {
-            // validate file name
-            var checkName = validateFileName(data.title);
-            if (checkName !== "OK") {
-                return e + "file name " + checkName;
-            }
-
-            // check if file data is valid
-            var file = data.files[filename];
-            if (typeof file !== "string") {
-                return e + "project file data is corrupted";
-            }
-
-            // programs can't be bigger than 0.5 MB
-            projectSize += calcStrSz(file.length);
-            if (projectSize > 1024 * 512) {
-                return e + "project is too big; 0.5 MB allowed";
-            }
-        }
-
-        return "OK";
-    } else {
-        return e + "project metadata is corrupted";
-    }
-}
-function validateNickname(nickname) {
-    if (typeof nickname !== "string") {
-        return "nickname must be a string";
-    }
-    if (nickname.length > 32) {
-        return "nickname can't be longer than 32 characters";
-    }
-    if (nickname.length <= 0) {
-        return "nickname can't be empty";
-    }
-    return "OK";
-}
-function validateBio(bio) {
-    if (typeof bio !== "string") {
-        return "bio must be a string";
-    }
-    if (bio.length > 160) {
-        return "bio can't be longer than 160 characters";
-    }
-    return "OK";
-}
-function validateUsername(username) {
-    if (typeof username !== "string") {
-        return "username must be a string";
-    }
-    if (username.length > 32) {
-        return "username can't be longer than 32 characters";
-    }
-    if (!(/^[a-zA-Z0-9\_]+$/.test(username))) {
-        return "username can only contain letters, numbers, and underscores";
-    }
-    if (username.length < 3) {
-        return "username can't be shorter than 3 characters";
-    }
-    return "OK";
-}
-function validatePassword(password) {
-    if (typeof password !== "string") {
-        return "password must be a string";
-    }
-    if (password.length > 64) {
-        return "password can't be longer than 64 characters";
-    }
-    return "OK";
-}
-function validateDiscussion(data) {
-    let e = "error: ";
-    if (
-        (data.type === "Q" || data.type === "C") &&
-        typeof data.content === "string" &&
-        typeof data.program === "string"
-    ) {
-        return "OK";
-    } else {
-        return e + "discussion metadata is corrupted";
-    }
-}
-
-function calculateHotness(upvotes, uploadedOn) {
-    // Constants for the Wilson Score Interval
-    const z = 1.96; // 95% confidence interval
-    
-    // Calculate the fraction of upvotes
-    const p = upvotes / (upvotes + 1); // Adding 0.1 to avoid division by zero
-    
-    // Calculate the "score"
-    const score =
-    (p + (z * z) / (2 * (upvotes + 1)) - z * Math.sqrt((p * (1 - p) + (z * z) / (4 * (upvotes + 1))) / (upvotes + 1))) /
-    (1 + (z * z) / (upvotes + 1));
-    
-    // Calculate the hotness by considering the time elapsed
-    const elapsedTime = (Date.now() - uploadedOn) / (1000 * 60 * 60); // Convert milliseconds to hours
-    const hotness = score / elapsedTime;
-    
-    return hotness;
-}
-function calculateKAHotness(upvotes, uploadedOn) {
-    // Constants for the Wilson Score Interval
-    const z = 1.96; // 95% confidence interval
-    
-    // Calculate the fraction of upvotes
-    const p = upvotes / (upvotes + 0.1); // Adding 0.1 to avoid division by zero
-    
-    // Calculate the "score"
-    const score =
-    (p + (z * z) / (2 * (upvotes + 0.1)) - z * Math.sqrt((p * (0.1 - p) + (z * z) / (4 * (upvotes + 0.1))) / (upvotes + 0.1))) /
-    (0.1 + (z * z) / (upvotes + 0.1));
-    
-    // Calculate the hotness by considering the time elapsed
-    const elapsedTime = (Date.now() - uploadedOn) / (1000 * 60 * 60); // Convert milliseconds to hours
-    const hotness = score / elapsedTime;
-    
-    return hotness;
-}
-
-let KAAPIHashes = readJSON("./ka-api-hashes.json") ?? null;
-const KAProgramsCache = {};
-let KA_allPrograms = [];
-let KA_hotListData = [];
-let KA_recentListData = [];
-let KA_topListData = [];
-async function getKAProgram(id) {
-    // KA_ + originalProgramId
-    if (!KAProgramsCache[id]) {
-        let programRes, programJSON;
-        try {
-            programRes = await fetch("https://www.khanacademy.org/api/internal/graphql/programQuery", {
-                "headers": {
-                    "accept": "*/*",
-                    "accept-language": "en-US,en;q=0.9",
-                    "content-type": "application/json",
-                    "x-ka-fkey": "0"
-                },
-                "body": "{\"operationName\":\"programQuery\",\"query\":\"query programQuery($programId: String!) {\\n  programById(id: $programId) {\\n    byChild\\n    category\\n    created\\n    creatorProfile: author {\\n      id\\n      nickname\\n      profileRoot\\n      profile {\\n        accessLevel\\n        __typename\\n      }\\n      __typename\\n    }\\n    deleted\\n    description\\n    spinoffCount: displayableSpinoffCount\\n    docsUrlPath\\n    flags\\n    flaggedBy: flaggedByKaids\\n    flaggedByUser: isFlaggedByCurrentUser\\n    height\\n    hideFromHotlist\\n    id\\n    imagePath\\n    isProjectOrFork: originIsProject\\n    isOwner\\n    kaid: authorKaid\\n    key\\n    newUrlPath\\n    originScratchpad: originProgram {\\n      deleted\\n      translatedTitle\\n      url\\n      __typename\\n    }\\n    restrictPosting\\n    revision: latestRevision {\\n      id\\n      code\\n      configVersion\\n      created\\n      editorType\\n      folds\\n      __typename\\n    }\\n    slug\\n    sumVotesIncremented\\n    title\\n    topic: parentCurationNode {\\n      id\\n      nodeSlug: slug\\n      relativeUrl\\n      slug\\n      translatedTitle\\n      __typename\\n    }\\n    translatedTitle\\n    url\\n    userAuthoredContentType\\n    upVoted\\n    width\\n    __typename\\n  }\\n}\",\"variables\":{\"programId\":\"" + id.slice(3) + "\"}}",
-                "method": "POST"
-            });
-            programJSON = (await programRes.json()).data.programById;
-        } catch (err) {
-            console.error(err);
-        }
-
-        const KAprogramType = programJSON?.userAuthoredContentType;
-        const profileRoot = programJSON?.creatorProfile?.profileRoot;
-        const programType = KAprogramType === "WEBPAGE" ? "html" : (KAprogramType === "PJS" ? "pjs" : null);
-        const programCreated = new Date(programJSON?.created).getTime();
-        const programUpdated = new Date(programJSON?.revision?.created).getTime();
-        const authorUsername = typeof profileRoot === "string" ? profileRoot.split("/")[2] : undefined;
-        const programFileName = programType === "html" ? "index.html" : "index.js";
-
-        KAProgramsCache[id] = {
-            "id": id,
-            "title": programJSON?.title ?? "",
-            "type": programType,
-            "forks": [
-                // {
-                //     "id": "osjamxlmp81jfs",
-                //     "created": 1695061820584,
-                //     "likeCount": 0
-                // },
-                // {
-                //     "id": "5Kjhm6lonohkkn",
-                //     "created": 1699322074718,
-                //     "likeCount": 0
-                // }
-            ],
-            "created": programCreated,
-            "lastSaved": programUpdated,
-            "flags": [],
-            "width": programType === "html" ? 600 : (programJSON?.width ?? 400),
-            "height": programJSON?.height ?? 400,
-            "fileNames": [
-                programFileName
-            ],
-            "author": {
-                "username": authorUsername,
-                "id": programJSON?.creatorProfile?.id,
-                "nickname": programJSON?.creatorProfile?.nickname
-            },
-            "parent": null,
-            "thumbnail": null,
-            "files": {
-                [programFileName]: programJSON?.revision?.code ?? ""
-            },
-            "discussions": [
-                // "vbEyWelsp8ecx0",
-                // "TvM9Bhlsp8h23w",
-                // "gOZmUglspjox79"
-            ],
-            "likeCount": programJSON?.sumVotesIncremented,
-            "forkCount": programJSON?.spinoffCount
-        };
-    }
-
-    return KAProgramsCache[id];
-}
-function updateKAAPIHashes() {
-    fetch("https://cdn.jsdelivr.net/gh/bhavjitChauhan/khan-api@safelist/hashes.json")
-        .then(res => res.json())
-        .then(json => {
-            KAAPIHashes = json;
-            fs.writeFileSync("./ka-api-hashes.json", JSON.stringify(json, "", "  "))
-        })
-        .catch(console.log);
-}
-if (KAAPIHashes === null) {
-    updateKAAPIHashes();
-}
-async function updateKAProjectsList() {
-    const programs = [];
-    
-    try {
-        async function getList(sortOrder, amt) {
-            let res = await fetch("https://www.khanacademy.org/api/internal/graphql/hotlist", {
-                "headers": {
-                    "accept": "*/*",
-                    "accept-language": "en-US,en;q=0.9",
-                    "content-type": "application/json",
-                    "x-ka-fkey": "0"
-                },
-                "body": "{\"operationName\":\"hotlist\",\"query\":\"query hotlist($curationNodeId: String, $onlyOfficialProjectSpinoffs: Boolean!, $sort: ListProgramSortOrder, $pageInfo: ListProgramsPageInfo) {\\n  listTopPrograms(\\n    curationNodeId: $curationNodeId\\n    onlyOfficialProjectSpinoffs: $onlyOfficialProjectSpinoffs\\n    sort: $sort\\n    pageInfo: $pageInfo\\n  ) {\\n    complete\\n    cursor\\n    programs {\\n      id\\n      key\\n      authorKaid\\n      authorNickname\\n      displayableSpinoffCount\\n      imagePath\\n      sumVotesIncremented\\n      translatedTitle: title\\n      url\\n      __typename\\n    }\\n    __typename\\n  }\\n}\",\"variables\":{\"curationNodeId\":\"xffde7c31\",\"onlyOfficialProjectSpinoffs\":false,\"sort\":\"" + sortOrder + "\",\"pageInfo\":{\"itemsPerPage\":" + amt + ",\"cursor\":\"\"}}}",
-                "method": "POST"
-            });
-            let json = await res.json();
-            return json?.data?.listTopPrograms?.programs;
-        }
-        
-        const loadAmount = 2;
-
-        let reqPrograms = await getList("HOT", loadAmount);
-        if (reqPrograms) {
-            for (let i = 0; i < reqPrograms.length; i++) {
-                programs.push(reqPrograms[i]);
-            }
-        }
-
-        reqPrograms = await getList("RECENT", loadAmount);
-        if (reqPrograms) {
-            for (let i = 0; i < reqPrograms.length; i++) {
-                programs.push(reqPrograms[i]);
-            }
-        }
-        
-        reqPrograms = await getList("UPVOTE", loadAmount);
-        if (reqPrograms) {
-            for (let i = 0; i < reqPrograms.length; i++) {
-                programs.push(reqPrograms[i]);
-            }
-        }        
-    } catch (err) {
-        return null;
-    }
-    
-    KA_allPrograms = [];
-    for (let i = 0; i < programs.length; i++) {
-        const program = programs[i];
-        const formattedProgram = await getKAProgram("KA_" + program.id);
-        
-        KA_allPrograms.push({
-            "id": formattedProgram.id,
-            "title": formattedProgram.title,
-            "type": formattedProgram.type,
-            "forks": formattedProgram.forks,
-            "created": formattedProgram.created,
-            "author": {
-                "username": formattedProgram.author.username,
-                "id": formattedProgram.author.id,
-                "nickname": formattedProgram.author.nickname
-            },
-            "likeCount": formattedProgram.likeCount,
-            "forkCount": formattedProgram.forkCount,
-        });
-    }
-
-    KA_hotListData = KA_allPrograms.slice();
-    KA_recentListData = KA_allPrograms.slice();
-    KA_topListData = KA_allPrograms.slice();
-
-    KA_hotListData.sort((a, b) => calculateKAHotness(b.likeCount + b.forkCount, b.created) - calculateHotness(a.likeCount + a.forkCount, a.created));
-    KA_recentListData.sort((a, b) => b.created - a.created);
-    KA_topListData.sort((a, b) => b.likeCount - a.likeCount);
-}
-updateKAProjectsList().then(() => {
-    console.log("Loaded KA Hotlist");
-});
-async function khanAPI(endpoint) {
-    if (endpoint === "hotlist") {
-        
-    } else {
-        return null;
-    }
-    
-    // fetch("https://www.khanacademy.org/api/internal/_mt/graphql/updateUserVideoProgress?hash=1299053045&variables="+JSON.stringify({
-    //     "input": {
-    //         "contentId": "x6cc4162aedf4ce93",
-    //         "secondsWatched": 351,
-    //         "lastSecondWatched": 351,
-    //         "durationSeconds": 352,
-    //         "captionsLocale": "en",
-    //         "fallbackPlayer": false,
-    //         "localTimezoneOffsetSeconds": 10800
-    //     }
-    // }), {headers: {"x-ka-fkey": document.cookie.match(/(?<=fkey=)(.*?)(?=;)/)[0]}})
-}
-
+let kaHotlist = null;
+let vxsHotlist = null;
+const {
+    getKAProgram,
+    initializeLists
+ } = require("./hotlist.js");
 
 // for spam detection
 const IP_monitor = readJSON("./ip-data.json") ?? {};
-for (var ip in IP_monitor) {
+for (const ip in IP_monitor) {
     IP_monitor[ip].requests = 0;
 }
 // reset spam detection for IPs every minute
 setInterval(function() {
-    for (var ip in IP_monitor) {
+    for (const ip in IP_monitor) {
         IP_monitor[ip].requests = 0;
     }
 }, 1000 * 60 * 1);
 
 
-const DEFAULT_OG_TAGS = `
-    <meta content="VExcess Academy" property="og:title" />
-    <meta content="A website where anyone can learn to code and share their projects." property="og:description" />
-    <meta content="/CDN/images/logo.png#a" property="og:image" />
-`;
-
-
-class FileCache {
-    files = new Map();
-    readTimeStamps = new Map();
-    mappings;
-    cacheSize = 0;
-    maxCacheSize;
-
-    // cache size is in MB
-    constructor(mappings, maxCacheSize) {
-        this.mappings = mappings;
-        this.maxCacheSize = maxCacheSize * 1024 * 1024;
-    }
-
-    get(name) {
-        if (this.readTimeStamps.has(name)) {
-            // update cache
-            this.readTimeStamps.set(name, Date.now());
-            return this.files.get(name);
-        } else {
-            let data = fs.readFileSync(this.mappings[name] ?? `./pages/${name}`, "utf8").toString();
-
-            // update cache
-            this.readTimeStamps.set(name, Date.now());
-            this.files.set(name, data);
-
-            // update cache size
-            this.cacheSize += data.length;
-
-            // while the cache is too big
-            while (this.cacheSize > this.maxCacheSize) {
-                const iterator = map1.entries();
-                let oldestName;
-                let oldestTimeStamp = Infinity;
-
-                // find oldest file
-                let entry;
-                while (entry = iterator.next().value) {
-                    if (entry[1] < oldestTimeStamp) {
-                        oldestTimeStamp = entry[1];
-                        oldestName = entry[0];
-                    }
-                }
-
-                // update cache size
-                this.cacheSize -= this.files.get(oldestName).length;
-                
-                this.readTimeStamps.delete(oldestName);
-                this.files.delete(oldestName);
-            }
-            
-            return data;
-        }
-    }
-
-    clear() {
-        this.readTimeStamps.clear();
-        this.files.clear();
-    }
-}
+const FileCache = require("./filecache.js");
 
 // file cache for fast file serving
 const fileCache = new FileCache({
@@ -653,15 +84,23 @@ const fileCache = new FileCache({
     "login": "./pages/login/login.html",
     "profile": "./pages/profile/profile.html",
     "logs/dev": "./pages/logs/dev.html",
+    "logs/finance": "./pages/logs/finance.html",
     "tos": "./pages/tos/tos.html",
     "privacy-policy": "./pages/privacy-policy/privacy-policy.html",
 }, 10);
+
+
+const DEFAULT_OG_TAGS = `
+    <meta content="VExcess Academy" property="og:title" />
+    <meta content="A website where anyone can learn to code and share their projects." property="og:description" />
+    <meta content="/CDN/images/logo.png#a" property="og:image" />
+`;
 
 // page creation utility
 function createHTMLPage(pg, userData, openGraphTags) {
     return fileCache.get("main")
         .replace("<!-- OPEN GRAPH INSERT -->", openGraphTags)
-        .replace("<!-- USER DATA INSERT -->", `<script>\n\tvar userData = ${userData ? JSON.stringify(userData).replaceAll("</", "<\\/") : "null"}\n</script>`)
+        .replace("<!-- USER DATA INSERT -->", `<script>\n\tlet userData = ${userData ? JSON.stringify(userData).replaceAll("</", "<\\/") : "null"}\n</script>`)
         .replace("<!-- PAGE CONTENT INSERT -->", fileCache.get(pg));
 }
 
@@ -669,35 +108,10 @@ function createHTMLPage(pg, userData, openGraphTags) {
 // cache user credentials for fast authentification
 const userCredentials = {};
 
-// program caches for browse projects
-let allPrograms = [];
-let hotListData = [];
-let recentListData = [];
-let topListData = [];
 
+const Analytics = require("./analytics.js");
+const myAnalytics = new Analytics("./analytics-data.json");
 
-// updates browse projects
-async function updateProjectLists() {
-    allPrograms = await programs.find({}).project({
-        id: 1,
-        type: 1,
-        title: 1,
-        likeCount: 1,
-        forkCount: 1,
-        created: 1,
-        author: 1,
-        code: 1,
-        _id: 0
-    }).toArray();
-
-    hotListData = allPrograms.slice();
-    recentListData = allPrograms.slice();
-    topListData = allPrograms.slice();
-
-    hotListData.sort((a, b) => calculateHotness(b.likeCount + b.forkCount, b.created) - calculateHotness(a.likeCount + a.forkCount, a.created));
-    recentListData.sort((a, b) => b.created - a.created);
-    topListData.sort((a, b) => b.likeCount - a.likeCount);
-}
 
 // tree specifying the routes for the project
 const projectTree = {
@@ -782,7 +196,11 @@ const projectTree = {
             if (["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(programType)) {
                 let webpageCode = createHTMLPage("program", data.userData, DEFAULT_OG_TAGS);
 
-                out.writeHead(200, { 'Content-Type': 'text/html' });
+                out.writeHead(200, {
+                    "Content-Type": "text/html",
+                    // "Cross-Origin-Opener-Policy": "same-origin",
+                    // "Cross-Origin-Embedder-Policy": "require-corp"
+                });
                 out.write(webpageCode);
             }
         },
@@ -821,7 +239,11 @@ const projectTree = {
                         webpageCode = createHTMLPage("program", data.userData, openGraphInsert);
                     }
                     
-                    out.writeHead(200, { "Content-Type": "text/html" });
+                    out.writeHead(200, {
+                        "Content-Type": "text/html",
+                        // "Cross-Origin-Opener-Policy": "same-origin",
+                        // "Cross-Origin-Embedder-Policy": "require-corp"
+                    });
                     out.write(webpageCode);
                 }
             } catch (err) {
@@ -852,6 +274,9 @@ const projectTree = {
             } else {
                 out.setHeader("Access-Control-Allow-Origin", "https://vxsacademy.org");
             }
+
+            // Disable all auth because of data leak
+            hasPermission = false;
 
             return { hasPermission, allowRequest };
         },
@@ -1039,7 +464,7 @@ const projectTree = {
                 }
 
                 // temp obj for program data
-                var programData = {
+                let programData = {
                     id: null,
                     title: json.title,
                     type: json.type,
@@ -1060,11 +485,12 @@ const projectTree = {
                         nickname: data.userData.nickname
                     },
                     parent: json.parent ?? null,
-                    thumbnail: json.thumbnail ? new bson.Binary(Buffer.from(json.thumbnail.slice(json.thumbnail.indexOf(",") + 1), 'base64')) : null
+                    thumbnail: json.thumbnail ? new bson.Binary(Buffer.from(json.thumbnail.slice(json.thumbnail.indexOf(",") + 1), 'base64')) : null,
+                    discussions: []
                 };
 
                 // validate input
-                var programCheck = validateProgramData(programData);
+                let programCheck = validateProgramData(programData);
                 if (programCheck !== "OK") creationError = programCheck;
 
                 // check if parent exists
@@ -1392,7 +818,7 @@ const projectTree = {
                 }
 
                 const validAvatars = ["bobert-cool","bobert-pixelated","boberta","bobert-approved","bobert-chad","bobert-cringe","bobert-flexing","bobert-hacker","bobert-high","bobert-troll-nose","bobert-troll","bobert-wide","bobert","rock-thonk","floof1","floof2","floof3","floof4","floof5","pyro1","pyro2","pyro3","pyro4","pyro5"];
-                const validBackgrounds = ["blue","cosmos","electric-blue","fbm","fractal-1","green","julia-rainbow","julia","magenta","photon-1","photon-2","transparent"];
+                const validBackgrounds = ["blue","bobert","cosmos","cyber","electric-blue","fbm","fractal-1","green","julia-rainbow","julia","magenta","photon-1","photon-2","transparent"];
                 
                 // validate input
                 if (json.nickname && validateNickname(json.nickname) !== "OK") {
@@ -1442,83 +868,83 @@ const projectTree = {
 
                 out.write("OK");
             },
-            "compile_cpp": async (path, out, data) => {
-                let escapedCode = encodeURIComponent(data.postData);
-                let res = await fetch("https://wasmexplorer-service.herokuapp.com/service.php", {
-                    "headers": {
-                    "accept": "*/*",
-                    "accept-language": "en-US,en;q=0.9",
-                    "content-type": "application/x-www-form-urlencoded",
-                    "prefer": "safe",
-                    "sec-ch-ua": "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Microsoft Edge\";v=\"116\"",
-                    "sec-ch-ua-mobile": "?0",
-                    "sec-ch-ua-platform": "\"Windows\"",
-                    "sec-fetch-dest": "empty",
-                    "sec-fetch-mode": "cors",
-                    "sec-fetch-site": "cross-site"
-                    },
-                    "referrer": "https://mbebenita.github.io/",
-                    "referrerPolicy": "strict-origin-when-cross-origin",
-                    "body": "input=" + escapedCode + "&action=cpp2wast&options=-std%3Dc%2B%2B11%20-Os",
-                    "method": "POST",
-                    "mode": "cors",
-                    "credentials": "omit"
-                });
-                let body = await res.text();
-                out.write(body);
-            },
-            "compile_zig": async (path, out, data) => {
-                let sourceCode = parseJSON(data.postData);
-                if (sourceCode && sourceCode["main.zig"]) {
-                    if (!fs.existsSync("./program-zig-out")) {
-                        fs.mkdirSync("./program-zig-out");
-                    }
+            // "compile_cpp": async (path, out, data) => {
+            //     let escapedCode = encodeURIComponent(data.postData);
+            //     let res = await fetch("https://wasmexplorer-service.herokuapp.com/service.php", {
+            //         "headers": {
+            //         "accept": "*/*",
+            //         "accept-language": "en-US,en;q=0.9",
+            //         "content-type": "application/x-www-form-urlencoded",
+            //         "prefer": "safe",
+            //         "sec-ch-ua": "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Microsoft Edge\";v=\"116\"",
+            //         "sec-ch-ua-mobile": "?0",
+            //         "sec-ch-ua-platform": "\"Windows\"",
+            //         "sec-fetch-dest": "empty",
+            //         "sec-fetch-mode": "cors",
+            //         "sec-fetch-site": "cross-site"
+            //         },
+            //         "referrer": "https://mbebenita.github.io/",
+            //         "referrerPolicy": "strict-origin-when-cross-origin",
+            //         "body": "input=" + escapedCode + "&action=cpp2wast&options=-std%3Dc%2B%2B11%20-Os",
+            //         "method": "POST",
+            //         "mode": "cors",
+            //         "credentials": "omit"
+            //     });
+            //     let body = await res.text();
+            //     out.write(body);
+            // },
+            // "compile_zig": async (path, out, data) => {
+            //     let sourceCode = parseJSON(data.postData);
+            //     if (sourceCode && sourceCode["main.zig"]) {
+            //         if (!fs.existsSync("./program-zig-out")) {
+            //             fs.mkdirSync("./program-zig-out");
+            //         }
 
-                    const id = Math.random().toString().replace(".", "");
-                    const path = `./program-zig-out/${id}`;
-                    fs.mkdirSync(path);
+            //         const id = Math.random().toString().replace(".", "");
+            //         const path = `./program-zig-out/${id}`;
+            //         fs.mkdirSync(path);
 
-                    let checkName = false;
-                    for (const fileName in sourceCode) {
-                        checkName = validateFileName(fileName);
-                        if (checkName === "OK") {
-                            fs.writeFileSync(`${path}/${fileName}`, sourceCode[fileName]);
-                        } else {
-                            break;
-                        }
-                    }
+            //         let checkName = false;
+            //         for (const fileName in sourceCode) {
+            //             checkName = validateFileName(fileName);
+            //             if (checkName === "OK") {
+            //                 fs.writeFileSync(`${path}/${fileName}`, sourceCode[fileName]);
+            //             } else {
+            //                 break;
+            //             }
+            //         }
 
-                    if (checkName === "OK") {
-                        const zigCompiler = new BashShell("ZigCompiler");
-                        zigCompiler.handler = function(event) {
-                            const printData = event.data.split("\n").map(ln => "    " + ln).join("\n");
-                            if (event.type === "err") {
-                                out.write(printData);
-                            } else {
-                                console.log(printData);
-                            }
-                        };
-                        zigCompiler.send(`cd program-zig-out/${id}`);
-                        let res = await zigCompiler.send(`zig build-exe -fno-entry -rdynamic -O ReleaseSmall -target wasm32-freestanding --name ${id} main.zig`, 5000);
-                        console.log("MYRES", id, res)
+            //         if (checkName === "OK") {
+            //             const zigCompiler = new BashShell("ZigCompiler");
+            //             zigCompiler.handler = function(event) {
+            //                 const printData = event.data.split("\n").map(ln => "    " + ln).join("\n");
+            //                 if (event.type === "err") {
+            //                     out.write(printData);
+            //                 } else {
+            //                     console.log(printData);
+            //                 }
+            //             };
+            //             zigCompiler.send(`cd program-zig-out/${id}`);
+            //             let res = await zigCompiler.send(`zig build-exe -fno-entry -rdynamic -O ReleaseSmall -target wasm32-freestanding --name ${id} main.zig`, 5000);
+            //             console.log("MYRES", id, res)
                         
-                        let output;
-                        if (fs.existsSync(`${path}/${id}.wasm`)) {
-                            console.log("SUCESS")
-                            output = fs.readFileSync(`${path}/${id}.wasm`);
-                            out.writeHead(200, { 'Content-Type': 'application/wasm' });
-                            out.write(output);
-                            console.log(output)
-                        }
+            //             let output;
+            //             if (fs.existsSync(`${path}/${id}.wasm`)) {
+            //                 console.log("SUCESS")
+            //                 output = fs.readFileSync(`${path}/${id}.wasm`);
+            //                 out.writeHead(200, { 'Content-Type': 'application/wasm' });
+            //                 out.write(output);
+            //                 console.log(output)
+            //             }
 
-                        fs.rmSync(path, { recursive: true });
-                    } else {
-                        out.write(checkName);
-                    }                    
-                } else {
-                    out.write("error: invalid source code");
-                }
-            },
+            //             fs.rmSync(path, { recursive: true });
+            //         } else {
+            //             out.write(checkName);
+            //         }                    
+            //     } else {
+            //         out.write("error: invalid source code");
+            //     }
+            // },
             "sign_out": async (path, out, data) => {
                 // sign out endpoint
                 if (!data.hasPermission || !data.allowRequest) {
@@ -1562,13 +988,13 @@ const projectTree = {
                 let list;
                 switch (sort) {
                     case "hot":
-                        list = KA_hotListData;
+                        list = kaHotlist.hotList;
                         break;
                     case "recent":
-                        list = KA_recentListData;
+                        list = kaHotlist.recentList;
                         break;
                     case "top":
-                        list = KA_topListData;
+                        list = kaHotlist.topList;
                         break;
                 }
 
@@ -1584,13 +1010,13 @@ const projectTree = {
                 let list;
                 switch (sort) {
                     case "hot":
-                        list = hotListData;
+                        list = vxsHotlist.hotList;
                         break;
                     case "recent":
-                        list = recentListData;
+                        list = vxsHotlist.recentList;
                         break;
                     case "top":
-                        list = topListData;
+                        list = vxsHotlist.topList;
                         break;
                 }
 
@@ -1612,7 +1038,7 @@ const projectTree = {
                 if (typeof who === "string") {
                     let queryType = who.startsWith("id_") ? "id" : "username";
 
-                    for (var id in userCredentials) {
+                    for (const id in userCredentials) {
                         let user = userCredentials[id];
                         if (
                             (queryType === "id" && "id_" + user.id === who) ||
@@ -1630,25 +1056,76 @@ const projectTree = {
                     out.write("404 Not Found"); // user not found
                 }
             },
-            "getDiscussion?": async (path, out, data) => {
-                let discussionId = parseQuery("?" + path).id;
-                let discussionData = await discussions.findOne({id: discussionId});
-                
-                if (discussionData === null) {
-                    out.write("404 Not Found"); // discussion not found
-                } else {
-                    delete discussionData.likes;
-                    delete discussionData.dislikes;
-
-                    let author = await users.findOne({
-                        id: discussionData.author.id
-                    }, {
-                        projection: { id: 1, username: 1, nickname: 1, avatar: 1, _id: 0 }
+            "getDiscussions?": async (path, out, data) => {
+                const query = parseQuery("?" + path);
+                if (query.isKAProgram) {
+                    const res = await fetch("https://www.khanacademy.org/api/internal/graphql/feedbackQuery", {
+                        "method": "POST",
+                        "headers": {
+                            "accept": "*/*",
+                            "content-type": "application/json",
+                        },
+                        "body": "{\"operationName\":\"feedbackQuery\",\"variables\":{\"topicId\":\"" + query.id + "\",\"feedbackType\":\"COMMENT\",\"currentSort\":1,\"focusKind\":\"scratchpad\"},\"query\":\"query feedbackQuery($topicId: String!, $focusKind: String!, $cursor: String, $limit: Int, $feedbackType: FeedbackType!, $currentSort: Int, $qaExpandKey: String) {\\n  feedback(\\n    focusId: $topicId\\n    cursor: $cursor\\n    limit: $limit\\n    feedbackType: $feedbackType\\n    focusKind: $focusKind\\n    sort: $currentSort\\n    qaExpandKey: $qaExpandKey\\n    answersLimit: 1\\n  ) {\\n    feedback {\\n      isLocked\\n      isPinned\\n      replyCount\\n      appearsAsDeleted\\n      author {\\n        id\\n        kaid\\n        nickname\\n        avatar {\\n          name\\n          imageSrc\\n          __typename\\n        }\\n        __typename\\n      }\\n      badges {\\n        name\\n        icons {\\n          smallUrl\\n          __typename\\n        }\\n        description\\n        __typename\\n      }\\n      content\\n      date\\n      definitelyNotSpam\\n      deleted\\n      downVoted\\n      expandKey\\n      feedbackType\\n      flaggedBy\\n      flaggedByUser\\n      flags\\n      focusUrl\\n      focus {\\n        kind\\n        id\\n        translatedTitle\\n        relativeUrl\\n        __typename\\n      }\\n      fromVideoAuthor\\n      key\\n      lowQualityScore\\n      notifyOnAnswer\\n      permalink\\n      qualityKind\\n      replyCount\\n      replyExpandKeys\\n      showLowQualityNotice\\n      sumVotesIncremented\\n      upVoted\\n      ... on QuestionFeedback {\\n        hasAnswered\\n        answers {\\n          isLocked\\n          isPinned\\n          replyCount\\n          appearsAsDeleted\\n          author {\\n            id\\n            kaid\\n            nickname\\n            avatar {\\n              name\\n              imageSrc\\n              __typename\\n            }\\n            __typename\\n          }\\n          badges {\\n            name\\n            icons {\\n              smallUrl\\n              __typename\\n            }\\n            description\\n            __typename\\n          }\\n          content\\n          date\\n          definitelyNotSpam\\n          deleted\\n          downVoted\\n          expandKey\\n          feedbackType\\n          flaggedBy\\n          flaggedByUser\\n          flags\\n          focusUrl\\n          focus {\\n            kind\\n            id\\n            translatedTitle\\n            relativeUrl\\n            __typename\\n          }\\n          fromVideoAuthor\\n          key\\n          lowQualityScore\\n          notifyOnAnswer\\n          permalink\\n          qualityKind\\n          replyCount\\n          replyExpandKeys\\n          showLowQualityNotice\\n          sumVotesIncremented\\n          upVoted\\n          __typename\\n        }\\n        isOld\\n        answerCount\\n        __typename\\n      }\\n      ... on AnswerFeedback {\\n        question {\\n          isLocked\\n          isPinned\\n          replyCount\\n          appearsAsDeleted\\n          author {\\n            id\\n            kaid\\n            nickname\\n            avatar {\\n              name\\n              imageSrc\\n              __typename\\n            }\\n            __typename\\n          }\\n          badges {\\n            name\\n            icons {\\n              smallUrl\\n              __typename\\n            }\\n            description\\n            __typename\\n          }\\n          content\\n          date\\n          definitelyNotSpam\\n          deleted\\n          downVoted\\n          expandKey\\n          feedbackType\\n          flaggedBy\\n          flaggedByUser\\n          flags\\n          focusUrl\\n          focus {\\n            kind\\n            id\\n            translatedTitle\\n            relativeUrl\\n            __typename\\n          }\\n          fromVideoAuthor\\n          key\\n          lowQualityScore\\n          notifyOnAnswer\\n          permalink\\n          qualityKind\\n          replyCount\\n          replyExpandKeys\\n          showLowQualityNotice\\n          sumVotesIncremented\\n          upVoted\\n          __typename\\n        }\\n        __typename\\n      }\\n      __typename\\n    }\\n    cursor\\n    isComplete\\n    sortedByDate\\n    __typename\\n  }\\n}\"}"
                     });
-                    
-                    discussionData.author = author;
+                    const json = await res.json();
+                    const discussions = json.data.feedback.feedback;
+                    if (discussions !== null) {
+                        for (let i = 0; i < discussions.length; i++) {
+                            const discussion = discussions[i];
+                            discussions[i] = {
+                                id: 0,
+                                program: discussion.focus.id,
+                                created: new Date(discussion.date).valueOf(),
+                                lastSaved: new Date(discussion.date).valueOf(),
+                                type: discussion.feedbackType === "COMMENT" ? "C" : "",
+                                likeCount: discussion.sumVotesIncremented,
+                                flags: [],
+                                content: discussion.content,
+                                author: {
+                                    id: discussion.author.kaid,
+                                    username: "",
+                                    nickname: discussion.author.nickname,
+                                    avatar: discussion.author.avatar.imageSrc
+                                },
+                                thread: []
+                            };
+                        };
+                        out.write(JSON.stringify(discussions));
+                    } else {
+                        out.write(JSON.stringify([]));
+                    }
+                } else {
+                    if (query.id) {
+                        query.ids = [query.id];
+                    } else if (typeof query.ids === "string") {
+                        query.ids = query.ids.split(",");
 
-                    out.write(JSON.stringify(discussionData));
+                        let output = [];
+                        for (let i = 0; i < query.ids.length; i++) {
+                            const id = query.ids[i];
+                            let discussionData = await discussions.findOne({ id: id });
+                    
+                            if (discussionData !== null) {
+                                discussionData.likeCount = discussionData.likes.length - discussionData.dislikes.length;
+                                delete discussionData.likes;
+                                delete discussionData.dislikes;
+
+                                let author = await users.findOne({
+                                    id: discussionData.author.id
+                                }, {
+                                    projection: { id: 1, username: 1, nickname: 1, avatar: 1, _id: 0 }
+                                });
+                                
+                                discussionData.author = author;
+
+                                output.push(discussionData);
+                            }
+                        }
+                        
+                        out.write(JSON.stringify(output));
+                    } else {
+                        out.write("error: 400");
+                    }
                 }
             },
         }
@@ -1739,7 +1216,7 @@ async function useTree(path, tree, data, response) {
                 if (key === "/API/") {
                     if (tree[key][":ACTION"]) {
                         let newData = await tree[key][":ACTION"](path, response, data);
-                        for (var prop in newData) {
+                        for (const prop in newData) {
                             data[prop] = newData[prop];
                         }
                     }
@@ -1783,7 +1260,7 @@ async function useTree(path, tree, data, response) {
                 break;
             } else if (key === ":ACTION") {
                 let newData = await tree[key](path, response, data);
-                for (var prop in newData) {
+                for (const prop in newData) {
                     data[prop] = newData[prop];
                 }
             }
@@ -1796,11 +1273,26 @@ async function useTree(path, tree, data, response) {
 }
 
 const server = http.createServer({key: secrets.KEY, cert: secrets.CERT}, async (request, response) => {
-    // proxy the sandbox domain to the sandbox server
-    
+    // route the sandbox subdomain to the sandbox server
     if (request.headers["host"] && request.headers["host"].startsWith("sandbox.")) {
         try {
             let res = await fetch("http://127.0.0.1:" + secrets.SANDBOX_PORT + request.url);
+            let buff = await res.arrayBuffer();
+            response.writeHead(200, res.headers);
+            response.write(Buffer.from(buff));
+            response.end();
+            return;
+        } catch (e) {
+            response.write("500 Internal Server Error");
+            response.end();
+            return;
+        }
+    }
+
+    // route the compile subdomain to the compiler server
+    if (request.headers["host"] && request.headers["host"].startsWith("compile.")) {
+        try {
+            let res = await fetch("http://127.0.0.1:" + secrets.COMPILER_PORT + request.url);
             let buff = await res.arrayBuffer();
             response.writeHead(200, res.headers);
             response.write(Buffer.from(buff));
@@ -1899,26 +1391,42 @@ async function main() {
     // !!! DANGER !!! for manually updating each item in a collection
     // {
     //     const useCollection = programs;
-    //     (await useCollection.find({}).project({ id: 1, likes: 1, forks: 1, _id: 0}).toArray()).forEach(item => {
-    //         useCollection.updateOne({ id: item.id }, {$set: {
-    //             likeCount: item.likes.length,
-    //             forkCount: item.forks.length
-    //         }});
+    //     (await useCollection.find({}).project({ id: 1, type: 1, _id: 0}).toArray()).forEach(item => {
+    //         if (item.type === "html") {
+    //             useCollection.updateOne({ id: item.id }, {$set: {
+    //                 type: "webpage"
+    //             }});
+    //         }
     //     });
     // }
+
+    const lists = initializeLists(db);
+    vxsHotlist = lists.vxsHotlist;
+    kaHotlist = lists.kaHotlist;
     
     // update browser projects the first time
-    await updateProjectLists();
+    vxsHotlist.updatePrograms().then(() => {
+        vxsHotlist.updateLists();
+        console.log("Loaded VXS Hotlist");
+    });
+    kaHotlist.updatePrograms().then(() => {
+        kaHotlist.updateLists();
+        console.log("Loaded KA Hotlist");
+    });
 
     // update browse projects every 10 minutes
     setInterval(() => {
-        updateProjectLists();
-        updateKAProjectsList();
+        vxsHotlist.updatePrograms().then(() => {
+            vxsHotlist.updateLists();
+        });
+        kaHotlist.updatePrograms().then(() => {
+            kaHotlist.updateLists();
+        });
     }, 1000 * 60 * 10);
 
     // lets light this candle!
     server.listen(secrets.PORT, function() {
-        console.log("HTTPS Server Online at https://127.0.0.1:" + secrets.PORT);
+        console.log("Main server online at https://127.0.0.1:" + secrets.PORT);
     });
 }
 

@@ -37,21 +37,23 @@ class BashShell {
 
             return new Promise(resolve => {
                 const oldHandler = that.handler;
+
+                const timeOutTimeout = setTimeout(() => {
+                    that.handler = oldHandler;
+                    resolve();
+                }, maxHold);
+
                 that.handler = e => {
                     if (e.type === "data" && e.data.endsWith(id+"\n")) {
                         e.data = e.data.slice(0, e.data.length - (id.length + 1));
                         oldHandler(e);
                         that.handler = oldHandler;
+                        clearTimeout(timeOutTimeout);
                         resolve(e);
                     } else {
                         oldHandler(e);
                     }
                 };
-
-                setTimeout(() => {
-                    that.handler = oldHandler;
-                    resolve();
-                }, maxHold);
 
                 that.terminal.stdin.write(`echo ${id}\n`);
             });

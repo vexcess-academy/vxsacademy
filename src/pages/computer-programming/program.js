@@ -228,14 +228,10 @@ window.addEventListener("message", event => {
             break;
             case "stderr":
                 if (values !== null) {
-                    try {
-                        for (var i = 0; i < values.types.length; i++) {
-                            debugConsole.err(values.obj[i], values.types[i], Terminal.STDOUT);
-                        }
-                    } catch (er) {
-                        console.log("OUTTERR", values)
+                    for (var i = 0; i < values.types.length; i++) {
+                        console.error(values.obj[i], values.types[i]);
+                        debugConsole.err(values.obj[i], values.types[i], Terminal.STDOUT);
                     }
-                    
                 }
             break;
             case "stdout":
@@ -599,47 +595,47 @@ function resizePage () {
 window.addEventListener('resize', resizePage, true);
 
 function main() {
-    if (programData.id) {
-        isKAProgram = programData.id.startsWith("KA_") && programData.id.length !== 14;
-    }
+    // if (programData.id) {
+    //     isKAProgram = programData.id.startsWith("KA_") && programData.id.length !== 14;
+    // }
 
-    const useRepl = ["html", "pjs", "python"].includes(programData.type);
-    debugConsole = new Terminal($("#debug-console").el, useRepl);
-    debugConsole.styles.background = "var(--themeColor)";
-    if (prefersDarkMode) {
-        debugConsole.useDarkStyles();
-    } else {
-        debugConsole.useLightStyles();
-    }
+    // const useRepl = ["html", "pjs", "python"].includes(programData.type);
+    // debugConsole = new Terminal($("#debug-console").el, useRepl);
+    // debugConsole.styles.background = "var(--themeColor)";
+    // if (prefersDarkMode) {
+    //     debugConsole.useDarkStyles();
+    // } else {
+    //     debugConsole.useLightStyles();
+    // }
     
-    debugConsole.eval = async function(code) {
-        evalResult = undefined;
+    // debugConsole.eval = async function(code) {
+    //     evalResult = undefined;
 
-        return new Promise(resolve => {
-            ifrWin.postMessage({
-                event: "eval",
-                data: code
-            }, "*");
+    //     return new Promise(resolve => {
+    //         ifrWin.postMessage({
+    //             event: "eval",
+    //             data: code
+    //         }, "*");
 
-            const start = Date.now();
-            function check() {
-                if (evalResult !== undefined) {
-                    resolve(evalResult);
-                } else if (Date.now() - start < 3000) {
-                    setTimeout(check, 4);
-                } else {
-                    console.log("Console Eval Timed Out");
-                }
-            }
-            check();
-        });
-    };
+    //         const start = Date.now();
+    //         function check() {
+    //             if (evalResult !== undefined) {
+    //                 resolve(evalResult);
+    //             } else if (Date.now() - start < 3000) {
+    //                 setTimeout(check, 4);
+    //             } else {
+    //                 console.log("Console Eval Timed Out");
+    //             }
+    //         }
+    //         check();
+    //     });
+    // };
 
-    setProgramTitle(programData.title);
-    editorSettings.width = programData.width;
-    editorSettings.height = programData.height;
-    fileNames = programData.fileNames;
-    localStorageKey = "cs-new-program-" + (userData === null ? "null" : userData.id) + "-" + programData.type;
+    // setProgramTitle(programData.title);
+    // editorSettings.width = programData.width;
+    // editorSettings.height = programData.height;
+    // fileNames = programData.fileNames;
+    // localStorageKey = "cs-new-program-" + (userData === null ? "null" : userData.id) + "-" + programData.type;
 
     if (programData.id) {
         if (!userData) {
@@ -1211,7 +1207,7 @@ function main2() {
     const FileTab = $.createComponent("FileTab", $.html`
         <div class="editor-tab" draggable="true">
             <input class="editor-tab-input" type="text" value="\{filename}" data-filename="\{filename}" readonly="true" style="width: \{filename.length}ch">
-            <span class="editor-tab-close">${String.fromCharCode(10006)}</span>
+            <span class="editor-tab-close">${"\u2716"}</span>
         </div>
     `, function() {
         let tabEl = this;
@@ -1229,7 +1225,9 @@ function main2() {
             let that = $(this);
             
             // save file
-            programData.files[currFileName] = currModel.getValue();
+            if (currModel) {
+                programData.files[currFileName] = currModel.getValue();
+            }
 
             // change file
             currFileName = that.$(".editor-tab-input")[0].value;
@@ -1349,12 +1347,15 @@ function main2() {
             let file = getFile(filename);
             createFileTab(filename, file);
         }
-        editorTabEls[0].css("background-color: var(--themeColor)");
 
-        // set model value
-        currModel.setValue(getFile(currFileName));
+        if (editorTabEls[0]) {
+            editorTabEls[0].css("background-color: var(--themeColor)");
 
-        updateCurrModel();
+            // set model value
+            currModel.setValue(getFile(currFileName));
+
+            updateCurrModel();
+        }
 
         // run code live
         editor.onDidChangeModelContent(() => {
@@ -1637,22 +1638,7 @@ for (let i = 0; i < tabs.length; i++) {
     });
 }
 
-// Monaco setup
-require.config({
-   paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor/min/vs" }
-});
+
 
 onProgramInfoReady(main);
 
-// Monaco init
-require(["vs/editor/editor.main"], () => {
-    console.log("Monaco Editor Loaded");
-    function waitTillReady() {
-        if (main1Complete) {
-            main2();
-        } else {
-            setTimeout(waitTillReady, 100);
-        }
-    }
-    waitTillReady();
-});

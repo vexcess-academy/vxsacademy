@@ -13,9 +13,10 @@ $.createComponent("discussion-post", $.html`
             <div class="content">\{content}</div>
             <div class="discussion-stats">
                 <button class="button">Comment</button>
-                <span>(0 likes)</span>
-                <span><img src="/CDN/images/icons/like.svg" style="transform: translate(0px, 1px) scale(1.25);"> Like</span>
-                <span><img src="/CDN/images/icons/like.svg" style="transform: translate(0px, 3px) scale(1.25, -1.25);"> Dislike</span>
+                
+                <span><img src="/CDN/images/icons/like.svg" style="transform: translate(0px, 1px) scale(1.25);"></span>
+                <span>\{likeCount}</span>
+                <span><img src="/CDN/images/icons/like.svg" style="transform: translate(0px, 3px) scale(1.25, -1.25);"></span>
                 <span><img src="/CDN/images/icons/report.svg" style="transform: translate(3px, 2px) scale(1.25);"> Report</span>
             </div>
         </div>
@@ -34,42 +35,45 @@ function displayDiscussions(discussions) {
         combo.el.appendTo(discussionList);
     });
 }
-async function loadDiscussions(page) {
-    const discussionIds = programData.discussions;
-    const amountLoading = Math.min(PAGE_SIZE, discussionIds.length - (page * PAGE_SIZE));
-    let discussionsLoaded = 0;
-    for (let i = 0; i < amountLoading; i++) {
-        let id = discussionIds[i];
-        try {
-            $.getJSON(`/API/getDiscussion?id=${id}`, json => {
-                discussionsLoaded++;
-    
+async function loadDiscussions(page, isKAProgram) {
+    if (isKAProgram) {
+        $.getJSON(`/API/getDiscussions?id=${programData.id.slice(3)}&isKAProgram=${isKAProgram}`, discussions => {
+            for (let i = 0; i < discussions.length; i++) {
+                const discussion = discussions[i];
                 let el = $("discussion-post", {
-                    avatar: json.author.avatar,
-                    nickname: json.author.nickname,
-                    time: new Date(json.created).toDateString(),
-                    content: json.content
+                    avatar: discussion.author.avatar,
+                    nickname: discussion.author.nickname,
+                    time: new Date(discussion.created).toDateString(),
+                    content: discussion.content,
+                    likeCount: discussion.likeCount
                 });
-    
-                discussionsList.push({ json, el });
-    
-                if (discussionsLoaded === amountLoading) {
+                discussionsList.push({ discussion, el });
+                displayDiscussions(discussionsList);
+            }
+        });
+    } else {
+        const discussionIds = programData.discussions;
+        const pgStart = page * PAGE_SIZE;
+        const pgEnd = pgStart + PAGE_SIZE;
+        const idsSlice = discussionIds.slice(pgStart, pgEnd).join(",");
+        if (idsSlice.length > 0) {
+            $.getJSON(`/API/getDiscussions?ids=${idsSlice}`, discussions => {
+                for (let i = 0; i < discussions.length; i++) {
+                    const discussion = discussions[i];
+                    let el = $("discussion-post", {
+                        avatar: discussion.author.avatar,
+                        nickname: discussion.author.nickname,
+                        time: new Date(discussion.created).toDateString(),
+                        content: discussion.content,
+                        likeCount: discussion.likeCount
+                    });
+                    discussionsList.push({ discussion, el });
                     displayDiscussions(discussionsList);
                 }
             });
-        } catch (err) {
-            // discussion was deleted
-            discussionsLoaded++;
         }
     }
 }
-
-onProgramInfoReady(() => {
-    if (programData.id) {
-        loadDiscussions(0);
-    }
-});
-
 
 let discussionInput = $(".discussion-input")[0];
 let discussionParent = $(discussionInput.parentElement);
@@ -115,16 +119,16 @@ function createDiscussion(type) {
             commentBtn.disabled = false;
             questionBtn.disabled = false;
 
-            $.getJSON(`/API/getDiscussion?id=${res}`, json => {
+            $.getJSON(`/API/getDiscussions?ids=${res}`, comments => {
+                const json = comments[0];
                 let el = $("discussion-post", {
                     avatar: json.author.avatar,
                     nickname: json.author.nickname,
                     time: new Date(json.created).toDateString(),
-                    content: json.content
+                    content: json.content,
+                    likeCount: json.likeCount
                 });
-    
                 discussionsList.push({ json, el });
-    
                 displayDiscussions(discussionsList);
             });
         }

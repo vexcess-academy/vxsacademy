@@ -49,13 +49,58 @@ Go to [https://www.mongodb.com/docs/manual/tutorial/](https://www.mongodb.com/do
 ```
 sudo systemctl enable mongod
 ```
-to make your system automatically start MongoDB on startup.
+to make your system automatically start MongoDB on startup. Otherwise run
+```
+sudo systemctl start mongod
+```
+to manually start mongodb. And run
+```
+sudo systemctl status mongod
+```
+to check if mongodb is running.
 
 ## Installing MongoDB Compass (*optional*)
 Although not strictly necessary it makes your life easier to have a GUI instead of doing everything from the command line interface. Just go to [https://www.mongodb.com/try/download/compass](https://www.mongodb.com/try/download/compass) and download the version for your system. Again I'm using the Ubuntu version. For me it downloaded a .deb package and I can just double click it to install it.
 
 ## Configuring a database
 Next create a database called `vxsacademy` and create 4 collections in that database named `programs`, `salts`, `discussions`, and `users`. This is very easy from the MongoDB Compass app. If you happen to have data for each collection you can then click the "Import Data" button to easily import the data into the basebase from a JSON file.
+
+## MongoDB Auth
+If you are not running the database behind a firewall make sure to enable authentication. To do this first connect to the database using mongosh
+```
+mongosh mongodb://<host>:<port>
+```
+then
+```
+use admin
+```
+next create an admin account
+```js
+db.createUser(
+  {
+    user: "adminuser",
+    pwd: "SECRET_ADMIN_PASSWORD",
+    roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
+  }
+)
+```
+disconnect from the database and then add the following to your `/etc/mongod.conf` file
+```
+security:
+    authorization: "enabled"
+```
+next restart the database using
+```
+sudo service mongod restart
+```
+finally create a user specific for vxsacademy
+```js
+db.createUser({
+    user: "vxsacademyuser",
+    pwd: "SECRET_VXSACADEMYUSER_PASSWORD",
+    roles: [{role: "readWrite", db: "vxsacademy"}]
+})
+```
 
 ## Installing Git
 To install Git run

@@ -68,7 +68,9 @@ const server = http.createServer((req, res) => {
             }
                 
             let resHeaders = {
-                "Content-Type": dataType
+                "Content-Type": dataType,
+                // "Cross-Origin-Opener-Policy": "same-origin",
+                // "Cross-Origin-Embedder-Policy": "require-corp"
             };
 
             if (dataType === "text/html") {
@@ -119,5 +121,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(secrets.SANDBOX_PORT, function () {
-    console.log("Sandbox Online at http://127.0.0.1:" + secrets.SANDBOX_PORT);
+    console.log("Sandbox online at http://127.0.0.1:" + secrets.SANDBOX_PORT);
 });

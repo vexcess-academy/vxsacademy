@@ -1,8 +1,8 @@
 @media (prefers-color-scheme: dark) {
     :root {
-        --background: rgb(40 40 40);
-        --background2: rgb(52 52 52);
-        --background3: rgb(37 37 37);
+        --background: rgb(56, 56, 56);
+        --background2: rgb(52, 52, 52);
+        --background3: rgb(37, 37, 37);
         --transparent-background: rgb(255 255 255 / 15%);
         --text-color: rgb(255 255 255);
         --link-color: rgb(50, 120, 255);

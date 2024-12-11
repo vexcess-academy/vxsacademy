@@ -4,7 +4,13 @@ const { MongoClient } = require("mongodb");
 
 const secrets = require("./secrets").getSecrets("./");
 
-const myMongo = new MongoClient(`mongodb://${secrets.MONGO_IP}:${secrets.MONGO_PORT}`);
+let myMongo;
+if (secrets.MONGO_PASSWORD) {
+    myMongo = new MongoClient(`mongodb://vxsacademyuser:${secrets.MONGO_PASSWORD}@${secrets.MONGO_IP}:${secrets.MONGO_PORT}/?authSource=vxsacademy`);
+} else {
+    console.log("WARNING: MongoDB is running without authentication");
+    myMongo = new MongoClient(`mongodb://${secrets.MONGO_IP}:${secrets.MONGO_PORT}`);
+}
 
 async function restoreCollection(collection) {
     const coll = db.collection(collection);
@@ -29,6 +35,7 @@ async function restoreCollection(collection) {
 async function main() {
     await myMongo.connect();
     db = myMongo.db("vxsacademy");
+    db.auth("vxsacademyuser", secrets.MONGO_PASSWORD);
     console.log("Connected to MongoDB!");
 
     await restoreCollection("discussions");

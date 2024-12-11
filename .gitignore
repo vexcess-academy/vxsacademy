@@ -11,3 +11,4 @@ secrets.js
 server.cert
 server.csr
 server.key
+analytics-data.json

@@ -1,8 +1,11 @@
-<!-- Import Monaco Editor -->
 <script src="/CDN/lib/json-formatter.js"></script>
 <script src="/CDN/lib/terminal.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.46.0/min/vs/loader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.48.0/min/vs/loader.js"></script>
+<script src="/CDN/validators.js"></script>
+<script src="/CDN/pages/computer-programming/settings-dialog.js"></script>
+<script src="/CDN/pages/computer-programming/editor.js"></script>
 <link rel="stylesheet" href="/CDN/pages/computer-programming/program.css" type="text/css">
+<link rel="stylesheet" href="/CDN/pages/computer-programming/editor.css" type="text/css">
 <script src="https://cdn.jsdelivr.net/gh/vExcess/libraries@main/prism.js"></script>
 
 <div id="page-middle-container">
@@ -13,94 +16,11 @@
     </h2>
 
     <!-- Editor Container -->
-    <div id="editor-container">
-        <!-- Editor Tabs -->
-        <div id="editor-tabs-container">
-            <span id="editor-newtab-btn">+</span>
-        </div>
-
-        <!-- Main Editor & Output Frame -->
-        <div style="display: flex; margin-top: 0px;">
-            <div id="editor" style="width: 800px; height: 400px; border: none;"></div>
-            <div id="output-frame" style="width: 400px; height: 400px;"></div>
-        </div>
-
-        <!-- Debug Console -->
-        <div id="debug-console"></div>
-
-        <!-- Editor Buttons -->
-        <div id="editor-buttons">
-            <button id="editor-settings-button" class="button">
-                Settings
-                <img src="/CDN/images/icons/settings.svg" style="transform: translate(2px, 2px) scale(1.3);">
-            </button>
-            <button id="fullscreen-program-button" class="button" onclick="window.open(window.location.href + '/fullscreen', '_blank')">
-                Fullscreen
-                <img src="/CDN/images/icons/fullscreen.svg" style="transform: translate(3px, 2px) scale(1.1);">
-            </button>
-            <span style="display: inline-block;">Auto-Refresh: </span>
-            <label class="switch">
-                <input type="checkbox" checked>
-                <span class="slider round"></span>
-            </label>
-            <span style="float: right;">
-                <button id="editor-run-button" class="button">
-                    Run
-                    <img src="/CDN/images/icons/run.svg" style="transform: translate(7px, 2px) scale(1.1);">
-                </button>
-                <button id="editor-save-button" class="button">
-                    <span>Save</span>
-                    <img src="/CDN/images/icons/save.svg" style="transform: translate(5px, 2px) scale(1.2);">
-                </button>
-            </span>
-        </div>
-    </div>
+    <div id="editor-placeholder"></div>
 
     <!-- Editor Settings Div -->
     <div id="page-darken" style="display: none;"></div>
-    <div id="editor-settings">
-        <h1>Settings</h1>
-        
-        <p></p>
-
-        <div style="float: left;">
-            <h3>Width</h3>
-            <input id="canvasWidth" type="number" value="">
-        </div>
-
-        <div style="float: right; width: 375px;">
-            <h3>Height</h3>
-            <input id="canvasHeight" type="number" value="">
-        </div>
-
-        <br><br><br><br><br>
-            
-        <h3>Indent Width</h3>
-        <select id="indentSize">
-          <option value="2">2 spaces</option>
-          <option value="4">4 spaces</option>
-        </select>
-        
-        <h3>Theme</h3>
-        <select id="editorTheme">
-          <option value="vs-dark">Dark Mode</option>
-          <option value="vs">Light Mode</option>
-        </select>
-        
-        <h3>Font Size</h3>
-        <select id="fontSize">
-            <option value="10">10px</option>
-            <option value="12">12px</option>
-            <option value="13">13px</option>
-            <option value="14">14px</option>
-            <option value="16">16px</option>
-        </select>
-        
-        <p></p>
-        
-        <button class="button">Cancel</button>
-        <button class="button">Save and Close</button>
-    </div>
+    <div id="settings-placeholder"></div>
 
     <br><br>
 
@@ -142,7 +62,7 @@
                 <div class="post">
                     <div>
                         <span class="avatar-wrapper">
-                            <img src="https://bobertism.pages.dev/boberts/large/bobertCool.png" alt="User avatar" class="avatar">
+                            <img src="/CDN/images/avatars/bobert-cool.png" alt="User avatar" class="avatar">
                         </span>
                     </div>
                     <div class="dicussion-body" tabindex="0">
@@ -325,7 +245,12 @@
     </div>
 </div>
 
+<script src="/CDN/pages/computer-programming/program-stuff.js"></script>
+<script src="/CDN/pages/computer-programming/discussions.js"></script>
+<script src="/CDN/pages/computer-programming/nuevoprogram.js"></script>
+
+<!-- 
 <script src="/CDN/pages/computer-programming/program-init.js"></script>
 <script src="/CDN/pages/computer-programming/program.js"></script>
-<script src="/CDN/pages/computer-programming/discussions.js"></script>
+ -->
 

@@ -103,3 +103,7 @@ td, th {
 tr:nth-child(even) {
     background-color: var(--background3);
 }
+
+.paragraph {
+    line-height: 1.35em;
+}

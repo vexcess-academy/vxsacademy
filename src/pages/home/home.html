@@ -1,6 +1,8 @@
 <link rel="stylesheet" href="/CDN/pages/home/home.css" type="text/css">
 
 <div id="page-middle-container">
+    <h2>Important</h2>
+    <div>Due to the recent data leak all API endpoints requiring authentication have been disabled until I get around to implementing a password reset and can re-encrypt all account data. Essentially the site is read only at the time. In addition, I rewrote the code editor from the ground up. Unfortunately, the new editor still needs a lot of debugging. Please let me know what bugs you encounter with it. I am aware that tab creation/deletion/reordering is buggy.</div>
 
     <h2>Start a new project or <a href="/computer-programming/browse">Browse Projects</a> or <a href="/computer-programming/ka-browse">Browse KA Projects</a></h2>
     <div id="program-showcase">
@@ -28,19 +30,19 @@
             GLSL
         </a>
 
-        <a class="program-display-box" href='/computer-programming/new/zig'>
+        <!-- <a class="program-display-box" href='/computer-programming/new/zig'>
             <img class="lang-logo" src="/CDN/images/language-icons/zig.png" height="100px">
             <br>
             Zig
-        </a>
-
+        </a> -->
+<!-- 
         <a class="program-display-box" href='/computer-programming/new/jitlang'>
             <img class="lang-logo" src="/CDN/images/language-icons/jitlang.png" height="100px">
             <br>
             JITLang
-        </a>
+        </a> -->
 
-        <a class="program-display-box" href='/computer-programming/new/cpp'>
+        <!-- <a class="program-display-box" href='/computer-programming/new/cpp'>
             <img class="lang-logo" src="/CDN/images/language-icons/cpp.png" height="100px">
             <br>
             C++
@@ -50,15 +52,13 @@
             <img class="lang-logo" src="/CDN/images/language-icons/java.png" height="100px">
             <br>
             Java
-        </a>
+        </a> -->
     </div>
     <br><br>
     <button class="collapsible">About</button>
     <div class="content">
         <p>
             VExcess Academy is similiar to Khan Academy, however we mainly focus on computer science. Students can create programs using the online editor and share them with the community.
-            <br><br>
-            <strong>Important: Sometimes if you save a project on VExcess Academy, it randomly disappears from the server and we have no clue why. This is probably an issue with Replit's free hosting. So make sure to backup your code on a more secure platform.</strong>
             <br><br>
             <strong>Also Important: This project is still under development so expect new features to show up, features to temporarily stop working, and some features to permanently disappear.</strong>
         </p>
@@ -83,8 +83,8 @@
             </tr>
             <tr>
                 <td>number of language environments</td>
-                <td>7</td>
-                <td>3</td>
+                <td>8</td>
+                <td>4</td>
             </tr>
             <tr>
                 <td>allowed files per program</td>
@@ -148,7 +148,7 @@
             </tr>
             <tr>
                 <td>notification counter</td>
-                <td>no</td>
+                <td>yes</td>
                 <td>no</td>
             </tr>
             <tr>
@@ -158,11 +158,6 @@
             </tr>
             <tr>
                 <td>cool loading icon</td>
-                <td>yes</td>
-                <td>no</td>
-            </tr>
-            <tr>
-                <td>green theme</td>
                 <td>yes</td>
                 <td>no</td>
             </tr>
@@ -195,10 +190,10 @@
         <ul style="margin: auto; font-size: 18px;">
             <li><a href="https://github.com/vExcess">VExcess</a> - Founder; I wrote almost all of the code (~12,500 lines)</li>
             <li><a href="https://github.com/shipment22">Shipment</a> - Wrote a lot of the CSS and created the Bobert avatar</li>
-            <li><a href="https://github.com/Reginald-Gillespie">WKoA</a> - Helped do pentesting and discover bugs</li>
+            <li><a href="https://github.com/Reginald-Gillespie">WKoA</a> - Did pentesting and discovered bugs</li>
             <li><a href="https://github.com/Dddatt/webgl-tutorial">Dat</a> - Wrote the WebGL tutorial</li>
             <li><a href="https://github.com/yu0bab/vxsacademy-course-s-">CobraCoder</a> - Wrote the JS w/ Processing.js tutorial</li>
-            <li><a href="https://www.khanacademy.org/profile/kaid_142152517100107888031317">Archbirdplus</a> - Helped do pentesting and discover bugs</li>
+            <li><a href="https://www.khanacademy.org/profile/kaid_142152517100107888031317">Archbirdplus</a> - Did pentesting and discovered bugs</li>
             <li><a href="https://github.com/L1quidH2O">sikn</a> - Added ES6 support to PJS editor</li>
             <li><a href="https://github.com/RandomLegoBrick">WalkWorthy</a> - Helped with the Java environment</li>
             <li><a href="https://khanacademy.org/profile/SharleyBoo">CylenceScythe</a> - Created Pyro avatar graphics</li>
@@ -224,17 +219,17 @@
                 </tr>
                 <tr>
                     <td>Processing JS</td>
-                    <td>mostly functional; code preprocessor needs debugging</td>
+                    <td>functional; ES6 support is extremely minimal</td>
                 </tr>
                 <tr>
                     <td>Python</td>
-                    <td>partially functional; little to no support for importing libraries or multiple files; code preprocessor needs debugging</td>
+                    <td>functional; little to no support for importing libraries or multiple files</td>
                 </tr>
                 <tr>
                     <td>GLSL</td>
-                    <td>working;</td>
+                    <td>functional;</td>
                 </tr>
-                <tr>
+                <!-- <tr>
                     <td>JITLang</td>
                     <td>temporarily broken;</td>
                 </tr>
@@ -245,23 +240,29 @@
                 <tr>
                     <td>Java</td>
                     <td>temporarily broken due to updating from Java 13 to Java 20;</td>
-                </tr>
+                </tr> -->
             </tbody>
         </table>
     </div>
     <br><br>
 
     <h2>Dev Logs: <a href="/logs/dev">Dev Logs</a></h2>
-    <br>
+    <div style="height: 1px;"><!-- spacer --></div>
 
-    <h2>Support</h2>
-    <div>
+    <h2>Get Support</h2>
+    <div class="paragraph">
         The fastest way to get help and support from the community is at our Discord server: <a href="https://discord.gg/GGqwzp2rBr" target="_blank">https://discord.gg/GGqwzp2rBr</a>
         <br>
         In addition you can email us at support@vxsacademy.org
     </div>
-    <br><br>
-    
+    <br>
+
+    <h2>Support the Founder</h2>
+    <div class="paragraph">
+        I (VExcess) have spent hundreds of hours working to provide this software to everyone free of charge. However, hosting a website isn't free (<a href="/logs/finance.html" target="_blank">Finance Logs</a>) and I also need to pay for college. If you have money to spare and my work has provided utility to you consider donating to me. You can donate Solana to my wallet address at <span style="background-color: rgba(0, 0, 0, 0.3); padding: 2px; border-radius: 4px;">4c83DZVr5wKfsWW62AvYamX6gjugCyuwQmST2meWnno2</span>. IMPORTANT: Only send Solana to my wallet; sending other crypto currencies (e.g. Bitcoin or Ethereum) to a Solana wallet will result in the coins being lost forever into the void of cyberspace.
+    </div>
+    <br>
+
     <script>
         $(".collapsible").forEach(el => {
             el.on("click", function() {

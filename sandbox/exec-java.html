@@ -19,6 +19,22 @@
     <script>
 let terminal = new Terminal(document.getElementById("live-output-container"));
 
+
+// async function main() {
+//     await cheerpjInit();
+//     cheerpOSAddStringFile("/str/MyApp.jar", new Uint8Array(jarFile));
+//     const exitCode = await cheerpjRunMain(
+//         "Main",
+//         "/str/MyApp.jar"
+//     );
+//     console.log(`Program exited with code ${exitCode}`);
+//     // await cheerpjRunJar("/app/MyApp.jar")
+//     // const cj = await cheerpjRunJar("/app/MyApp.jar");
+//     // console.log(await cj.com.library.Main)
+// }
+
+// main();
+
 window.addEventListener("message", event => {
     if (event.data === "ping") {
         window.top.postMessage({

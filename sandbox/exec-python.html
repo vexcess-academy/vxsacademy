@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="/sandbox.css" type="text/css">
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="./terminal.js"></script>
+    <script src="./sync-message.js"></script>
 </head>
 <body>
     
@@ -20,15 +21,54 @@ let terminal = new Terminal(document.getElementById("live-output-container"));
 
 const wait = () => new Promise(resolve => setTimeout(resolve, 1000));
 
-window.addEventListener("message", async function (event) {
-    if (event.data === "ping") {
+var {makeChannel, writeMessage} = syncMessage;
+
+const pyWorker = new Worker("./python-worker.js");
+
+const channel = makeChannel();
+pyWorker.postMessage({channel});
+
+let pyReady = false;
+let hangingSyncMessageId = null;
+pyWorker.addEventListener("message", e => {
+    const msg = e.data;
+
+    switch (msg.event) {
+        case "stdout":
+            if (!pyReady) {
+                pyReady = true;
+                liveOutputContainer.innerHTML = "";
+            }
+            terminal.out(msg.data);
+        break;
+
+        case "stderr":
+            terminal.err(msg.data);
+        break;
+        
+        case "stdin":
+            hangingSyncMessageId = msg.messageId;
+            terminal.out(msg.data);
+            terminal.in().then(userInput => {
+                writeMessage(channel, userInput, msg.messageId);
+                hangingSyncMessageId = null;
+            });
+        break;
+    }
+    
+});
+
+window.addEventListener("message", async event => {
+    const msg = event.data;
+
+    if (msg === "ping") {
         window.top.postMessage({
             "sender": "sandbox"
         }, "*");
         return;
     }
 
-    if (event.data === "thumbnail") {        
+    if (msg === "thumbnail") {        
         html2canvas(document.body, {
             width: window.innerWidth,
             height: window.innerHeight
@@ -36,52 +76,50 @@ window.addEventListener("message", async function (event) {
         return;
     }
 
-    if (event.data.event === "eval") {
-        const code = event.data.data;
-        let res = undefined;
-        try {
-            res = pyodide.runPython(code);
-        } catch (err) {
-            console.error(err);
-        }
-        window.top.postMessage({
-            "sender": "sandbox",
-            "event": "evalResult",
-            data: serializeObject([res])
-        }, "*");
+    if (msg.event === "eval") {
+        const code = msg.data;
+        pyWorker.postMessage({
+            event: "exec",
+            code
+        });
+        
+        // window.top.postMessage({
+        //     "sender": "sandbox",
+        //     "event": "evalResult",
+        //     data: serializeObject([res])
+        // }, "*");
         
         return;
     }
-    
-    let data = event.data;
-    let files = data.files;
-    let mainCode = files["main.py"];
 
+    let files = msg.files;
+
+    if (!files) {
+        // something is making post messages to the sandbox and it's not the main webpage
+        // could be a browser extension. But we just ignore them.
+        return;
+    }
     
     function start() {
-        if (!window.pyodide) {
+        if (!pyReady) {
             return setTimeout(start, 32);
-        }
-                
-        // lets light this candle
-        try {
-            pyodide.globals.set("input", async a => {
-                if (a) {
-                    terminal.out(a);
-                }
-                return await terminal.in();
-            });
+        } else if (files["main.py"] !== "# Python") {
+            if (hangingSyncMessageId !== null) {
+                writeMessage(channel, "", hangingSyncMessageId);
+            }
 
-            let code = "async def __main__():\n    abs(0)\n" + mainCode.split("\n").map(s => "    " + s).join("\n").replaceAll("input(", "await input(") + "\n__main__()";
-            
-            warningsBox.innerHTML = "";
-            liveOutputContainer.style.width = data.width + "px";
-            liveOutputContainer.style.height = data.height + "px";
-            liveOutputContainer.innerHTML = "";
-            
-            pyodide.runPython(code);
-        } catch (err) {
-            terminal.err(err.toString());
+            // cheap and lazy way to ignore results from hanging sync message
+            setTimeout(() => {
+                warningsBox.innerHTML = "";
+                liveOutputContainer.style.width = msg.width + "px";
+                liveOutputContainer.style.height = msg.height + "px";
+                liveOutputContainer.innerHTML = "";
+
+                pyWorker.postMessage({
+                    event: "exec",
+                    code: files["main.py"]
+                });
+            }, 4);
         }
     }
     start();
@@ -90,27 +128,5 @@ window.addEventListener("message", async function (event) {
 terminal.out("Installing Python...");
     </script>
 
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.21.2/full/pyodide.js"></script>
-
-    <script>
-async function initPyodide() {
-    window.pyodide = await loadPyodide({
-        stdin: function () {
-            return "async input not supported"
-        },
-        stdout: str => {
-            terminal.out(str);
-        },
-        stderr: str => {
-            terminal.err(str);
-        }
-    });
-
-    liveOutputContainer.innerHTML = "";
-    pyodide.runPython("import sys\nsys.version");
-};
-initPyodide();
-    </script>
-    
 </body>
 </html>

@@ -131,41 +131,30 @@
                 notifsContainer.css({ display: "block" });
 
                 let numNotifstoLoad = Math.min(10, userData.notifications.length);
-                let numNotifsLoaded = 0;
                 let notifEls = [];
 
                 if (numNotifstoLoad === 0) {
                     notifsContainer.html("No new notifications");
                 } else  {
                     notifsContainer.html("");
-                }
-
-                for (let i = 0; i < numNotifstoLoad; i++) {
-                    let notifId = userData.notifications[i];
-                    try {
-                        $.getJSON(`/API/getDiscussion?id=${notifId}`, json => {
-                            numNotifsLoaded++;
+                    $.getJSON(`/API/getDiscussions?ids=${userData.notifications.join(",")}`, notifications => {
+                        for (let i = 0; i < notifications.length; i++) {
+                            const notif = notifications[i];
 
                             const notificationEl = $("notif-post", {
-                                avatar: json.author.avatar,
-                                nickname: json.author.nickname,
-                                time: new Date(json.created).toDateString(),
-                                content: json.content.slice(0, 100).replaceAll("\n", " "),
-                                program: json.program
+                                avatar: notif.author.avatar,
+                                nickname: notif.author.nickname,
+                                time: new Date(notif.created).toDateString(),
+                                content: notif.content.slice(0, 100).replaceAll("\n", " "),
+                                program: notif.program
                             });
-                            notificationEl.timestamp = json.created;
+                            notificationEl.timestamp = notif.created;
                             notifEls.push(notificationEl);
+                        }
 
-                            if (numNotifsLoaded === numNotifstoLoad) {
-                                notifEls.sort((a, b) => b.created - a.created);
-                                notifEls.forEach(el => el.appendTo(notifsContainer));
-                            }
-                        });
-                    } catch (err) {
-                        // failed to load message
-                        numNotifsLoaded++;
-                    }
-                    
+                        notifEls.sort((a, b) => b.created - a.created);
+                        notifEls.forEach(el => el.appendTo(notifsContainer));
+                    });
                 }
             })
 

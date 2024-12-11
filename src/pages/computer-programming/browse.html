@@ -31,7 +31,11 @@ let sort = "";
 let page = 0;
 
 function displayPrograms(programs) {
-    programs.forEach(program => $("program-element", program).appendTo(grid));
+    programs.forEach(program => $("program-element", {
+        // note order matters so that type overwrites the default type
+        ...program,
+        type: program.type === "webpage" ? "html" : program.type
+    }).appendTo(grid));
 }
 
 function loadPrograms(sort, page) {

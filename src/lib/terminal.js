@@ -346,6 +346,7 @@ class Terminal {
         el.style.display = "flex";
         el.style.borderBottom = styles.borderBottom;
         el.style.minHeight = "1em";
+        el.style.overflowX = "auto";
 
         const outStyles = [styles.stdout, styles.stdbug, styles.stderr];
         el.style.backgroundColor = outStyles[backgroundClr].backgroundColor;

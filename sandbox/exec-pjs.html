@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="/sandbox.css" type="text/css">
     <script src="/khanpjs.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/Khan/processing-js@master/processing.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jshint@2.13.6/dist/jshint.min.js"></script>
+    <script src="/eslint.js"></script>
 </head>
 <body>
 
@@ -54,9 +54,8 @@ const Process = {
 };
         
 // avoid polluting global namespace
-(() => {
-    const JSHINT = window.JSHINT;
-    window.JSHINT = undefined;
+{
+    const linter = new eslint.Linter();
     
     let liveOutputCanvas = document.getElementById("output-canvas");
 
@@ -226,40 +225,42 @@ let runStartInterval = setInterval(function() {
             // vvvvv USER SUPPLIED CODE vvvvv
             ${code}
             // ^^^^^ USER SUPPLIED CODE ^^^^^
-        }
 
-        if (typeof draw !== 'undefined') processingInstance.draw = draw;
-        if (typeof keyReleased !== 'undefined') processingInstance.keyReleased = keyReleased;
-        if (typeof keyPressed !== 'undefined') processingInstance.keyPressed = keyPressed;
-        if (typeof keyTyped !== 'undefined') processingInstance.keyTyped = keyTyped;
-        if (typeof mouseClicked !== 'undefined') processingInstance.mouseClicked = mouseClicked;
-        if (typeof mouseReleased !== 'undefined') processingInstance.mouseReleased = mouseReleased;
-        if (typeof mouseDragged !== 'undefined') processingInstance.mouseDragged = mouseDragged;
-        if (typeof mouseOut !== 'undefined') processingInstance.mouseOut = mouseOut;
-        if (typeof mousePressed !== 'undefined') processingInstance.mousePressed = mousePressed;
-        if (typeof mouseMoved !== 'undefined') processingInstance.mouseMoved = mouseMoved;
-        if (typeof mouseOver !== 'undefined') processingInstance.mouseOver = mouseOver;
+            if (typeof draw !== 'undefined') processingInstance.draw = draw;
+            if (typeof keyReleased !== 'undefined') processingInstance.keyReleased = keyReleased;
+            if (typeof keyPressed !== 'undefined') processingInstance.keyPressed = keyPressed;
+            if (typeof keyTyped !== 'undefined') processingInstance.keyTyped = keyTyped;
+            if (typeof mouseClicked !== 'undefined') processingInstance.mouseClicked = mouseClicked;
+            if (typeof mouseReleased !== 'undefined') processingInstance.mouseReleased = mouseReleased;
+            if (typeof mouseDragged !== 'undefined') processingInstance.mouseDragged = mouseDragged;
+            if (typeof mouseOut !== 'undefined') processingInstance.mouseOut = mouseOut;
+            if (typeof mousePressed !== 'undefined') processingInstance.mousePressed = mousePressed;
+            if (typeof mouseMoved !== 'undefined') processingInstance.mouseMoved = mouseMoved;
+            if (typeof mouseOver !== 'undefined') processingInstance.mouseOver = mouseOver;
+        }
     } else {
-        console.log(Process.preload.imagesLoaded, Process.preload.imagesExpected)
+        console.log("Loading Images: " + Process.preload.imagesLoaded + "/" + Process.preload.imagesExpected)
     }
 });
         `
     }
     
-    window.addEventListener("message", function (event) {
-        if (event.data === "ping") {
+    window.addEventListener("message", event => {
+        const msg = event.data;
+
+        if (msg === "ping") {
             window.top.postMessage({
                 "sender": "sandbox"
             }, "*");
             return;
         }
     
-        if (event.data === "thumbnail") {
+        if (msg === "thumbnail") {
             sendThumnailFromCanvas(liveOutputCanvas);
             return;
         }
         
-        if (event.data.event === "eval") {
+        if (msg.event === "eval") {
             function checkIsExpression(str) {
                 let idx = str.indexOf("(");
                 if (idx === -1) {
@@ -284,10 +285,15 @@ let runStartInterval = setInterval(function() {
                 }
             }
 
-            let code = event.data.data;
+            let code = msg.data;
             const isExpression = checkIsExpression(code);
             if (!isExpression) {
-                code = Process.injector.transformCode(code, Process.processingInstance, null);
+                code = Process.injector.transformCode(code.replace(/class[^\{]*\{[^\(]*/ig, str => {
+                    return str.slice(0, str.indexOf("{")+1) + str.slice(str.lastIndexOf(" "))
+                }), Process.processingInstance, null);
+                code = code.replace(/__env__\.[^ =\(]*\([^)]*\) *\{/ig, str => {
+                    return str.replace("__env__.", "");
+                })
                 code = generateCode(Process.width, Process.height, code, true);
             } else {
                 let keys = Object.keys(Process.processingInstance).sort((a, b) => b.length - a.length);
@@ -329,37 +335,58 @@ let runStartInterval = setInterval(function() {
 
         warningsBox.innerHTML = "";
         
-        let data = event.data;
-        let files = data.files;
+        let files = msg.files;
+
+        if (!files) {
+            // something is making post messages to the sandbox and it's not the main webpage
+            // could be a browser extension. But we just ignore them.
+            return;
+        }
 
         // lint code
+        let syntaxErrors = [];
         for (let fileName in files) {
             if (fileName.toLowerCase().endsWith(".js")) {
+                const errors = linter.verify(files[fileName], {
+                    rules: {
+
+                    }
+                });
+                for (let i = 0; i < errors.length; i++) {
+                    errors[i].sourceFileName = fileName;
+                    syntaxErrors.push(errors[i]);
+                }
                 // if(0){} required to bypass JSHINT bug
-                JSHINT("// jshint -W082\n// jshint -W079\n//jshint -W080\nif(0){}\n" + files["index.js"], {
-                    esversion: 11,
-                    asi: true,
-                    boss: true,
-                    eqnull: true,
-                    evil: true,
-                    expr: true,
-                    funcscope: true,
-                    loopfunc: true,
-                    proto: true,
-                    supernew: true,
-                    withstmt: true,
-                    browser: true,
-                    devel: true,
-                    shadow: true
-                }, {});
+                // JSHINT("// jshint -W082\n// jshint -W079\n//jshint -W080\nif(0){}\n" + files["index.js"], {
+                //     esversion: 11,
+                //     moz: true,
+                //     asi: true,
+                //     boss: true,
+                //     eqnull: true,
+                //     evil: true,
+                //     expr: true,
+                //     funcscope: true,
+                //     loopfunc: true,
+                //     proto: true,
+                //     supernew: true,
+                //     withstmt: true,
+                //     browser: true,
+                //     devel: true,
+                //     shadow: true
+                // }, {});
             }
         }
 
-        let syntaxErrors = JSHINT.data().errors;
-        if (syntaxErrors && syntaxErrors.length > 0) {
+        if (syntaxErrors.length > 0) {
             for (let i = 0; i < Math.min(syntaxErrors.length, 5); i++) {
-                console.log(syntaxErrors[i])
-                createWarning(syntaxErrors[i].raw + " on line " + (syntaxErrors[i].line - 2) + "\n `" + syntaxErrors[i].evidence + "`");
+                const err = syntaxErrors[i];
+                let evidence = files[err.sourceFileName].split("\n").slice(err.line - 1, err.endLine ?? err.line);
+                if (evidence.length === 1) {
+                    evidence = evidence[0].slice(err.column, err.endColumn);
+                } else {
+                    evidence = evidence.join("\n");
+                }
+                createWarning(err.message + " on line " + err.line + "\n `" + evidence + "`");
             }
         } else {
             if (Process.processingInstance) {
@@ -391,8 +418,8 @@ let runStartInterval = setInterval(function() {
                 inst.draw = () => {};
             });
             
-            Process.width = data.width;
-            Process.height = data.height;
+            Process.width = msg.width;
+            Process.height = msg.height;
             
             Process.sourceCode = files["index.js"];
             try {
@@ -405,14 +432,19 @@ let runStartInterval = setInterval(function() {
                         });
                         break;
                     case "sikn":
-                        Process.code = Process.injector.transformCode(Process.sourceCode, Process.processingInstance, null);
+                        Process.code = Process.injector.transformCode(Process.sourceCode.replace(/class[^\{]*\{[^\(]*/ig, str => {
+                            return str.slice(0, str.indexOf("{")+1) + str.slice(str.lastIndexOf(" "))
+                        }), Process.processingInstance, null);
+                        Process.code = Process.code.replace(/__env__\.[^ =\(]*\([^)]*\) *\{/ig, str => {
+                            return str.replace("__env__.", "");
+                        });
                         break;
                     default:
                         Process.code = Process.sourceCode;
                         break;
                 }
             } catch (err) {
-                createWarning(syntaxErrors[i].dscription + " on line " + syntaxErrors[i].lineNumber);
+                console.error(err);
             }
 
             // run new code
@@ -426,7 +458,7 @@ let runStartInterval = setInterval(function() {
             
         }
     });
-})();
+}
     </script>
     
 </body>

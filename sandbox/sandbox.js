@@ -123,7 +123,7 @@ function createWarning(txt) {
     window.top.postMessage({
         sender: "sandbox",
         event: "stderr",
-        data: txt
+        data: serializeObject([txt])
     }, "*");
 }
 
@@ -336,6 +336,28 @@ function sendThumnailFromCanvas(canvas) {
         thumbnail: imgCanvas.toDataURL("image/jpeg", 0.5)
     }, "*");
 }
+
+let serviceWorker;
+async function registerServiceWorker() {
+    if ("serviceWorker" in navigator) {
+        try {
+            serviceWorker = await navigator.serviceWorker.register("/service-worker.js", {
+                scope: "/",
+            });
+            if (serviceWorker.installing) {
+                console.log("Service worker installing");
+            } else if (serviceWorker.waiting) {
+                console.log("Service worker installed");
+            } else if (serviceWorker.active) {
+                console.log("Service worker active");
+            }
+        } catch (error) {
+            console.error(`Registration failed with ${error}`);
+        }
+    }
+};
+
+registerServiceWorker();
 
 window.addEventListener("unhandledrejection", e => {
     createWarning(e.reason);
