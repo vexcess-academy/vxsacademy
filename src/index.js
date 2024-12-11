@@ -829,6 +829,12 @@ const projectTree = {
                     out.write("error: 400");
                     return;
                 }
+                for (let id in userCredentials) {
+                    if (userCredentials[id].username.toLowerCase() === json.username.toLowerCase()) {
+                        out.write("error: that username is already taken");
+                        return;
+                    }
+                }
                 if (json.bio && validateBio(json.bio) !== "OK") {
                     out.write("error: 400");
                     return;
@@ -1276,9 +1282,10 @@ const server = http.createServer({key: secrets.KEY, cert: secrets.CERT}, async (
     // route the sandbox subdomain to the sandbox server
     if (request.headers["host"] && request.headers["host"].startsWith("sandbox.")) {
         try {
-            let res = await fetch("http://127.0.0.1:" + secrets.SANDBOX_PORT + request.url);
-            let buff = await res.arrayBuffer();
-            response.writeHead(200, res.headers);
+            const res = await fetch("http://127.0.0.1:" + secrets.SANDBOX_PORT + request.url);
+            const buff = await res.arrayBuffer();
+            const headers = Array.from(res.headers.entries());
+            response.writeHead(200, headers);
             response.write(Buffer.from(buff));
             response.end();
             return;
