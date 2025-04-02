@@ -1,7 +1,7 @@
 # VExcess Academy
 An open source website where anyone can learn computer science for free and share programs in various languages with the community.
 
-![screenshot](https://github.com/vExcess/vexcess-academy/blob/master/screenshot.jpg?raw=true)
+![screenshot](https://raw.githubusercontent.com/vexcess-academy/vxsacademy/refs/heads/main/screenshot.jpg)
 
 ## Running Locally
 VExcess Academy requires Node JS v15.8.0 or higher to run.  
@@ -16,7 +16,7 @@ You will need to create the `secrets.js` file for yourself. You can find a sampl
 [Dat](https://github.com/Dddatt) - Wrote the WebGL tutorial  
 [CobraCoder](https://github.com/yu0bab) - Wrote the JS w/ Processing.js tutorial  
 [Archbirdplus](https://github.com/archbirdplus) - Helped do pentesting and discover bugs  
-[sikn](https://github.com/L1quidH2O) - Added ES6 support to PJS editor  
+[sikn](https://github.com/L1quidH2O) - Added ES6 support to PJS editor and pentesting  
 [WalkWorthy](https://github.com/RandomLegoBrick) - Created the Java runtime iso  
 [CylenceScythe](https://www.khanacademy.org/profile/SharleyBoo) - Created Pyro avatar graphics  
 [Leslie](https://www.khanacademy.org/profile/ForeverFrostine) - Created Floof avatar graphics  

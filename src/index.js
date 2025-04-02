@@ -14,6 +14,7 @@ const secrets = require("../secrets").getSecrets("../");
 let myMongo;
 if (secrets.MONGO_PASSWORD) {
     myMongo = new MongoClient(`mongodb://vxsacademyuser:${secrets.MONGO_PASSWORD}@${secrets.MONGO_IP}:${secrets.MONGO_PORT}/?authSource=vxsacademy`);
+    console.log(myMongo)
 } else {
     console.log("WARNING: MongoDB is running without authentication");
     myMongo = new MongoClient(`mongodb://${secrets.MONGO_IP}:${secrets.MONGO_PORT}`);
@@ -97,10 +98,20 @@ const DEFAULT_OG_TAGS = `
 `;
 
 // page creation utility
-function createHTMLPage(pg, userData, openGraphTags) {
+// const Base64 = require("./lib/base64.js");
+const Base64 = {
+    Uint8ToB64(bytes) {
+        return Buffer.from(bytes).toString("base64");
+    }
+};
+async function createHTMLPage(pg, userData, openGraphTags) {
+    const stringifiedUserData = userData ? JSON.stringify(userData) : "null";
+    const userDataBytes = new TextEncoder().encode(stringifiedUserData);
+    const base64UserData = Base64.Uint8ToB64(userDataBytes);
+
     return fileCache.get("main")
         .replace("<!-- OPEN GRAPH INSERT -->", openGraphTags)
-        .replace("<!-- USER DATA INSERT -->", `<script>\n\tlet userData = ${userData ? JSON.stringify(userData).replaceAll("</", "<\\/") : "null"}\n</script>`)
+        .replace("<!-- USER DATA INSERT -->", `<script>\n\tlet userData = JSON.parse(new TextDecoder("utf-8").decode(Base64.decode("${base64UserData}")));\n</script>`)
         .replace("<!-- PAGE CONTENT INSERT -->", fileCache.get(pg));
 }
 
@@ -120,81 +131,81 @@ const projectTree = {
         await fetch("http://127.0.0.1:" + secrets.SANDBOX_PORT + "/clearCache");
         out.write("Cache Cleared");
     },
-    "/": (path, out, data) => {
+    "/": async (path, out, data) => {
         // main path
         out.writeHead(200, { 'Content-Type': 'text/html' });
-        out.write(createHTMLPage("home", data.userData, DEFAULT_OG_TAGS));
+        out.write(await createHTMLPage("home", data.userData, DEFAULT_OG_TAGS));
     },
-    "/login": (path, out, data) => {
+    "/login": async (path, out, data) => {
         // login page
         out.writeHead(200, { 'Content-Type': 'text/html' });
-        out.write(createHTMLPage("login", data.userData, DEFAULT_OG_TAGS));
+        out.write(await createHTMLPage("login", data.userData, DEFAULT_OG_TAGS));
     },
-    "/profile/": (path, out, data) => {
+    "/profile/": async (path, out, data) => {
         // profile page
         out.writeHead(200, { 'Content-Type': 'text/html' });
-        out.write(createHTMLPage("profile", data.userData, DEFAULT_OG_TAGS));
+        out.write(await createHTMLPage("profile", data.userData, DEFAULT_OG_TAGS));
     },
-    "/logs/": (path, out, data) => {
+    "/logs/": async (path, out, data) => {
         // logs path
         out.writeHead(200, { 'Content-Type': 'text/html' });
-        out.write(createHTMLPage("logs/" + path, data.userData, DEFAULT_OG_TAGS));
+        out.write(await createHTMLPage("logs/" + path, data.userData, DEFAULT_OG_TAGS));
     },
-    "/tos": (path, out, data) => {
+    "/tos": async (path, out, data) => {
         // tos path
         out.writeHead(200, { 'Content-Type': 'text/html' });
-        out.write(createHTMLPage("tos" + path, data.userData, DEFAULT_OG_TAGS));
+        out.write(await createHTMLPage("tos" + path, data.userData, DEFAULT_OG_TAGS));
     },
-     "/privacy-policy": (path, out, data) => {
+     "/privacy-policy": async (path, out, data) => {
         // tos path
         out.writeHead(200, { 'Content-Type': 'text/html' });
-        out.write(createHTMLPage("privacy-policy" + path, data.userData, DEFAULT_OG_TAGS));
+        out.write(await createHTMLPage("privacy-policy" + path, data.userData, DEFAULT_OG_TAGS));
     },
-    "/computer-programming": (path, out, data) => {
+    "/computer-programming": async (path, out, data) => {
         // computer programming home
         out.writeHead(200, { 'Content-Type': 'text/html' });
-        out.write(createHTMLPage("computer-programming", data.userData, DEFAULT_OG_TAGS));
+        out.write(await createHTMLPage("computer-programming", data.userData, DEFAULT_OG_TAGS));
     },
     "/computer-programming/": {
-        "browse": (path, out, data) => {
+        "browse": async (path, out, data) => {
             // browse projects
             out.writeHead(200, { "Content-Type": "text/html" });
-            out.write(createHTMLPage("browse", data.userData, DEFAULT_OG_TAGS));
+            out.write(await createHTMLPage("browse", data.userData, DEFAULT_OG_TAGS));
         },
-        "ka-browse": (path, out, data) => {
+        "ka-browse": async (path, out, data) => {
             // browse projects
             out.writeHead(200, { "Content-Type": "text/html" });
-            out.write(createHTMLPage("browse", data.userData, DEFAULT_OG_TAGS));
+            out.write(await createHTMLPage("browse", data.userData, DEFAULT_OG_TAGS));
         },
-        "javascript": (path, out, data) => {
+        "javascript": async (path, out, data) => {
             // return course page
             out.writeHead(200, { 'Content-Type': 'text/html' });
-            out.write(createHTMLPage("course", data.userData, DEFAULT_OG_TAGS));
+            out.write(await createHTMLPage("course", data.userData, DEFAULT_OG_TAGS));
             return;
         },
-        "javascript/": (path, out, data) => {
+        "javascript/": async (path, out, data) => {
             // return course page
             out.writeHead(200, { 'Content-Type': 'text/html' });
-            out.write(createHTMLPage("course", data.userData, DEFAULT_OG_TAGS));
+            out.write(await createHTMLPage("course", data.userData, DEFAULT_OG_TAGS));
             return;
         },
-        "webgl": (path, out, data) => {
+        "webgl": async (path, out, data) => {
             // return course page
             out.writeHead(200, { 'Content-Type': 'text/html' });
-            out.write(createHTMLPage("course", data.userData, DEFAULT_OG_TAGS));
+            out.write(await createHTMLPage("course", data.userData, DEFAULT_OG_TAGS));
             return;
         },
-        "webgl/": (path, out, data) => {
+        "webgl/": async (path, out, data) => {
             // return course page
             out.writeHead(200, { 'Content-Type': 'text/html' });
-            out.write(createHTMLPage("course", data.userData, DEFAULT_OG_TAGS));
+            out.write(await createHTMLPage("course", data.userData, DEFAULT_OG_TAGS));
             return;
         },
-        "new/": (path, out, data) => {
+        "new/": async (path, out, data) => {
             // new program path
             let programType = path;
             if (["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(programType)) {
-                let webpageCode = createHTMLPage("program", data.userData, DEFAULT_OG_TAGS);
+                let webpageCode = await createHTMLPage("program", data.userData, DEFAULT_OG_TAGS);
 
                 out.writeHead(200, {
                     "Content-Type": "text/html",
@@ -223,11 +234,22 @@ const projectTree = {
                     // exit if program not found
                     return out.write("404");
                 } else {
+                    function lazySanitize(str) {
+                        const allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ";
+                        let out = "";
+                        for (let i = 0; i < str.length; i++) {
+                            if (allowed.includes(str[i])) {
+                                out += str[i];
+                            }
+                        }
+                        return out;
+                    }
+
                     let webpageCode;
                     const thumbnailURL = isKAProgram ? `https://www.khanacademy.org/computer-programming/i/${programData.id.slice(3)}/latest.png` : `/CDN/programs/${programData.id}.jpg`;
                     const openGraphInsert = `
-                        <meta content="${programData.title.replaceAll('"', '\\"')}" property="og:title" />
-                        <meta content="Made by ${programData.author.nickname.replaceAll('"', '\\"')}" property="og:description" />
+                        <meta content="${lazySanitize(programData.title)}" property="og:title" />
+                        <meta content="Made by ${lazySanitize(programData.author.nickname)}" property="og:description" />
                         <meta content="${thumbnailURL}" property="og:image" />
                     `;
                     
@@ -236,7 +258,7 @@ const projectTree = {
                             .replace("<!-- OPEN GRAPH INSERT -->", openGraphInsert)
                             // .replace("<!-- USER DATA INSERT -->", `<script>\n\tvar userData = ${userData ? JSON.stringify(userData).replaceAll("</", "<\\/") : "null"}\n</script>`);
                     } else {
-                        webpageCode = createHTMLPage("program", data.userData, openGraphInsert);
+                        webpageCode = await createHTMLPage("program", data.userData, openGraphInsert);
                     }
                     
                     out.writeHead(200, {

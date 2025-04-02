@@ -170,7 +170,7 @@ function initializeLists(db) {
                     }
                 }
                 
-                const loadAmount = 1;
+                const loadAmount = 20;
     
                 let reqPrograms = await getList("HOT", loadAmount);
                 if (reqPrograms) {
