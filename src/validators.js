@@ -33,7 +33,7 @@ function validateProgramData(data) {
         typeof data.title === "string"
     ) {
         // check if program is a valid type
-        if (!["html", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(data.type)) {
+        if (!["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(data.type)) {
             return e + "invalid project type";
         }
 

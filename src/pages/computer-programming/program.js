@@ -295,7 +295,7 @@ function validateProgramData(data) {
         typeof data.title === "string"
     ) {
         // check if program is a valid type
-        if (!["html", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(data.type)) {
+        if (!["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(data.type)) {
             return e + "invalid project type";
         }
 
@@ -398,7 +398,7 @@ function runProgram() {
     
     var mainCode;
     switch (programData.type) {
-        case "html":
+        case "webpage":
             mainCode = getFile("index.html");
         break;
         case "pjs":
@@ -599,7 +599,7 @@ function main() {
     //     isKAProgram = programData.id.startsWith("KA_") && programData.id.length !== 14;
     // }
 
-    // const useRepl = ["html", "pjs", "python"].includes(programData.type);
+    // const useRepl = ["webpage", "pjs", "python"].includes(programData.type);
     // debugConsole = new Terminal($("#debug-console").el, useRepl);
     // debugConsole.styles.background = "var(--themeColor)";
     // if (prefersDarkMode) {

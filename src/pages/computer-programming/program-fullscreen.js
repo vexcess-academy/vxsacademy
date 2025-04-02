@@ -31,7 +31,7 @@ function runProgram() {
     
     var mainCode;
     switch (programData.type) {
-        case "html":
+        case "webpage":
             mainCode = getFile("index.html");
         break;
         case "pjs":
