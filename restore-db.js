@@ -35,7 +35,9 @@ async function restoreCollection(collection) {
 async function main() {
     await myMongo.connect();
     db = myMongo.db("vxsacademy");
-    db.auth("vxsacademyuser", secrets.MONGO_PASSWORD);
+    if (secrets.MONGO_PASSWORD) {
+        db.auth("vxsacademyuser", secrets.MONGO_PASSWORD);
+    }
     console.log("Connected to MongoDB!");
 
     await restoreCollection("discussions");
