@@ -1079,7 +1079,28 @@ const projectTree = {
                 }
 
                 if (foundUser) {
-                    out.write(JSON.stringify(await users.findOne({ id: who.id })));
+                    let userData = await users.findOne({ id: who.id });
+
+                    const projection = {
+                        "_id": 0,
+                        "nickname": 1,
+                        "username": 1,
+                        "avatar": 1,
+                        "id": 1,
+                        "bio": 1,
+                        "created": 1,
+                        "projects": 1,
+                        "background": 1,
+                        "comments": 1,
+                        "discussions": 1,
+                    };
+
+                    let outData = {};
+                    for (const prop in projection) {
+                        outData[prop] = userData[prop];
+                    }
+
+                    out.write(JSON.stringify(outData));
                 } else {
                     out.write("404 Not Found"); // user not found
                 }
@@ -1373,7 +1394,9 @@ const server = http.createServer({key: secrets.KEY, cert: secrets.CERT}, async (
             url = url.slice(0, url.length - 1);
         }
         // prevent people from accessing upstream files
-        url = url.replaceAll("../", "./").replaceAll("..\\", ".\\");
+        while (url.includes("..")) {
+            url = url.replace("..", ".");
+        }
 
         // handle the request
         let status = await useTree(url, projectTree, { request, userData, userToken, hashedUserIP }, response);
