@@ -1,5 +1,5 @@
-FROM ubuntu:24.04
+# build vxsacademy-base
+FROM vxsacademy-base:latest
 WORKDIR /home/ubuntu
 COPY . ./vxsacademy
-EXPOSE 3000 3001
 WORKDIR ./vxsacademy

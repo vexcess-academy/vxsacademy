@@ -1,0 +1,1 @@
+podman build -f base.Dockerfile -t vxsacademy-base
