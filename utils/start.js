@@ -1,5 +1,5 @@
-const BashShell = require("./src/lib/BashShell.js");
-const secrets = require("./secrets").getSecrets("./");
+const BashShell = require("../lib/BashShell.js");
+const secrets = require("../secrets/secrets.js").getSecrets("./secrets/");
 
 function myHandler(event) {
     console.log("SUBSHELL " + event.process + "  " + event.type);
@@ -19,10 +19,10 @@ if (secrets.USE_PROXY) {
 
 const mainServer = new BashShell("MainServer");
 mainServer.handler = myHandler;
-mainServer.send("cd src");
+mainServer.send("cd backend/main-server");
 mainServer.send("node index.js");
 
 const sandoxServer = new BashShell("SandboxServer");
 sandoxServer.handler = myHandler;
-sandoxServer.send("cd sandbox");
+sandoxServer.send("cd backend/sandbox-server");
 sandoxServer.send("node index.js");

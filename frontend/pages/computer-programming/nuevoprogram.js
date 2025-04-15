@@ -44,7 +44,7 @@ function timeSince (date) {
 const sandboxURL = 
     window.location.hostname === "vxsacademy.org" ?
     "https://sandbox.vxsacademy.org" :
-    "http://127.0.0.1:3003";
+    "http://127.0.0.1:3001";
 
 const PROGRAM_ID = window.location.pathname.split("/")[2];
 let isKAProgram = PROGRAM_ID.startsWith("KA_");

@@ -6,10 +6,10 @@ const fs = require("node:fs");
 
 const { MongoClient } = require("mongodb");
 const bson = require("bson");
-const BashShell = require("./lib/BashShell.js");
+const BashShell = require("../../lib/BashShell.js");
 
 // it'd be very bad if these were publicly available
-const secrets = require("../secrets").getSecrets("../");
+const secrets = require("../../secrets/secrets.js").getSecrets("../../secrets/");
 
 let myMongo;
 if (secrets.MONGO_PASSWORD) {
@@ -37,7 +37,7 @@ const {
     readJSON,
     parseCookies,
     parseQuery
-} = require("./utils.js");
+} = require("../../frontend/utils.js");
 
 
 // validating user input is essential
@@ -49,7 +49,7 @@ const {
     validateUsername,
     validatePassword,
     validateDiscussion
-} = require("./validators.js");
+} = require("../../frontend/validators.js");
 
 let kaHotlist = null;
 let vxsHotlist = null;
@@ -75,19 +75,19 @@ const FileCache = require("./filecache.js");
 
 // file cache for fast file serving
 const fileCache = new FileCache({
-    "main": "./page-template.html",
-    "computer-programming": "./pages/computer-programming/computer-programming.html",
-    "program": "./pages/computer-programming/program.html",
-    "program-fullscreen": "./pages/computer-programming/program-fullscreen.html",
-    "course": "./pages/computer-programming/course.html",
-    "browse": "./pages/computer-programming/browse.html",
-    "home": "./pages/home/home.html",
-    "login": "./pages/login/login.html",
-    "profile": "./pages/profile/profile.html",
-    "logs/dev": "./pages/logs/dev.html",
-    "logs/finance": "./pages/logs/finance.html",
-    "tos": "./pages/tos/tos.html",
-    "privacy-policy": "./pages/privacy-policy/privacy-policy.html",
+    "main": "../../frontend/page-template.html",
+    "computer-programming": "../../frontend/pages/computer-programming/computer-programming.html",
+    "program": "../../frontend/pages/computer-programming/program.html",
+    "program-fullscreen": "../../frontend/pages/computer-programming/program-fullscreen.html",
+    "course": "../../frontend/pages/computer-programming/course.html",
+    "browse": "../../frontend/pages/computer-programming/browse.html",
+    "home": "../../frontend/pages/home/home.html",
+    "login": "../../frontend/pages/login/login.html",
+    "profile": "../../frontend/pages/profile/profile.html",
+    "logs/dev": "../../frontend/pages/logs/dev.html",
+    "logs/finance": "../../frontend/pages/logs/finance.html",
+    "tos": "../../frontend/pages/tos/tos.html",
+    "privacy-policy": "../../frontend/pages/privacy-policy/privacy-policy.html",
 }, 10);
 
 
@@ -1236,7 +1236,11 @@ const projectTree = {
             }
         } else {
             try {
-                dataOut = fs.readFileSync(fetchPath);
+                if (fetchPath.startsWith("./lib")) {
+                    dataOut = fs.readFileSync("../../" + fetchPath);
+                } else {
+                    dataOut = fs.readFileSync("../../frontend/" + fetchPath);
+                }
             } catch (e) {
                 // file doesn't exist
                 dataOut = null;
@@ -1442,13 +1446,11 @@ async function main() {
 
     // !!! DANGER !!! for manually updating each item in a collection
     // {
-    //     const useCollection = programs;
-    //     (await useCollection.find({}).project({ id: 1, type: 1, _id: 0}).toArray()).forEach(item => {
-    //         if (item.type === "html") {
-    //             useCollection.updateOne({ id: item.id }, {$set: {
-    //                 type: "webpage"
-    //             }});
-    //         }
+    //     const useCollection = users;
+    //     (await useCollection.find({}).project({ id: 1, newNotifs: 1, _id: 0}).toArray()).forEach(item => {
+    //         useCollection.updateOne({ id: item.id }, {$set: {
+    //             newNotifs: item.newNotifs ?? 0
+    //         }});
     //     });
     // }
 

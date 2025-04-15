@@ -13,6 +13,7 @@ db-backup
 rathole
 client.toml
 secrets.js
+secrets.dart
 server.cert
 server.csr
 server.key
@@ -20,3 +21,8 @@ analytics-data.json
 
 # ignore WSL metadata files
 *.Identifier
+
+# ignore dart build stuff
+.dart_tool/
+pubspec.lock
+*.exe

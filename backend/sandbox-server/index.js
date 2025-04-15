@@ -3,7 +3,7 @@ const http = require('http');
 const fs = require('fs');
 
 // it'd be very bad if these were publicly available
-const secrets = require("../secrets").getSecrets("../");
+const secrets = require("../../secrets/secrets.js").getSecrets("../../secrets/");
 
 function parseQuery(url) {
     let quesIdx = url.indexOf("?");

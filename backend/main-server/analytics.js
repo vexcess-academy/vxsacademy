@@ -1,6 +1,6 @@
 const {
     readJSON
-} = require("./utils.js");
+} = require("../../frontend/utils.js");
 
 class Analytics {
     storagePath;

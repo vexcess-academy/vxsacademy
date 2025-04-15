@@ -2,7 +2,7 @@ const fs = require('fs');
 const bson = require("bson");
 const { MongoClient } = require("mongodb");
 
-const secrets = require("./secrets").getSecrets("./");
+const secrets = require("../secrets/secrets.js").getSecrets("./secrets/");
 
 let myMongo;
 if (secrets.MONGO_PASSWORD) {
