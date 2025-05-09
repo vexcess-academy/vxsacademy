@@ -5,6 +5,8 @@ typedef HttpServer = IO.HttpServer;
 typedef SecurityContext = IO.SecurityContext;
 typedef InternetAddress = IO.InternetAddress;
 typedef HttpRequest = IO.HttpRequest;
+typedef HttpResponse = IO.HttpResponse;
+typedef HttpStatus = IO.HttpStatus;
 typedef Cookie = IO.Cookie;
 
 Future<HttpServer> createServer({
@@ -15,11 +17,9 @@ Future<HttpServer> createServer({
     late HttpServer server;
     if (CERT_PATH == null && KEY_PATH == null) {
         server = await HttpServer.bind(InternetAddress.anyIPv4, PORT);
-        print("Web Server online at http://127.0.0.1:${PORT}");
     } else {
         final securityContext = getServerSecurityContext(CERT_PATH!, KEY_PATH!);
         server = await HttpServer.bindSecure(InternetAddress.anyIPv4, PORT, securityContext);
-        print("Web Server online at https://127.0.0.1:${PORT}");
     }
     return server;
 }

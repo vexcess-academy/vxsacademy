@@ -546,7 +546,7 @@ class Sandbox {
         }
 
         if (programData.id) {
-            this.iframe.attr("src", sandboxURL + "/exec-" + programData.type + ".html?" + domains.map(btoa).join("&"));
+            this.iframe.attr("src", sandboxURL + "/exec-" + programData.type + ".html?allowed=" + domains.map(btoa).join(","));
         } else {
             this.iframe.attr("src", sandboxURL + "/exec-" + programData.type + ".html?allowAll=true");
         }

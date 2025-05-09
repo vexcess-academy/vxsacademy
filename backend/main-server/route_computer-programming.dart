@@ -1,5 +1,6 @@
 import 'route_.dart';
 import 'hotlist.dart' show getKAProgram;
+import 'main.dart' show programs;
 
 final routeTree_computerprogramming = {
     "browse": (AP path, AO out, AD data) async {
@@ -63,11 +64,11 @@ final routeTree_computerprogramming = {
             final isFullScreen = splitPath.length > 1 && splitPath[1] == "fullscreen";
 
             final isKAProgram = programId.startsWith("KA_") && programId.length != 14;
-            var programData = null;
+            Map<String, dynamic>? programData = null;
             if (isKAProgram) {
                 programData = await getKAProgram(programId);
             } else {
-                // programData = await programs.findOne({id: programId}/*, {projection: {id: 1, _id: 0}}*/);
+                programData = await programs.findOne({"id": programId}/*, {projection: {id: 1, _id: 0}}*/);
             }
 
             if (programData == null) {
@@ -88,10 +89,10 @@ final routeTree_computerprogramming = {
                 }
 
                 String webpageCode;
-                final thumbnailURL = isKAProgram ? "https://www.khanacademy.org/computer-programming/i/${programData.id.slice(3)}/latest.png" : "/CDN/programs/${programData.id}.jpg";
+                final thumbnailURL = isKAProgram ? "https://www.khanacademy.org/computer-programming/i/${programData["id"].slice(3)}/latest.png" : "/CDN/programs/${programData["id"]}.jpg";
                 final openGraphInsert = """
-                    <meta content="${lazySanitize(programData.title)}" property="og:title" />
-                    <meta content="Made by ${lazySanitize(programData.author.nickname)}" property="og:description" />
+                    <meta content="${lazySanitize(programData["title"])}" property="og:title" />
+                    <meta content="Made by ${lazySanitize(programData["author"]["nickname"])}" property="og:description" />
                     <meta content="${thumbnailURL}" property="og:image" />
                 """;
                 

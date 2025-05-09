@@ -8,11 +8,12 @@ class FileCache {
     Map<String, String> files = new Map();
     Map<String, int> readTimestamps = new Map();
     Map<String, String> pathToFilePathMap = new Map();
+    String rootPath;
 
     int cacheSize = 0;
     int maxCacheSize = 0;
 
-    FileCache(Map<String, String> mappings, int maxCacheMB) {
+    FileCache(this.rootPath, Map<String, String> mappings, int maxCacheMB) {
         this.pathToFilePathMap = mappings;
         this.maxCacheSize = maxCacheMB * 1024 * 1024;
     }
@@ -45,7 +46,7 @@ class FileCache {
             if (pathToFilePathMap[path] != null) {
                 fileContents = await readFileAsString(pathToFilePathMap[path]!);
             } else {
-                fileContents = await readFileAsString("./pages/${path}");
+                fileContents = await readFileAsString(this.rootPath + path);
             }
 
             // doesn't exist

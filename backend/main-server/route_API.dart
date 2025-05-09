@@ -6,7 +6,7 @@ import 'package:http/http.dart' as HTTP;
 
 import 'ProgramData.dart';
 import 'route_.dart';
-import 'utils.dart';
+import '../lib/utils.dart';
 import 'hotlist.dart';
 import 'main.dart';
 import 'UserData.dart';
@@ -148,7 +148,7 @@ final routeTree_API = {
     //         }
 
     //         // login endpoint
-    //         if (data["userData"]) {
+    //         if (data["userData"] != null) {
     //             out.write("error: already signed in");
     //             return;
     //         }
@@ -837,7 +837,7 @@ final routeTree_API = {
         },
         "getDiscussions?": (AP path, AO out, AD data) async {
             final query = parseQuery("?" + path);
-            if (query["isKAProgram"]) {
+            if (query["isKAProgram"] != null) {
                 final res = await HTTP.post(
                     Uri.parse("https://www.khanacademy.org/api/internal/graphql/feedbackQuery"),
                     headers: {
@@ -874,7 +874,7 @@ final routeTree_API = {
                     out.add(bytesOf(json.encode([])));
                 }
             } else {
-                if (query["id"]) {
+                if (query["id"] != null) {
                     query["ids"] = [query["id"]];
                 } else if (query["ids"] is String) {
                     query["ids"] = query["ids"].split(",");
@@ -882,23 +882,28 @@ final routeTree_API = {
                     var output = [];
                     for (int i = 0; i < query["ids"].length; i++) {
                         final id = query["ids"][i];
-                        // var discussionData = await discussions.findOne({ id: id });
+                        Map<String, dynamic>? discussionData = await discussions.findOne({ "id": id });
                 
-                        // if (discussionData != null) {
-                        //     discussionData.likeCount = discussionData.likes.length - discussionData.dislikes.length;
-                        //     delete discussionData.likes;
-                        //     delete discussionData.dislikes;
+                        if (discussionData != null) {
+                            discussionData["likeCount"] = discussionData["likes"].length - discussionData["dislikes"].length;
+                            discussionData.remove("likes");
+                            discussionData.remove("dislikes");
 
-                        //     var author = await users.findOne({
-                        //         id: discussionData.author.id
-                        //     }, {
-                        //         projection: { id: 1, username: 1, nickname: 1, avatar: 1, _id: 0 }
-                        //     });
+                            Map<String, dynamic>? author = await users.findOne({
+                                "id": discussionData["author"]["id"]
+                            });
+                            author = projectOne(author!, {
+                                "id": 1,
+                                "username": 1,
+                                "nickname": 1,
+                                "avatar": 1,
+                                "_id": 0
+                            });
                             
-                        //     discussionData.author = author;
+                            discussionData["author"] = author;
 
-                        //     output.push(discussionData);
-                        // }
+                            output.add(discussionData);
+                        }
                     }
                     
                     out.add(bytesOf(json.encode(output)));

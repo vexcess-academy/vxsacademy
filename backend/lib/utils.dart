@@ -15,12 +15,12 @@ Map<String, dynamic> parseQuery(String url) {
             final vars = end.split("&");
             Map<String, dynamic> keys = {};
             for (var i = 0; i < vars.length; i++) {
-                var eqIdx = vars[i].indexOf("=");
-                var temp = [
+                final eqIdx = vars[i].indexOf("=");
+                final temp = [
                     Uri.decodeComponent(vars[i].substring(0, eqIdx)),
                     Uri.decodeComponent(vars[i].substring(eqIdx + 1))
                 ];
-                var number = int.tryParse(temp[1]);
+                final number = int.tryParse(temp[1]);
                 if (number != null) {
                     keys[temp[0]] = number;
                 } else {
@@ -70,6 +70,17 @@ Future<List<Map<String, dynamic>>> project(Stream<Map<String, dynamic>> stream, 
     return data;
 }
 
+Map<String, dynamic> projectOne(Map<String, dynamic> item, Map<String, int> mask) {
+    Map<String, dynamic> masked = {};
+    for (String key in mask.keys) {
+        bool include = mask[key] == 1;
+        if (include) {
+            masked[key] = item[key];
+        }
+    }
+    return masked;
+}
+
 Uint8List bytesOf(Object obj) {
     if (obj is String) {
         return utf8.encode(obj);
@@ -78,4 +89,12 @@ Uint8List bytesOf(Object obj) {
     } else {
         throw "Invalid input to SHA256";
     }
+}
+
+String urlFileExt(String url) {
+    int idx = url.lastIndexOf(".");
+    if (idx == -1) {
+        return "";
+    }
+    return url.substring(idx + 1);
 }

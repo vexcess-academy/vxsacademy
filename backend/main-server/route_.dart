@@ -4,13 +4,13 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as HTTP;
 
-import 'FileCache.dart';
+import '../lib/FileCache.dart';
 import 'UserData.dart';
-import 'cryptography.dart';
-import 'file-io.dart';
+import '../lib/cryptography.dart';
+import '../lib/file-io.dart';
 import 'ProgramData.dart';
 import 'hotlist.dart' show getKAProgram;
-import 'utils.dart';
+import '../lib/utils.dart';
 
 import 'route_computer-programming.dart';
 import 'route_API.dart';
@@ -18,21 +18,24 @@ import 'route_CDN.dart';
 
 import '../../secrets/secrets.dart';
 
-var fileCache = new FileCache({
-    "main": "./frontend/page-template.html",
-    "computer-programming": "./frontend/pages/computer-programming/computer-programming.html",
-    "program": "./frontend/pages/computer-programming/program.html",
-    "program-fullscreen": "./frontend/pages/computer-programming/program-fullscreen.html",
-    "course": "./frontend/pages/computer-programming/course.html",
-    "browse": "./frontend/pages/computer-programming/browse.html",
-    "home": "./frontend/pages/home/home.html",
-    "login": "./frontend/pages/login/login.html",
-    "profile": "./frontend/pages/profile/profile.html",
-    "logs/dev": "./frontend/pages/logs/dev.html",
-    "logs/finance": "./frontend/pages/logs/finance.html",
-    "tos": "./frontend/pages/tos/tos.html",
-    "privacy-policy": "./frontend/pages/privacy-policy/privacy-policy.html",
-}, 16);
+var fileCache = new FileCache(
+    "./frontend/pages/",
+    {
+        "main": "./frontend/page-template.html",
+        "computer-programming": "./frontend/pages/computer-programming/computer-programming.html",
+        "program": "./frontend/pages/computer-programming/program.html",
+        "program-fullscreen": "./frontend/pages/computer-programming/program-fullscreen.html",
+        "course": "./frontend/pages/computer-programming/course.html",
+        "browse": "./frontend/pages/computer-programming/browse.html",
+        "home": "./frontend/pages/home/home.html",
+        "login": "./frontend/pages/login/login.html",
+        "profile": "./frontend/pages/profile/profile.html",
+        "logs/dev": "./frontend/pages/logs/dev.html",
+        "logs/finance": "./frontend/pages/logs/finance.html",
+        "tos": "./frontend/pages/tos/tos.html",
+        "privacy-policy": "./frontend/pages/privacy-policy/privacy-policy.html",
+    }, 16
+);
 
 const DEFAULT_OG_TAGS = """
     <meta content="VExcess Academy" property="og:title" />

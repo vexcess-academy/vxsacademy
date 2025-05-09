@@ -15,9 +15,9 @@ import 'package:http/http.dart' as HTTP;
 import 'package:mongo_dart/mongo_dart.dart' as Mongo;
 
 // custom modules
-import 'file-io.dart';
-import 'http-utils.dart';
-import 'cryptography.dart';
+import '../lib/file-io.dart';
+import '../lib/http-utils.dart';
+import '../lib/cryptography.dart';
 import 'UserData.dart';
 import 'hotlist.dart';
 
@@ -26,11 +26,6 @@ import 'route_.dart' show routeTree;
 
 // it'd be very bad if these were publicly available (again)
 import '../../secrets/secrets.dart';
-
-typedef HttpServer = IO.HttpServer;
-typedef HttpRequest = IO.HttpRequest;
-typedef HttpResponse = IO.HttpResponse;
-typedef HttpStatus = IO.HttpStatus;
 
 // --------------- IMPORTS END ---------------
 
@@ -189,9 +184,10 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
             response.write("Internal Server Error");
         }
         response.close();
-    } catch (err) {
+    } catch (err, trace) {
         print(request.uri);
         print(err);
+        print(trace);
         response.statusCode = 500;
         response.write("Internal Server Error");
         response.close();
@@ -238,7 +234,7 @@ void main() async {
     vxsHotlist.updatePrograms().then((_) {
         vxsHotlist.updateLists();
         print("Loaded VXS Hotlist");
-        print(vxsHotlist.allPrograms);
+        // print(vxsHotlist.allPrograms);
     });
     kaHotlist.updatePrograms().then((_) {
         kaHotlist.updateLists();
@@ -250,9 +246,9 @@ void main() async {
         vxsHotlist.updatePrograms().then((void _) {
             vxsHotlist.updateLists();
         });
-        kaHotlist.updatePrograms().then((void _) {
-            kaHotlist.updateLists();
-        });
+        // kaHotlist.updatePrograms().then((void _) {
+        //     kaHotlist.updateLists();
+        // });
     });
 
     // init salt for ip hashing
@@ -273,6 +269,7 @@ void main() async {
         KEY_PATH: secrets.KEY_PATH,
         PORT: secrets.PORT
     );
+    print("Main server online at https://127.0.0.1:${secrets.PORT}");
     
     // listen for requests
     try {

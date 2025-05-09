@@ -6,15 +6,27 @@ import 'package:mongo_dart/mongo_dart.dart' as Mongo;
 import 'route_.dart';
 import 'ProgramData.dart';
 import 'hotlist.dart' show getKAProgram;
-import 'file-io.dart';
+import '../lib/file-io.dart';
+import '../lib/utils.dart';
 import 'main.dart';
+
+import 'main.dart' show programs;
+
+Map<String, dynamic> shallowClone(Map<String, dynamic> m) {
+    Map<String, dynamic> newMap = {};
+    for (String key in m.keys) {
+        newMap[key] = m[key];
+    }
+
+    return newMap;
+}
 
 void routeFn_CDN(AP path, AO out, AD data) async {
     // stop browsers from complaining about CORS issues
     out.headers.add("Access-Control-Allow-Origin", "*");
 
     // figure out the type of file
-    String fileExt = path.split(".").reversed.toList()[0];
+    String fileExt = urlFileExt(path);
     String fileType = "text";
     String fileSubType = "plain";
 
@@ -44,24 +56,29 @@ void routeFn_CDN(AP path, AO out, AD data) async {
             if (isKAProgram) {
                 programData = await getKAProgram(id);
             } else {
-                // programData = await programs.findOne({ id });
+                programData = await programs.findOne({ "id": id });
             }
 
             if (programData != null) {
                 if (!isKAProgram) {
-                    Map<String, dynamic> clonedProgram = json.decode(json.encode(programData));
+                    Map<String, dynamic> clonedProgram = shallowClone(programData);
 
                     // update user specific data on program
-                    if (data["userData"] && clonedProgram["likes"].contains(data["userData"].id)) {
+                    if (data["userData"] != null && clonedProgram["likes"].contains(data["userData"].id)) {
                         clonedProgram["hasLiked"] = true;
                     }
 
                     // hide sensitive data from front end
                     clonedProgram.remove("likes");
 
+                    if (clonedProgram["thumbnail"] != null) {
+                        Mongo.BsonBinary thumbnailBinary = clonedProgram["thumbnail"];
+                        clonedProgram["thumbnail"] = base64.encode(thumbnailBinary.byteList);
+                    }
+
                     programData = clonedProgram;
                 }
-                dataOut = json.encode(programData);
+                dataOut = utf8.encode(json.encode(programData));
             }
         } else if (fetchPath.endsWith(".jpg")) {
             var id = fetchPath.substring("./programs/".length, fetchPath.length - ".jpg".length);

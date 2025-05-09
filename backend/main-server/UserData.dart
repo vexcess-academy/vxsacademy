@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'utils.dart';
+import '../lib/utils.dart';
 
 class UserData {
     late String nickname;

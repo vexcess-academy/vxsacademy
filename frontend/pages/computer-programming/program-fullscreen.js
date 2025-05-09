@@ -112,7 +112,7 @@ $.getJSON(`/CDN/programs/${PROGRAM_ID}.json`).then(data => {
     }
     
     outputFrame
-        .attr("src", sandboxURL + "/exec-" + programData.type + ".html?" + domains.map(btoa).join("&"))
+        .attr("src", sandboxURL + "/exec-" + programData.type + ".html?allowed=" + domains.map(btoa).join(","))
         .on("load", () => {
             runProgram();
             outputFrameLoaded = true;
