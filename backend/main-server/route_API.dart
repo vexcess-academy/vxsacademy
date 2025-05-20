@@ -43,7 +43,7 @@ final routeTree_API = {
             "allowRequest": allowRequest
         };
     },
-    // ":POST:": {
+    ":POST:": {
     //     "signup": (AP path, AO out, AD data) async {
     //         if (!data["allowRequest"]) {
     //             out.write("error: access denied");
@@ -744,7 +744,7 @@ final routeTree_API = {
 
     //         out.write("OK");
     //     },
-    // },
+    },
     ":GET:": {
         ":ACTION": (AP path, AO out, AD data) {
             out.headers.add("Content-Type", "application/json");
@@ -801,14 +801,15 @@ final routeTree_API = {
             // expensive and dirty way to hide data from front end. refine this later
             final start = Math.min<int>(page, list.length);
             final end = Math.min<int>(page + 16, list.length);
-            List<dynamic> listClone = json.decode(json.encode(list.sublist(page, page + 16)));
-            for (int i = 0; i < listClone.length; i++) {
+            List<dynamic> sublist = page >= list.length ? [] : list.sublist(page, Math.min(list.length, page + 16));
+            List<dynamic> sublistClone = json.decode(json.encode(sublist));
+            for (int i = 0; i < sublistClone.length; i++) {
                 // hide sensitive data from front end
-                Map<String, dynamic> item = listClone[i];
+                Map<String, dynamic> item = sublistClone[i];
                 item.remove("likes");
             }
 
-            out.add(bytesOf(json.encode(listClone)));
+            out.add(bytesOf(json.encode(sublistClone)));
         },
         "getUserData?": (AP path, AO out, AD data) async {
             var who = parseQuery("?" + path)["who"];

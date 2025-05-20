@@ -2,7 +2,8 @@ const fs = require('fs');
 const bson = require("bson");
 const { MongoClient } = require("mongodb");
 
-const secrets = require("../secrets/secrets.js").getSecrets("./secrets/");
+const secretsCode = fs.readFileSync("./secrets/secrets.dart").toString().replaceAll("final ", "").replaceAll("bool ", "").replaceAll("String? ", "").replaceAll("String ", "").replaceAll("int ", "");
+const secrets = Function(secretsCode + "\nreturn secrets")();
 
 let myMongo;
 if (secrets.MONGO_PASSWORD) {

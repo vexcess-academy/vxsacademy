@@ -1,18 +1,17 @@
-<link rel="stylesheet" href="/CDN/pages/computer-programming/computer-programming.css" type="text/css">
+<h2>Computer Programming</h2>
 
-<div id="page-middle-container">
+<h3>View community programs at <a href="/computer-programming/browse">Browse Projects</a> or <a href="/computer-programming/ka-browse">Browse KA Projects</a></h3>
 
-    <h2>Computer Programming</h2>
+<p>
+    These programming courses aim to teach a person who has no programming 
+    experience to be able to create complex programs. The recommended place
+    to start for beginners is the "Introduction to JavaScript" course.
+</p>
 
-    <h3>View community programs at <a href="/computer-programming/browse">Browse Projects</a> or <a href="/computer-programming/ka-browse">Browse KA Projects</a></h3>
+<script>
+    addEventListener("DOMContentLoaded", () => {
+        const $ = Q$;
 
-    <p>
-        These programming courses aim to teach a person who has no programming 
-        experience to be able to create complex programs. The recommended place
-        to start for beginners is the "Introduction to JavaScript" course.
-    </p>
-
-    <script>
         const pageBody = $("#page-middle-container")
         
         const courseCatalog = [
@@ -84,7 +83,7 @@
             let courseElement = $("course", course).appendTo(pageBody);
             let sectionBoxes = courseElement.$(".sections-box")[0].$("*div");
 
-            $.getJSON(`/CDN/pages/computer-programming/${course.endpoint}/course.json`, json => {
+            $.getJSON(`/CDN/computer-programming/${course.endpoint}/course.json`, json => {
                 if (json !== null) {
                     // add section titles to course info
                     for (let j = 0; j < json.sections.length; j++) {
@@ -113,6 +112,23 @@
                 }
             });
         }
-    </script>
-    
-</div>
+    })
+</script>
+
+<style>
+    /* Main Page */
+    :global(#page-middle-container) {
+        padding: 20px;
+        margin: auto;
+        max-width: 80%;
+    }
+
+    :global(.course-div) {
+        background-color: var(--background2);
+        border: 2px solid var(--borders2);
+        border-radius: 5px;
+        padding: 16px;
+        padding-top: 6px;
+        margin-bottom: 25px;
+    }
+</style>

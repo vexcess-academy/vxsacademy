@@ -21,6 +21,9 @@
 
     <!-- import Barbequery -->
     <script src="/CDN/lib/barbequery.js"></script>
+    <script>
+        const Q$ = $;
+    </script>
 
     <!-- import components -->
     <script src="/CDN/page-template-components.js"></script>
@@ -238,17 +241,19 @@
         </script>
     </div>
 
-    <!-- PAGE CONTENT INSERT -->
+    <div id="page-middle-container">
+        %svquery.body%
+    </div>
 
     <script>
-        $("#page-middle-container").on("click", () => {
+        Q$("#page-middle-container").on("click", () => {
             dropDownMenu.style.setProperty("--show", "none");
             dropDownMenuOpen = false;
             
             profileDropDownMenu.css("display: none");
         });
     </script>
-    
+
     <div id="page-bottom-container">
     	<p style="font-size: 18px;">Our goal is to create a high quality free online education environment focused on computer science.</p>
         <a href="/tos" style="display: inline-block; margin-right: 10px;">Terms of Use</a>  <a href="/privacy-policy" style="display: inline-block;">Privacy Policy</a>

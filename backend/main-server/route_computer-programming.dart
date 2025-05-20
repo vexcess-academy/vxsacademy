@@ -89,7 +89,7 @@ final routeTree_computerprogramming = {
                 }
 
                 String webpageCode;
-                final thumbnailURL = isKAProgram ? "https://www.khanacademy.org/computer-programming/i/${programData["id"].slice(3)}/latest.png" : "/CDN/programs/${programData["id"]}.jpg";
+                final thumbnailURL = isKAProgram ? "https://www.khanacademy.org/computer-programming/i/${programData["id"].substring(3)}/latest.png" : "/CDN/programs/${programData["id"]}.jpg";
                 final openGraphInsert = """
                     <meta content="${lazySanitize(programData["title"])}" property="og:title" />
                     <meta content="Made by ${lazySanitize(programData["author"]["nickname"])}" property="og:description" />

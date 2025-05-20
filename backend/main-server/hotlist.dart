@@ -6,6 +6,8 @@ import 'package:http/http.dart' as HTTP;
 
 import '../lib/utils.dart';
 
+const loadAmount = 1;
+
 Map<String, Map<String, dynamic>> KAProgramsCache = {};
 Future<Map<String, dynamic>?> getKAProgram(String id) async {
     // KA_ + originalProgramId
@@ -227,8 +229,6 @@ void initLists(Mongo.Db db) {
                         return null;
                     }
                 }
-                
-                const loadAmount = 1;
     
                 var reqPrograms = await getList("HOT", loadAmount);
                 if (reqPrograms != null) {

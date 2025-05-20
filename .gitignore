@@ -23,6 +23,7 @@ analytics-data.json
 *.Identifier
 
 # ignore dart build stuff
+build
 .dart_tool/
 pubspec.lock
 *.exe

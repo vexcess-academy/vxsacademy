@@ -115,10 +115,12 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
     if (host != null) {
         if (host.startsWith("sandbox.")) {
             // route the sandbox subdomain to the sandbox server
-            forwardRequest("http://127.0.0.1:${secrets.SANDBOX_PORT}${request.uri}", request);
+            await forwardRequest("http://127.0.0.1:${secrets.SANDBOX_PORT}${request.uri}", request);
+            return;
         } else if (host.startsWith("compile.")) {
             // route the compile subdomain to the compiler server
-            forwardRequest("http://127.0.0.1:${secrets.COMPILER_PORT}${request.uri}", request);
+            await forwardRequest("http://127.0.0.1:${secrets.COMPILER_PORT}${request.uri}", request);
+            return;
         }
     }
 
@@ -128,7 +130,9 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
     if (clientIPAddr != null) {
         hashedUserIP = SHA256(IPHashSalt + clientIPAddr);
         if (IPMonitor[hashedUserIP] == null) {
-            IPMonitor[hashedUserIP] = {};
+            IPMonitor[hashedUserIP] = {
+                "requests": 0
+            };
         }
         IPMonitor[hashedUserIP]!["requests"]++;
         if (IPMonitor[hashedUserIP]!["requests"] > 50) {
@@ -148,11 +152,11 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
         for (final id in userCache.keys) {
             final user = userCache[id]!;
             // check against all user tokens
-            for (final token in user.tokens) {
-                if (AESDecrypt(base64.decode(token), base64.decode(secrets.MASTER_KEY)) == userToken) {
-                    userData = user;
-                }
-            }
+            // for (final token in user.tokens) {
+            //     if (AESDecrypt(base64.decode(token), base64.decode(secrets.MASTER_KEY)) == userToken) {
+            //         userData = user;
+            //     }
+            // }
         }
     }
 
@@ -191,7 +195,6 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
         response.statusCode = 500;
         response.write("Internal Server Error");
         response.close();
-        rethrow;
     }
 }
 

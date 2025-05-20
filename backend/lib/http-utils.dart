@@ -37,7 +37,7 @@ SecurityContext getServerSecurityContext(String certificatePath, String privateK
 }
 
 Future<void> forwardRequest(String destination, HttpRequest request) async {
-    try {
+    // try {
         final response = request.response;
         final headers = response.headers;
 
@@ -45,19 +45,18 @@ Future<void> forwardRequest(String destination, HttpRequest request) async {
         final remoteHeaders = remoteResponse.headers;
 
         response.statusCode = remoteResponse.statusCode;
-
         for (String header in remoteHeaders.keys) {
-            headers.add(header, remoteHeaders[header]!);
+            headers.set(header, remoteHeaders[header]!);
         }
 
         response.add(remoteResponse.bodyBytes);
 
         await request.response.close();
-    } catch (e) {
-        request.response.statusCode = 500;
-        request.response.write("Internal Server Error");
-        await request.response.close();
-    }
+    // } catch (e) {
+    //     request.response.statusCode = 500;
+    //     request.response.write("Internal Server Error");
+    //     await request.response.close();
+    // }
 }
 
 String? getCookie(List<Cookie> cookies, String name) {

@@ -11,7 +11,7 @@ import '../lib/utils.dart';
 import '../../secrets/secrets.dart';
 
 var fileCache = new FileCache(
-    "./frontend-sandbox/",
+    "./frontend/sandbox/",
     {}, 16
 );
 

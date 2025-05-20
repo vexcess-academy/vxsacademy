@@ -71,9 +71,9 @@ void routeFn_CDN(AP path, AO out, AD data) async {
                     // hide sensitive data from front end
                     clonedProgram.remove("likes");
 
-                    if (clonedProgram["thumbnail"] != null) {
-                        Mongo.BsonBinary thumbnailBinary = clonedProgram["thumbnail"];
-                        clonedProgram["thumbnail"] = base64.encode(thumbnailBinary.byteList);
+                    dynamic thumbnail = clonedProgram["thumbnail"];
+                    if (thumbnail != null && thumbnail is Mongo.BsonBinary) {
+                        clonedProgram["thumbnail"] = base64.encode(clonedProgram["thumbnail"].byteList);
                     }
 
                     programData = clonedProgram;
@@ -91,9 +91,9 @@ void routeFn_CDN(AP path, AO out, AD data) async {
     } else {
         try {
             if (fetchPath.startsWith("./lib")) {
-                dataOut = await readFile("./" + fetchPath);
+                dataOut = await readFile(fetchPath);
             } else {
-                dataOut = await readFile("./frontend/" + fetchPath);
+                dataOut = await readFile("./frontend/main/" + fetchPath);
             }
         } catch (e) {
             // file doesn't exist

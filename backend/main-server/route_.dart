@@ -19,22 +19,22 @@ import 'route_CDN.dart';
 import '../../secrets/secrets.dart';
 
 var fileCache = new FileCache(
-    "./frontend/pages/",
+    "./frontend/main/",
     {
-        "main": "./frontend/page-template.html",
-        "computer-programming": "./frontend/pages/computer-programming/computer-programming.html",
-        "program": "./frontend/pages/computer-programming/program.html",
-        "program-fullscreen": "./frontend/pages/computer-programming/program-fullscreen.html",
-        "course": "./frontend/pages/computer-programming/course.html",
-        "browse": "./frontend/pages/computer-programming/browse.html",
-        "home": "./frontend/pages/home/home.html",
-        "login": "./frontend/pages/login/login.html",
-        "profile": "./frontend/pages/profile/profile.html",
-        "logs/dev": "./frontend/pages/logs/dev.html",
-        "logs/finance": "./frontend/pages/logs/finance.html",
-        "tos": "./frontend/pages/tos/tos.html",
-        "privacy-policy": "./frontend/pages/privacy-policy/privacy-policy.html",
-    }, 16
+        "main": "./frontend/main/page-template.html",
+        // "computer-programming": "./frontend/main/pages/computer-programming/computer-programming.html",
+        // "program": "./frontend/main/pages/computer-programming/program.html",
+        // "program-fullscreen": "./frontend/main/pages/computer-programming/program-fullscreen.html",
+        // "course": "./frontend/main/pages/computer-programming/course.html",
+        // "browse": "./frontend/main/pages/computer-programming/browse.html",
+        // "home": "./frontend/main/pages/home/home.html",
+        // "login": "./frontend/main/pages/login/login.html",
+        // "profile": "./frontend/main/pages/profile/profile.html",
+        // "dev-logs": "./frontend/main/pages/logs/dev.html",
+        // "finance-logs": "./frontend/main/pages/logs/finance.html",
+        // "tos": "./frontend/main/pages/tos/tos.html",
+        // "privacy-policy": "./frontend/main/pages/privacy-policy/privacy-policy.html",
+    }, 32
 );
 
 const DEFAULT_OG_TAGS = """
@@ -48,12 +48,33 @@ Future<String> createHTMLPage(String pg, UserData? userData, String openGraphTag
     final userDataBytes = bytesOf(stringifiedUserData);
     final base64UserData = base64.encode(userDataBytes);
 
+    // String pageHTML = (await fileCache.get("main"))!;
+    // return pageHTML
+    //     .replaceFirst("<!-- OPEN GRAPH INSERT -->", openGraphTags)
+    //     .replaceFirst("<!-- USER DATA INSERT -->", "<script>\n\tlet userData = JSON.parse(new TextDecoder(\"utf-8\").decode(Base64.decode(\"${base64UserData}\")));\n</script>")
+    //     .replaceFirst("%svquery.body%", await fileCache.get(pg) ?? "");
+
     String pageHTML = (await fileCache.get("main"))!;
     return pageHTML
         .replaceFirst("<!-- OPEN GRAPH INSERT -->", openGraphTags)
         .replaceFirst("<!-- USER DATA INSERT -->", "<script>\n\tlet userData = JSON.parse(new TextDecoder(\"utf-8\").decode(Base64.decode(\"${base64UserData}\")));\n</script>")
-        .replaceFirst("<!-- PAGE CONTENT INSERT -->", await fileCache.get(pg) ?? "");
+        .replaceFirst("%svquery.body%", """
+            <script src="/CDN/build/${pg.split("/").last}.js" type="module"></script>
+            <link href="/CDN/build/${pg.split("/").last}.css" rel="stylesheet">
+        """);
 }
+
+// Future<String> compileSveltePage(String pg, UserData? userData, String openGraphTags) async {
+//     final stringifiedUserData = userData != null ? json.encode(userData) : "null";
+//     final userDataBytes = bytesOf(stringifiedUserData);
+//     final base64UserData = base64.encode(userDataBytes);
+
+//     String pageHTML = (await fileCache.get("main"))!;
+//     return pageHTML
+//         .replaceFirst("<!-- OPEN GRAPH INSERT -->", openGraphTags)
+//         .replaceFirst("<!-- USER DATA INSERT -->", "<script>\n\tlet userData = JSON.parse(new TextDecoder(\"utf-8\").decode(Base64.decode(\"${base64UserData}\")));\n</script>")
+//         .replaceFirst("%svquery.body%", await fileCache.get(pg) ?? "");
+// }
 
 typedef AP = String;
 typedef AO = HttpResponse;
@@ -76,6 +97,12 @@ final Map<String, dynamic> routeTree = {
         out.write(await createHTMLPage("home", data["userData"], DEFAULT_OG_TAGS));
         out.close();
     },
+    "/ping": (AP path, AO out, AD data) async {
+        // main path
+        out.headers.add('Content-Type', 'text/plain');
+        out.write("Pong!");
+        out.close();
+    },
     "/login": (AP path, AO out, AD data) async {
         // login page
         out.headers.add('Content-Type', 'text/html');
@@ -89,7 +116,7 @@ final Map<String, dynamic> routeTree = {
     "/logs/": (AP path, AO out, AD data) async {
         // logs path
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("logs/" + path, data["userData"], DEFAULT_OG_TAGS));
+        out.write(await createHTMLPage("logs_" + path, data["userData"], DEFAULT_OG_TAGS));
     },
     "/tos": (AP path, AO out, AD data) async {
         // tos path

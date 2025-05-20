@@ -11,8 +11,9 @@ Future<Uint8List?> readFile(String path, {bool elevatedPermissions=false}) async
     print("Reading: $absFilePath");
 
     final whitelist = [
-        "/frontend/",
-        "/frontend-sandbox/",
+        "/frontend/main/",
+        "/frontend/sandbox/",
+        "/frontend/build/",
         "/lib/",
     ];
 

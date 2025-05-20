@@ -16,15 +16,19 @@ Map<String, dynamic> parseQuery(String url) {
             Map<String, dynamic> keys = {};
             for (var i = 0; i < vars.length; i++) {
                 final eqIdx = vars[i].indexOf("=");
-                final temp = [
-                    Uri.decodeComponent(vars[i].substring(0, eqIdx)),
-                    Uri.decodeComponent(vars[i].substring(eqIdx + 1))
-                ];
-                final number = int.tryParse(temp[1]);
-                if (number != null) {
-                    keys[temp[0]] = number;
+                if (eqIdx != -1) {
+                    final temp = [
+                        Uri.decodeComponent(vars[i].substring(0, eqIdx)),
+                        Uri.decodeComponent(vars[i].substring(eqIdx + 1))
+                    ];
+                    final number = int.tryParse(temp[1]);
+                    if (number != null) {
+                        keys[temp[0]] = number;
+                    } else {
+                        keys[temp[0]] = temp[1];
+                    }
                 } else {
-                    keys[temp[0]] = temp[1];
+                    keys[vars[i]] = null;
                 }
             }
             return keys;
