@@ -39,19 +39,24 @@ SecurityContext getServerSecurityContext(String certificatePath, String privateK
 Future<void> forwardRequest(String destination, HttpRequest request) async {
     // try {
         final response = request.response;
-        final headers = response.headers;
 
-        final remoteResponse = await HTTP.get(Uri.parse(destination));
-        final remoteHeaders = remoteResponse.headers;
+        if (request.protocolVersion == "1.0") {
+            response.statusCode = 426; // Upgrade Required
+        } else {
+            final headers = response.headers;
 
-        response.statusCode = remoteResponse.statusCode;
-        for (String header in remoteHeaders.keys) {
-            headers.set(header, remoteHeaders[header]!);
+            final remoteResponse = await HTTP.get(Uri.parse(destination));
+            final remoteHeaders = remoteResponse.headers;
+
+            response.statusCode = remoteResponse.statusCode;
+            for (String header in remoteHeaders.keys) {
+                headers.set(header, remoteHeaders[header]!);
+            }
+
+            response.add(remoteResponse.bodyBytes);
         }
 
-        response.add(remoteResponse.bodyBytes);
-
-        await request.response.close();
+        await response.close();
     // } catch (e) {
     //     request.response.statusCode = 500;
     //     request.response.write("Internal Server Error");
