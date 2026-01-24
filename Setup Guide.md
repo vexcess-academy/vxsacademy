@@ -23,6 +23,13 @@ nvm install --lts
 ```
 to install the latest long term support version of Node.
 
+## Install Node JS
+I use Node's npm for package management and Bun for building the frontend.
+[https://bun.com/docs/installation](https://bun.com/docs/installation)
+```
+curl -fsSL https://bun.com/install | bash
+```
+
 ## Install Java Development Kit
 First ensure your package repository is up to date by running
 ```
@@ -136,3 +143,9 @@ Install certbot and run
 sudo certbot certonly --manual --preferred-challenges dns -d "vxsacademy.org,*.vxsacademy.org"
 ```
 Move `privkey.pem` to `server.key` and `fullchain.pem` to `server.cert`.
+```
+sudo cp /etc/letsencrypt/live/vxsacademy.org/privkey.pem ./secrets/server.key
+sudo cp /etc/letsencrypt/live/vxsacademy.org/fullchain.pem ./secrets/server.cert
+sudo chown vexcess ./secrets/server.key
+sudo chown vexcess ./secrets/server.cert
+```

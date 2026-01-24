@@ -1,6 +1,6 @@
 <script>
     const finances = [
-        ["BUY", "Ionos Linux VPS for proxy ($2/month)", 2 * 19],
+        ["BUY", "Ionos Linux VPS for proxy in 2024 ($2/month)", 2 * 11],
         ["BUY", "Buy vxsacademy.org domain", 12],
         ["BUY", "Old workstation for server", 86.75],
         ["BUY", "1TB SATA SSD for database", 42.89],
@@ -8,7 +8,17 @@
         ["BUY", "Newer workstation for server", 77.78],
         ["SELL", "4GB DDR4-2400 RAM from newer server", 1.69],
         ["BUY", "16GB DDR4-3200 RAM for server", 39.03],
+        ["BUY", "Ionos Linux VPS for proxy in 2025 ($2/month)", 2 * 12],
         ["BUY", "Renew vxsacademy.org domain", 12],
+        ["SELL", "Sell old server", 159.7],
+        ["BUY", "Raspberry Pi 5 for new server", 100.99],
+        ["BUY", "microSD card for Pi", 26.51],
+        ["BUY", "micro HDMI cable for Pi", 6.29],
+        ["BUY", "case for Pi", 11.25],
+        ["BUY", "Ionos Linux VPS for proxy in 2026 ($2/month)", 2 * 1],
+        ["BUY", "Renew vxsacademy.org domain", 15],
+        
+
     ];
 
     let total = 0;

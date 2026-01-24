@@ -56,6 +56,26 @@ class UserData {
         );
     }
 
+    Map<String, dynamic> toMap() {
+        return {
+            "nickname": this.nickname,
+            "username": this.username,
+            "avatar": this.avatar,
+            "password": this.password,
+            "tokenAges": this.tokenAges,
+            "tokens": this.tokens,
+            "id": this.id,
+            "bio": this.bio,
+            "created": this.created,
+            "projects": this.projects,
+            "background": this.background,
+            "comments": this.comments,
+            "discussions": this.discussions,
+            "notifications": this.notifications,
+            "newNotifs": this.newNotifs,
+        };
+    }
+
     String toJSONString() {
         return json.encode({
             "nickname": nickname,

@@ -20,6 +20,7 @@ import '../lib/http-utils.dart';
 import '../lib/cryptography.dart';
 import 'UserData.dart';
 import 'hotlist.dart';
+import '../lib/utils.dart';
 
 // the routing tree
 import 'route_.dart' show routeTree;
@@ -67,12 +68,10 @@ Future<int> useTree(String path, Map<String, dynamic> tree, Map<String, dynamic>
                     switch (request.method) {
                         case "POST": {
                             data["postBody"] = await utf8.decoder.bind(request).join();
-                            status = await useTree(path.substring(key.length), tree[key][":POST:"], data, response);
-                            if (status == 404) response.write("Not Found");
-                            response.close();
+                            status = await useTree(path.substring(key.length), tree[key][":POST:"].cast<String, dynamic>(), data, response);
                         }
                         case "GET": {
-                            status = await useTree(path.substring(key.length), tree[key][":GET:"], data, response);
+                            status = await useTree(path.substring(key.length), tree[key][":GET:"].cast<String, dynamic>(), data, response);
                         }
                     }
                     break;
@@ -81,7 +80,7 @@ Future<int> useTree(String path, Map<String, dynamic> tree, Map<String, dynamic>
                     await tree[key](path.substring(key.length), response, data);
                     break;
                 } else {
-                    status = await useTree(path.substring(key.length), tree[key], data, response);
+                    status = await useTree(path.substring(key.length), tree[key].cast<String, dynamic>(), data, response);
                     break;
                 }
             }
@@ -149,14 +148,18 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
 
     // find which user is making request
     if (userToken != null) {
+        final masterKeyBytes = base64.decode(secrets.MASTER_KEY);
         for (final id in userCache.keys) {
             final user = userCache[id]!;
             // check against all user tokens
-            // for (final token in user.tokens) {
-            //     if (AESDecrypt(base64.decode(token), base64.decode(secrets.MASTER_KEY)) == userToken) {
-            //         userData = user;
-            //     }
-            // }
+            for (final token in user.tokens) {
+                final encryptedTokenBytes = base64.decode(token);
+                final decryptedTokenBytes = AESDecrypt(encryptedTokenBytes, masterKeyBytes);
+                const SALT_SIZE = 16;
+                if (decryptedTokenBytes != null && utf8.decode(decryptedTokenBytes).substring(SALT_SIZE) == userToken) {
+                    userData = user;
+                }
+            }
         }
     }
 
@@ -207,6 +210,15 @@ late Mongo.DbCollection  discussions;
 void main() async {
     print("Starting Web Server...");
 
+    // print("AAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    // final a = base64.encode(AESEncrypt("Hello" + "World!", base64.decode(secrets.MASTER_KEY)));
+    // print(a);
+    // final encryptedTokenBytes = base64.decode(a);
+    // final decryptedTokenBytes = AESDecrypt(encryptedTokenBytes, base64.decode(secrets.MASTER_KEY));
+    // final b = decryptedTokenBytes!;
+    // print(b);
+    // print("BBBBBBBBBBBBBBBBBBBBBBBb");
+
     // connect to mongodb
     if (secrets.MONGO_PASSWORD != null) {
         db = Mongo.Db("mongodb://vxsacademyuser:${secrets.MONGO_PASSWORD}@${secrets.MONGO_IP}:${secrets.MONGO_PORT}/vxsacademy?authSource=vxsacademy");
@@ -232,6 +244,18 @@ void main() async {
         }
     }
 
+    // !!! DANGER BELOW !!! for manually updating each item in a collection
+    // {
+    //     final useCollection = users;
+    //     await useCollection.updateMany(
+    //         Mongo.where, 
+    //         Mongo.modify
+    //             .set('tokens', [])
+    //             .set('tokenAges', [])
+    //     );
+    // }
+    // !!! DANGER ABOVE !!!
+
     // initialize and load hotlists
     initLists(db);
     vxsHotlist.updatePrograms().then((_) {
@@ -249,9 +273,9 @@ void main() async {
         vxsHotlist.updatePrograms().then((void _) {
             vxsHotlist.updateLists();
         });
-        // kaHotlist.updatePrograms().then((void _) {
-        //     kaHotlist.updateLists();
-        // });
+        kaHotlist.updatePrograms().then((void _) {
+            kaHotlist.updateLists();
+        });
     });
 
     // init salt for ip hashing

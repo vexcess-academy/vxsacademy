@@ -44,7 +44,7 @@ const DEFAULT_OG_TAGS = """
 """;
 
 Future<String> createHTMLPage(String pg, UserData? userData, String openGraphTags) async {
-    final stringifiedUserData = userData != null ? json.encode(userData) : "null";
+    final stringifiedUserData = userData != null ? json.encode(userData.toMap()) : "null";
     final userDataBytes = bytesOf(stringifiedUserData);
     final base64UserData = base64.encode(userDataBytes);
 
@@ -82,13 +82,23 @@ typedef AD = Map<String, dynamic>;
 
 final Map<String, dynamic> routeTree = {
     "/clearCache": (AP path, AO out, AD data) async {
-        fileCache.clear();
-        try {
-            await HTTP.get(Uri.parse("http://127.0.0.1:${secrets.SANDBOX_PORT}/clearCache"));
-        } catch (e) {
-            // sandbox server must be offline
+        if (!secrets.USE_PROXY) {
+            Process.start(
+                "bun", "run buildscript.js".split(" "),
+                workingDirectory: "./frontend",
+                mode: ProcessStartMode.inheritStdio
+            );
+
+            fileCache.clear();
+            try {
+                await HTTP.get(Uri.parse("http://127.0.0.1:${secrets.SANDBOX_PORT}/clearCache"));
+            } catch (e) {
+                // sandbox server must be offline
+            }
+            out.write("Cache Cleared");
+        } else {
+            out.write("clearCache disabled in production");
         }
-        out.write("Cache Cleared");
         out.close();
     },
     "/": (AP path, AO out, AD data) async {
@@ -108,6 +118,11 @@ final Map<String, dynamic> routeTree = {
         out.headers.add('Content-Type', 'text/html');
         out.write(await createHTMLPage("login", data["userData"], DEFAULT_OG_TAGS));
     },
+    "/change_password": (AP path, AO out, AD data) async {
+        // login page
+        out.headers.add('Content-Type', 'text/html');
+        out.write(await createHTMLPage("change_password", data["userData"], DEFAULT_OG_TAGS));
+    },
     "/profile/": (AP path, AO out, AD data) async {
         // profile page
         out.headers.add('Content-Type', 'text/html');
@@ -123,7 +138,7 @@ final Map<String, dynamic> routeTree = {
         out.headers.add('Content-Type', 'text/html');
         out.write(await createHTMLPage("tos" + path, data["userData"], DEFAULT_OG_TAGS));
     },
-     "/privacy-policy": (AP path, AO out, AD data) async {
+    "/privacy-policy": (AP path, AO out, AD data) async {
         // tos path
         out.headers.add('Content-Type', 'text/html');
         out.write(await createHTMLPage("privacy-policy" + path, data["userData"], DEFAULT_OG_TAGS));

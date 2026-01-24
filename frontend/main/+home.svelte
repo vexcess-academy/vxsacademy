@@ -88,7 +88,7 @@
     });
 </script>
 
-<link rel="stylesheet" href="/CDN/pages/home/home.css" type="text/css">
+<!-- <link rel="stylesheet" href="/CDN/pages/home/home.css" type="text/css"> -->
 
 <h2>Important</h2>
 <div>Due to the recent data leak all API endpoints requiring authentication have been disabled until I get around to implementing a password reset and can re-encrypt all account data. Essentially the site is read only at the time. In addition, I rewrote the code editor from the ground up. Unfortunately, the new editor still needs a lot of debugging. Please let me know what bugs you encounter with it. I am aware that tab creation/deletion/reordering is buggy.</div>

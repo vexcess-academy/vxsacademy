@@ -1,5 +1,6 @@
 import "dart:convert";
 import "dart:typed_data";
+import 'package:fixnum/fixnum.dart';
 
 int millis() {
     return DateTime.now().millisecondsSinceEpoch;
@@ -51,6 +52,8 @@ List<T> castList<T>(List<dynamic> arr) {
     for (final item in arr) {
         if (item is double && T == int) {
             newArr.add(item.toInt() as T);
+        } else if (item is Int64 && T == int) {
+            newArr.add(item.toInt() as T);
         } else {
             newArr.add(item as T);
         }
@@ -91,7 +94,7 @@ Uint8List bytesOf(Object obj) {
     } else if (obj is Uint8List) {
         return obj;
     } else {
-        throw "Invalid input to SHA256";
+        throw "Invalid input to bytesOf";
     }
 }
 

@@ -7,9 +7,28 @@ import 'package:http/http.dart' as HTTP;
 import 'ProgramData.dart';
 import 'route_.dart';
 import '../lib/utils.dart';
+import '../lib/cryptography.dart';
+import '../lib/validators.dart';
 import 'hotlist.dart';
 import 'main.dart';
 import 'UserData.dart';
+import '../../secrets/secrets.dart';
+
+void deleteOldUserTokens(dynamic profile, UserData user) {
+    var currTime = millis();
+    const week = 1000*60*60*24*7;
+    for (var i = 0; i < profile["tokenAges"].length; i++) {
+        // convert Int64 to int
+        final tokenAge = profile["tokenAges"][i].toInt();
+        if (currTime - tokenAge > week) {
+            profile["tokenAges"].removeAt(i);
+            profile["tokens"].removeAt(i);
+            user.tokenAges.removeAt(i);
+            user.tokens.removeAt(i);
+            i--;
+        }
+    }
+}
 
 final routeTree_API = {
     ":ACTION": (AP path, AO out, AD data) {
@@ -22,7 +41,7 @@ final routeTree_API = {
         HttpRequest request = data["request"];
         final origin = request.headers.value("origin");
         final validOrigin = origin is String && (origin == "https://vxsacademy.org" || origin.startsWith("https://127.0.0.1") || origin.startsWith("http://127.0.0.1"));
-        final sensitiveEndpoint = ["signup", "login", "create_program", "save_program", "delete_program", "like_program", "update_profile", "compile_cpp", "sign_out", "compile_zig"].contains(path.substring(5));
+        final sensitiveEndpoint = ["signup", "login", "create_program", "save_program", "delete_program", "like_program", "update_profile", "compile_cpp", "log_out", "compile_zig"].contains(path.substring(5));
         // console.log(origin)
         if (sensitiveEndpoint && !validOrigin) {
             allowRequest = false;
@@ -34,9 +53,6 @@ final routeTree_API = {
         } else {
             out.headers.add("Access-Control-Allow-Origin", "https://vxsacademy.org");
         }
-
-        // Disable all auth because of data leak
-        hasPermission = false;
 
         return { 
             "hasPermission": hasPermission,
@@ -141,70 +157,134 @@ final routeTree_API = {
     //             return;
     //         }
     //     },
-    //     "login": (AP path, AO out, AD data) async {
-    //         if (!data["allowRequest"]) {
-    //             out.write("error: access denied");
-    //             return;
-    //         }
+        "login": (AP path, AO out, AD data) async {
+            if (!data["allowRequest"]) {
+                out.write("error: access denied");
+                return;
+            }
 
-    //         // login endpoint
-    //         if (data["userData"] != null) {
-    //             out.write("error: already signed in");
-    //             return;
-    //         }
+            // login endpoint
+            if (data["userData"] != null) {
+                out.write("error: already signed in");
+                return;
+            }
 
-    //         var json = parseJSON(data["postData"]);
-    //         if (json == null) {
-    //             out.write("error");
-    //             return;
-    //         }
+            var json = parseJSON(data["postBody"]!);
+            if (json == null) {
+                out.write("error");
+                return;
+            }            
 
-    //         if (validateUsername(json.username) == "OK" && validatePassword(json.password) == "OK") {
-    //             for (var id in userCache) {
-    //                 var user = userCache[id];
-    //                 if (user.username == json.username) {
-    //                     var salt = (await salts.findOne({ id: user.id })).salt;
+            if (validateUsername(json["username"]) == "OK" && validatePassword(json["password"]) == "OK") {
+                for (final id in userCache.keys) {
+                    final user = userCache[id]!;
+                    if (user.username == json["username"]) {
+                        final userSaltPair = await salts.findOne({ "id": id });
+                        if (userSaltPair == null) {
+                            out.write("error: userCache out of sync 1");
+                            return;
+                        }
+                        final salt = userSaltPair["salt"];
 
-    //                     if (user.password == SHA256(salt + json.password)) {
-    //                         var profile = await users.findOne({ id });
+                        if (user.password == SHA256(salt + json["password"])) {
+                            var profile = await users.findOne({ "id": id });
+                            if (profile == null) {
+                                out.write("error: userCache out of sync 2");
+                                return;
+                            }
                             
-    //                         // generate new auth token on every sign in
-    //                         var userTok = genRandomToken(32);
+                            // generate new auth token on every sign in
+                            var userTok = genRandomToken(32);
 
-    //                         // delete old tokens
-    //                         var currTime = millis();
-    //                         for (var i = 0; i < profile.tokens.length; i += 2) {
-    //                             if (currTime - profile.tokens[i] > 1000*60*60*24*7) {
-    //                                 profile.tokens.splice(i, 2);
-    //                                 userCache[id].tokens.splice(i, 2);
-    //                                 i -= 2;
-    //                             }
-    //                         }
+                            // delete old tokens
+                            deleteOldUserTokens(profile, user);
 
-    //                         // update cache
-    //                         userCache[id].tokens.push(millis(), AES_encrypt(salt + userTok, secrets.MASTER_KEY));
+                            final newTokenAge = millis();
+                            final newEncryptedToken = base64.encode(AESEncrypt(salt + userTok, base64.decode(secrets.MASTER_KEY)));
+
+                            // update cache
+                            user.tokenAges.add(newTokenAge);
+                            user.tokens.add(newEncryptedToken);
                             
-    //                         // update profile in storage
-    //                         profile.tokens.push(millis(), AES_encrypt(salt + userTok, secrets.MASTER_KEY));
-    //                         users.updateOne({ id }, {$set: {
-    //                             tokens: profile.tokens
-    //                         }});
+                            // update profile in storage
+                            profile["tokenAges"].add(newTokenAge);
+                            profile["tokens"].add(newEncryptedToken);
+                            users.updateOne({ "id": id }, {"\$set": {
+                                "tokenAges": profile["tokenAges"]!,
+                                "tokens": profile["tokens"]!
+                            }});
                                 
-    //                         out.write(userTok);
-    //                         return;
-    //                     } else {
-    //                         out.write("error: password is incorrect");
-    //                         return;
-    //                     }
-    //                 }
-    //             }
+                            out.write(userTok);
+                            return;
+                        } else {
+                            out.write("error: password is incorrect");
+                            return;
+                        }
+                    }
+                }
 
-    //             out.write("error: that username doesn't exist");
-    //         } else {
-    //             out.write("error: 400");
-    //             return;
-    //         }
-    //     },
+                out.write("error: that username doesn't exist");
+            } else {
+                out.write("error: 400");
+                return;
+            }
+        },
+        "change_password": (AP path, AO out, AD data) async {
+            if (!data["allowRequest"]) {
+                out.write("error: access denied");
+                return;
+            }
+
+            // change_password endpoint
+            var json = parseJSON(data["postBody"]!);
+            if (json == null) {
+                out.write("error");
+                return;
+            }            
+
+            if (validateUsername(json["username"]) == "OK" && validatePassword(json["password"]) == "OK" && validatePassword(json["new_password"]) == "OK") {
+                for (final id in userCache.keys) {
+                    final user = userCache[id]!;
+                    if (user.username == json["username"]) {
+                        final userSaltPair = await salts.findOne({ "id": id });
+                        if (userSaltPair == null) {
+                            out.write("error: userCache out of sync 1");
+                            return;
+                        }
+                        final salt = userSaltPair["salt"];
+
+                        if (user.password == SHA256(salt + json["password"])) {
+                            var profile = await users.findOne({ "id": id });
+                            if (profile == null) {
+                                out.write("error: userCache out of sync 2");
+                                return;
+                            }
+                            
+                            final newHashedPassword = SHA256(salt + json["new_password"]);
+
+                            // update cache
+                            user.password = newHashedPassword;
+                            
+                            // update profile in storage
+                            users.updateOne({ "id": id }, {"\$set": {
+                                "password": newHashedPassword
+                            }});
+                                
+                            out.write("OK");
+                            return;
+                        } else {
+                            out.write("error: password is incorrect");
+                            return;
+                        }
+                    }
+                }
+
+                out.write("error: that username doesn't exist");
+            } else {
+                out.write("error: 400");
+                return;
+            }
+        },
     //     "create_program": (AP path, AO out, AD data) async {
     //         // create program endpoint
     //         var json = parseJSON(data["postData"]);
@@ -714,36 +794,49 @@ final routeTree_API = {
     //     //         out.write("error: invalid source code");
     //     //     }
     //     // },
-    //     "sign_out": (AP path, AO out, AD data) async {
-    //         // sign out endpoint
-    //         if (!data["hasPermission"] || !data["allowRequest"]) {
-    //             out.write("error: access denied");
-    //             return;
-    //         }
+        "log_out": (AP path, AO out, AD data) async {
+            // sign out endpoint
+            if (!data["hasPermission"] || !data["allowRequest"]) {
+                out.write("error: access denied");
+                return;
+            }
 
-    //         // invalidate token
-    //         var token = data["userToken"];
-    //         var id = data["userData"].id;
-    //         var profile = await users.findOne({ id });
+            // invalidate token
+            var userToken = data["userToken"];
+            UserData user = data["userData"];
+            var profile = await users.findOne({ "id": user.id });
+            if (profile == null) {
+                out.write("error: userCache out of sync 3");
+                return;
+            }
             
-    //         // delete old tokens
-    //         var currTime = millis();
-    //         for (var i = 0; i < profile.tokens.length; i += 2) {
-    //             var plainTok = AES_decrypt(profile.tokens[i + 1], secrets.MASTER_KEY).slice(16);
-    //             if (currTime - profile.tokens[i] > 1000*60*60*24*7 || plainTok == token) {
-    //                 profile.tokens.splice(i, 2);
-    //                 userCache[id].tokens.splice(i, 2);
-    //                 i -= 2;
-    //             }
-    //         }
-            
-    //         // update profile in storage
-    //         users.updateOne({ id }, {$set: {
-    //             tokens: profile.tokens
-    //         }});
+            deleteOldUserTokens(profile, user);
 
-    //         out.write("OK");
-    //     },
+            // delete current token
+            final masterKeyBytes = base64.decode(secrets.MASTER_KEY);
+            for (var i = 0; i < user.tokens.length; i++) {
+                final token = user.tokens[i];
+
+                final encryptedTokenBytes = base64.decode(token);
+                final decryptedTokenBytes = AESDecrypt(encryptedTokenBytes, masterKeyBytes);
+                const SALT_SIZE = 16;
+                if (decryptedTokenBytes != null && utf8.decode(decryptedTokenBytes).substring(SALT_SIZE) == userToken) {
+                    profile["tokenAges"].removeAt(i);
+                    profile["tokens"].removeAt(i);
+                    user.tokenAges.removeAt(i);
+                    user.tokens.removeAt(i);
+                    break;
+                }
+            }
+            
+            // update profile in storage
+            users.updateOne({ "id": user.id }, {"\$set": {
+                "tokenAges": profile["tokenAges"]!,
+                "tokens": profile["tokens"]!
+            }});
+
+            out.write("OK");
+        },
     },
     ":GET:": {
         ":ACTION": (AP path, AO out, AD data) {
@@ -915,3 +1008,4 @@ final routeTree_API = {
         },
     }
 };    
+

@@ -166,7 +166,7 @@
 
             // log out
             profileMenuEls[3].on("click", () => {
-                fetch("/API/sign_out", {
+                fetch("/API/log_out", {
                     method: "POST"
                 }).then(res => res.text()).then(res => {
                     if (res === "OK") {

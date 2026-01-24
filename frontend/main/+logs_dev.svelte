@@ -444,6 +444,15 @@
     Replace production with the new Svelte frontend;
 </p>
 
+<h2>1/24/26</h2>
+<p>
+    Fix AES encryption;
+    Fix login API;
+    Fix auth tokens;
+    Create password reset page;
+    Fix hotlist sorting;
+</p>
+
 <h2>TODO</h2>
 <p>
     TODO: Implement sandbox unload detection;

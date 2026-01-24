@@ -6,7 +6,9 @@ import 'package:http/http.dart' as HTTP;
 
 import '../lib/utils.dart';
 
-const loadAmount = 1;
+import '../../secrets/secrets.dart';
+
+var loadAmount = 1;
 
 Map<String, Map<String, dynamic>> KAProgramsCache = {};
 Future<Map<String, dynamic>?> getKAProgram(String id) async {
@@ -29,110 +31,112 @@ Future<Map<String, dynamic>?> getKAProgram(String id) async {
             print(err);
         }
         
-        String? programType = null;
-        final KAprogramType = programJSON["userAuthoredContentType"];
-        switch (KAprogramType) {
-            case "WEBPAGE":
-                programType = "webpage";
-                break;
-            case "PJS":
-                programType = "pjs";
-                break;
-            case "PYTHON":
-                programType = "python";
-                break;
-        }
+        if (programJSON != null) {
+            String? programType = null;
+            final KAprogramType = programJSON["userAuthoredContentType"];
+            switch (KAprogramType) {
+                case "WEBPAGE":
+                    programType = "webpage";
+                    break;
+                case "PJS":
+                    programType = "pjs";
+                    break;
+                case "PYTHON":
+                    programType = "python";
+                    break;
+            }
 
-        final profileRoot = programJSON["creatorProfile"]["profileRoot"];
-        final programCreated = DateTime.parse(programJSON["created"]).millisecondsSinceEpoch;
-        final programUpdated = DateTime.parse(programJSON["revision"]["created"]).millisecondsSinceEpoch;
-        final authorUsername = profileRoot is String ? profileRoot.split("/")[2] : null;
-        
-        List<String> fileNames = [];
-        Map<String, String> programFiles = {};
-        switch (programType) {
-            case "webpage":
-                fileNames.add("index.html");
-                programFiles["index.html"] = programJSON["revision"]["code"] ?? "";
-                break;
-            case "pjs":
-                fileNames.add("index.js");
-                programFiles["index.js"] = programJSON["revision"]["code"] ?? "";
-                break;
-            case "python":
-                final pyFiles = json.decode(programJSON["revision"]["code"] ?? "{}")["files"];
-                if (pyFiles is List) {
-                    for (int i = 0; i < pyFiles.length; i++) {
-                        final fileName = pyFiles[i]["filename"];
-                        fileNames.add(fileName);
-                        programFiles[fileName] = pyFiles[i]["code"];
+            final profileRoot = programJSON["creatorProfile"]["profileRoot"];
+            final programCreated = DateTime.parse(programJSON["created"]).millisecondsSinceEpoch;
+            final programUpdated = DateTime.parse(programJSON["revision"]["created"]).millisecondsSinceEpoch;
+            final authorUsername = profileRoot is String ? profileRoot.split("/")[2] : null;
+            
+            List<String> fileNames = [];
+            Map<String, String> programFiles = {};
+            switch (programType) {
+                case "webpage":
+                    fileNames.add("index.html");
+                    programFiles["index.html"] = programJSON["revision"]["code"] ?? "";
+                    break;
+                case "pjs":
+                    fileNames.add("index.js");
+                    programFiles["index.js"] = programJSON["revision"]["code"] ?? "";
+                    break;
+                case "python":
+                    final pyFiles = json.decode(programJSON["revision"]["code"] ?? "{}")["files"];
+                    if (pyFiles is List) {
+                        for (int i = 0; i < pyFiles.length; i++) {
+                            final fileName = pyFiles[i]["filename"];
+                            fileNames.add(fileName);
+                            programFiles[fileName] = pyFiles[i]["code"];
+                        }
                     }
-                }
-                break;
+                    break;
+            }
+
+            // KAProgramsCache[id] = new ProgramData(
+            //     id: id,
+            //     title: programJSON?.title ?? "",
+            //     type: programType as String,
+            //     forks: [],
+            //     created: programCreated,
+            //     lastSaved: programUpdated,
+            //     flags: [],
+            //     width: programType == "webpage" ? 600 : (programJSON?.width ?? 400),
+            //     height: programJSON?.height ?? 400,
+            //     author: new ProgramDataUserData(
+            //         username: authorUsername as String,
+            //         id: programJSON?.creatorProfile?.id,
+            //         nickname: programJSON?.creatorProfile?.nickname
+            //     ),
+            //     parent: null,
+            //     thumbnail: null,
+            //     fileNames: fileNames,
+            //     files: programFiles,
+            //     discussions: [],
+            //     likes: [],
+            //     likeCount: programJSON?.sumVotesIncremented,
+            //     forkCount: programJSON?.spinoffCount
+            // );
+
+            KAProgramsCache[id] = {
+                "id": id,
+                "title": programJSON["title"] ?? "",
+                "type": programType,
+                "forks": [
+                    // {
+                    //     "id": "osjamxlmp81jfs",
+                    //     "created": 1695061820584,
+                    //     "likeCount": 0
+                    // },
+                    // {
+                    //     "id": "5Kjhm6lonohkkn",
+                    //     "created": 1699322074718,
+                    //     "likeCount": 0
+                    // }
+                ],
+                "created": programCreated,
+                "lastSaved": programUpdated,
+                "flags": [],
+                "width": programType == "webpage" ? 600 : (programJSON["width"] ?? 400),
+                "height": programJSON["height"] ?? 400,
+                "author": {
+                    "username": authorUsername,
+                    "id": programJSON["creatorProfile"]["id"],
+                    "nickname": programJSON["creatorProfile"]["nickname"]
+                },
+                "parent": null,
+                "thumbnail": null,
+                "files": programFiles,
+                "discussions": [
+                    // "vbEyWelsp8ecx0",
+                    // "TvM9Bhlsp8h23w",
+                    // "gOZmUglspjox79"
+                ],
+                "likeCount": programJSON["sumVotesIncremented"],
+                "forkCount": programJSON["spinoffCount"]
+            };
         }
-
-        // KAProgramsCache[id] = new ProgramData(
-        //     id: id,
-        //     title: programJSON?.title ?? "",
-        //     type: programType as String,
-        //     forks: [],
-        //     created: programCreated,
-        //     lastSaved: programUpdated,
-        //     flags: [],
-        //     width: programType == "webpage" ? 600 : (programJSON?.width ?? 400),
-        //     height: programJSON?.height ?? 400,
-        //     author: new ProgramDataUserData(
-        //         username: authorUsername as String,
-        //         id: programJSON?.creatorProfile?.id,
-        //         nickname: programJSON?.creatorProfile?.nickname
-        //     ),
-        //     parent: null,
-        //     thumbnail: null,
-        //     fileNames: fileNames,
-        //     files: programFiles,
-        //     discussions: [],
-        //     likes: [],
-        //     likeCount: programJSON?.sumVotesIncremented,
-        //     forkCount: programJSON?.spinoffCount
-        // );
-
-        KAProgramsCache[id] = {
-            "id": id,
-            "title": programJSON["title"] ?? "",
-            "type": programType,
-            "forks": [
-                // {
-                //     "id": "osjamxlmp81jfs",
-                //     "created": 1695061820584,
-                //     "likeCount": 0
-                // },
-                // {
-                //     "id": "5Kjhm6lonohkkn",
-                //     "created": 1699322074718,
-                //     "likeCount": 0
-                // }
-            ],
-            "created": programCreated,
-            "lastSaved": programUpdated,
-            "flags": [],
-            "width": programType == "webpage" ? 600 : (programJSON["width"] ?? 400),
-            "height": programJSON["height"] ?? 400,
-            "author": {
-                "username": authorUsername,
-                "id": programJSON["creatorProfile"]["id"],
-                "nickname": programJSON["creatorProfile"]["nickname"]
-            },
-            "parent": null,
-            "thumbnail": null,
-            "files": programFiles,
-            "discussions": [
-                // "vbEyWelsp8ecx0",
-                // "TvM9Bhlsp8h23w",
-                // "gOZmUglspjox79"
-            ],
-            "likeCount": programJSON["sumVotesIncremented"],
-            "forkCount": programJSON["spinoffCount"]
-        };
     }
 
     return KAProgramsCache[id];
@@ -159,17 +163,32 @@ class Hotlist {
         recentList = allPrograms.sublist(0);
         topList = allPrograms.sublist(0);
 
+        bool isValidNum(dynamic a) {
+            if (a is int) {
+                return true;
+            } else if (a is double) {
+                return !a.isNaN && !a.isInfinite;
+            }
+            return false;
+        }
+
         final self = this;
         hotList.sort((a, b) {
-            final bHotness = self.calcHotness(
-                b["likeCount"].toInt() + b["forkCount"].toInt(), 
-                b["created"].toInt()
-            );
-            final aHotness = self.calcHotness(
-                a["likeCount"].toInt() + a["forkCount"].toInt(), 
-                a["created"].toInt()
-            );
-            return ((bHotness - aHotness) * 1000).toInt();
+            if (
+                isValidNum(a["likeCount"]) && isValidNum(a["forkCount"]) && isValidNum(a["created"]) && 
+                isValidNum(b["likeCount"]) && isValidNum(b["forkCount"]) && isValidNum(b["created"])
+            ) {
+                final bHotness = self.calcHotness(
+                    b["likeCount"].toInt() + b["forkCount"].toInt(), 
+                    b["created"].toInt()
+                );
+                final aHotness = self.calcHotness(
+                    a["likeCount"].toInt() + a["forkCount"].toInt(), 
+                    a["created"].toInt()
+                );
+                return ((bHotness - aHotness) * 1000).toInt();
+            }
+            return 0;
         });
         recentList.sort((a, b) => b["created"].toInt() - a["created"].toInt());
         topList.sort((a, b) => b["likeCount"].toInt() - a["likeCount"].toInt());
@@ -187,23 +206,9 @@ bool listsInitialized = false;
 void initLists(Mongo.Db db) {
     kaHotlist = new Hotlist(
         calcHotness: (int upvotes, int uploadedOn) {
-            // Constants for the Wilson Score Interval
-            const z = 1.96; // 95% confidence interval
-            
-            // Calculate the fraction of upvotes
-            final p = upvotes / (upvotes + 0.1); // Adding 0.1 to avoid division by zero
-            
-            // Calculate the "score"
-            final temp = (p * (0.1 - p) + (z * z) / (4 * (upvotes + 0.1))) / (upvotes + 0.1);
-            final score =
-                (p + (z * z) / (2 * (upvotes + 0.1)) - z * Math.sqrt(temp.abs())) /
-                (0.1 + (z * z) / (upvotes + 0.1));
-            
-            // Calculate the hotness by considering the time elapsed
-            final elapsedTime = (millis() - uploadedOn) / (1000 * 60 * 60); // Convert milliseconds to hours
-            final hotness = score / elapsedTime;
-            
-            return hotness;
+            final elapsedTime = (millis() - uploadedOn) / (1000 * 60 * 60 * 24); // Convert milliseconds to days
+            final decay = 0.17;
+            return upvotes * Math.pow(Math.e, -decay*elapsedTime).toDouble();
         },
         updatePrograms: (Hotlist hl) async {
             final programs = [];
@@ -230,6 +235,10 @@ void initLists(Mongo.Db db) {
                     }
                 }
     
+                if (secrets.USE_PROXY) {
+                    loadAmount = 20;
+                }
+
                 var reqPrograms = await getList("HOT", loadAmount);
                 if (reqPrograms != null) {
                     for (int i = 0; i < reqPrograms.length; i++) {
@@ -282,22 +291,28 @@ void initLists(Mongo.Db db) {
     
     vxsHotlist = new Hotlist(
         calcHotness: (int upvotes, int uploadedOn) {
-            // Constants for the Wilson Score Interval
-            const z = 1.96; // 95% confidence interval
+            // // Constants for the Wilson Score Interval
+            // const z = 1.96; // 95% confidence interval
+            // const bias = 1;
             
-            // Calculate the fraction of upvotes
-            final p = upvotes / (upvotes + 1); // Adding 0.1 to avoid division by zero
+            // // Calculate the fraction of upvotes
+            // final p = upvotes / (upvotes + bias); // Adding 0.1 to avoid division by zero
             
-            // Calculate the "score"
-            final score =
-                (p + (z * z) / (2 * (upvotes + 1)) - z * Math.sqrt((p * (1 - p) + (z * z) / (4 * (upvotes + 1))) / (upvotes + 1))) /
-                (1 + (z * z) / (upvotes + 1));
+            // // Calculate the "score"
+            // final temp = (p * (bias - p) + (z * z) / (4 * (upvotes + bias))) / (upvotes + bias);
+            // final score =
+            //     (p + (z * z) / (2 * (upvotes + bias)) - z * Math.sqrt(temp.abs())) /
+            //     (bias + (z * z) / (upvotes + bias));
             
-            // Calculate the hotness by considering the time elapsed
-            final elapsedTime = (millis() - uploadedOn) / (1000 * 60 * 60); // Convert milliseconds to hours
-            final hotness = score / elapsedTime;
+            // // Calculate the hotness by considering the time elapsed
+            // final elapsedTime = (millis() - uploadedOn) / (1000 * 60 * 60); // Convert milliseconds to hours
+            // final hotness = score / elapsedTime;
             
-            return hotness;
+            // return hotness;
+            
+            final elapsedTime = (millis() - uploadedOn) / (1000 * 60 * 60 * 24); // Convert milliseconds to days
+            final decay = 0.17;
+            return upvotes * Math.pow(Math.e, -decay*elapsedTime).toDouble();
         },
         updatePrograms: (Hotlist hl) async {
             final programs = db.collection("programs");
