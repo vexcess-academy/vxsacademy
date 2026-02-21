@@ -33,7 +33,7 @@
                     recaptchaRes: grecaptcha.getResponse()
                 })
             }).then(res => res.text()).then(res => {
-                if (res.includes("error") || res.includes(" ")) {
+                if (res.toLowerCase().includes("error") || res.includes(" ")) {
                     alert(res);
                 } else {
                     loginCallback(res);
@@ -100,7 +100,7 @@
                     password: password,
                 })
             }).then(res => res.text()).then(function (res) {
-                if (res.includes("error")) {
+                if (res.toLowerCase().includes("error")) {
                     alert(res);
                 } else {
                     loginCallback(res);

@@ -2,6 +2,9 @@ const fs = require('fs');
 const bson = require("bson");
 const { MongoClient } = require("mongodb");
 
+let location = "db-backup";
+// location = "db-reencrypted";
+
 const secretsCode = fs.readFileSync("./secrets/secrets.dart").toString().replaceAll("final ", "").replaceAll("bool ", "").replaceAll("String? ", "").replaceAll("String ", "").replaceAll("int ", "");
 const secrets = Function(secretsCode + "\nreturn secrets")();
 
@@ -20,7 +23,7 @@ async function restoreCollection(collection) {
     coll.drop();
 
     // fill collection with backup values
-    const docs = JSON.parse(fs.readFileSync(`./db-backup/vxsacademy.${collection}.json`).toString());
+    const docs = JSON.parse(fs.readFileSync(`./${location}/vxsacademy.${collection}.json`).toString());
     for (let i = 0; i < docs.length; i++) {
         let doc = docs[i];
         for (let prop in doc) {

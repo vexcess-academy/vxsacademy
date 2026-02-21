@@ -236,7 +236,7 @@ void initLists(Mongo.Db db) {
                 }
     
                 if (secrets.USE_PROXY) {
-                    loadAmount = 20;
+                    loadAmount = 25;
                 }
 
                 var reqPrograms = await getList("HOT", loadAmount);

@@ -107,7 +107,7 @@ function createDiscussion(type) {
             content: discussionInput.value
         })
     }).then(res => res.text()).then(res => {
-        if (res.includes("error")) {
+        if (res.toLowerCase().includes("error")) {
             alert(res);
         } else {
             discussionInput.value = "";

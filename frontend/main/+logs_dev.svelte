@@ -453,6 +453,18 @@
     Fix hotlist sorting;
 </p>
 
+<h2>2/20/26</h2>
+<p>
+    Make password reset also reset salt;
+    Create database rencryption script;
+    Fix clear notifications endpoint;
+    Fix save program endpoint;
+    Fix validators;
+    Fix update user data endpoint;
+    Fix create program endpoint;
+    Fix delete program endpoint;
+</p>
+
 <h2>TODO</h2>
 <p>
     TODO: Implement sandbox unload detection;

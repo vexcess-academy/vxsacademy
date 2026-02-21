@@ -78,6 +78,7 @@ Uint8List? AESDecrypt(Uint8List combined_iv_ciphertext, Uint8List key) {
         length += cipher.doFinal(plaintext, length);
         return plaintext.sublist(0, length);
     } on InvalidCipherTextException catch (e) {
+        // Most likely Authentication tag check failed
         return null;
     }
 }

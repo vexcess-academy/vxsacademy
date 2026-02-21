@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:convert';
 
 import 'package:mongo_dart/mongo_dart.dart' as Mongo;
+import 'package:fixnum/fixnum.dart';
 
 import 'route_.dart';
 import 'ProgramData.dart';
@@ -78,6 +79,15 @@ void routeFn_CDN(AP path, AO out, AD data) async {
 
                     programData = clonedProgram;
                 }
+                if (programData.containsKey("_id")) {
+                    programData.remove("_id");
+                }
+                for (final key in programData.keys) {
+                    if (programData[key] is Int64) {
+                        programData[key] = programData[key].toInt();
+                    }
+                }
+                // print(programData);
                 dataOut = utf8.encode(json.encode(programData));
             }
         } else if (fetchPath.endsWith(".jpg")) {

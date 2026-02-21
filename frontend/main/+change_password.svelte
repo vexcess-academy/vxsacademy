@@ -39,7 +39,7 @@
                     new_password: newPassword
                 })
             }).then(res => res.text()).then(function (res) {
-                if (res.includes("error")) {
+                if (res.toLowerCase().includes("error")) {
                     alert(res);
                 } else {
                     if (res === "OK") {

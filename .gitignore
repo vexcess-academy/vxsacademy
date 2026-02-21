@@ -8,6 +8,7 @@ program-zig-out
 
 # ignore database files
 db-backup
+db-reencrypted
 
 # ignore production files
 rathole

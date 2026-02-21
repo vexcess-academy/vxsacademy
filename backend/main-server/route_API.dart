@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as Math;
 
 import 'package:http/http.dart' as HTTP;
+import 'package:bson/bson.dart';
 
 import 'ProgramData.dart';
 import 'route_.dart';
@@ -170,10 +171,10 @@ final routeTree_API = {
             }
 
             var json = parseJSON(data["postBody"]!);
-            if (json == null) {
-                out.write("error");
+            if (json == null || json is! Map) {
+                out.write("error: invalid json");
                 return;
-            }            
+            }
 
             if (validateUsername(json["username"]) == "OK" && validatePassword(json["password"]) == "OK") {
                 for (final id in userCache.keys) {
@@ -237,10 +238,10 @@ final routeTree_API = {
 
             // change_password endpoint
             var json = parseJSON(data["postBody"]!);
-            if (json == null) {
-                out.write("error");
+            if (json == null || json is! Map) {
+                out.write("error: invalid json");
                 return;
-            }            
+            }
 
             if (validateUsername(json["username"]) == "OK" && validatePassword(json["password"]) == "OK" && validatePassword(json["new_password"]) == "OK") {
                 for (final id in userCache.keys) {
@@ -260,7 +261,13 @@ final routeTree_API = {
                                 return;
                             }
                             
-                            final newHashedPassword = SHA256(salt + json["new_password"]);
+                            final newSalt = genRandomToken(16);
+                            final newHashedPassword = SHA256(newSalt + json["new_password"]);
+
+                            // update salt in storage
+                            salts.updateOne({ "id": id }, {"\$set": {
+                                "salt": newSalt
+                            }});
 
                             // update cache
                             user.password = newHashedPassword;
@@ -285,203 +292,234 @@ final routeTree_API = {
                 return;
             }
         },
-    //     "create_program": (AP path, AO out, AD data) async {
-    //         // create program endpoint
-    //         var json = parseJSON(data["postData"]);
-    //         if (json == null) {
-    //             out.write("error");
-    //             return;
-    //         }
+        "create_program": (AP path, AO out, AD data) async {
+            // create program endpoint
+            var json = parseJSON(data["postBody"]!);
+            if (json == null || json is! Map) {
+                out.write("error: invalid json");
+                return;
+            }
 
-    //         var programId;
-    //         var creationError = false;
+            late String programId;
+            String? creationError = null;
 
-    //         if (!data["hasPermission"] || !data["allowRequest"]) {
-    //             out.write("error: access denied");
-    //             return;
-    //         }
+            if (!data["hasPermission"] || !data["allowRequest"]) {
+                out.write("error: access denied");
+                return;
+            }
 
-    //         if (data["userData"].projects.length > 32) {
-    //             out.write("error: your storage is full");
-    //             return;
-    //         }
+            final userData = data["userData"] as UserData;
 
-    //         // temp obj for program data
-    //         var programData = {
-    //             id: null,
-    //             title: json.title,
-    //             type: json.type,
-    //             likes: [],
-    //             forks: [],
-    //             likeCount: 0,
-    //             forkCount: 0,
-    //             created: millis(),
-    //             lastSaved: millis(),
-    //             flags: [],
-    //             width: json.width,
-    //             height: json.height,
-    //             fileNames: Object.keys(json.files),
-    //             files: json.files,
-    //             author: {
-    //                 username: data["userData"].username,
-    //                 id: data["userData"].id,
-    //                 nickname: data["userData"].nickname
-    //             },
-    //             parent: json.parent ?? null,
-    //             thumbnail: json.thumbnail ? new bson.Binary(Buffer.from(json.thumbnail.slice(json.thumbnail.indexOf(",") + 1), 'base64')) : null,
-    //             discussions: []
-    //         };
+            if (userData.projects.length > 64) {
+                out.write("error: your storage is full");
+                return;
+            }
 
-    //         // validate input
-    //         var programCheck = validateProgramData(programData);
-    //         if (programCheck != "OK") creationError = programCheck;
+            // temp obj for program data
+            var programData = {
+                "id": null,
+                "title": json["title"],
+                "type": json["type"],
+                "likes": [],
+                "forks": [],
+                "likeCount": 0,
+                "forkCount": 0,
+                "created": millis(),
+                "lastSaved": millis(),
+                "flags": [],
+                "width": json["width"],
+                "height": json["height"],
+                "fileNames": json["files"].keys.toList(),
+                "files": json["files"],
+                "author": {
+                    "username": userData.username,
+                    "id": userData.id,
+                    "nickname": userData.nickname
+                },
+                "parent": json.containsKey("parent") ? json["parent"] : null,
+                "thumbnail": json["thumbnail"],
+                "discussions": []
+            };
 
-    //         // check if parent exists
-    //         var parentProgram = null;
-    //         if (programData.parent != null && programData.parent.length > 0) {
-    //             parentProgram = await programs.findOne({id: programData.parent});
-    //             if (parentProgram == null) creationError = "error: parent non-existent";
-    //         }
+            // validate input
+            var programCheck = validateProgramData(programData);
+            if (programCheck != "OK") creationError = programCheck;
 
-    //         if (!creationError) {
-    //             var directory;
-    //             do {
-    //                 // create program id
-    //                 programId = genRandomToken(6) + millis().toString(36);
-    //             } while (await programs.findOne({id: programId}) != null); // check if program already exists
+            // check if parent exists
+            var parentProgram = null;
+            if (creationError == null) {
+                if (programData["parent"] != null && programData["parent"].length > 0) {
+                    parentProgram = await programs.findOne({ "id": programData["parent"] });
+                    if (parentProgram == null) creationError = "error: parent non-existent";
+                }
+            }
 
-    //             programData.id = programId;
+            if (creationError == null) {
+                do {
+                    // create program id
+                    programId = genRandomToken(6) + millis().toRadixString(36);
+                } while (await programs.findOne({ "id": programId }) != null); // check if program already exists
 
-    //             // update parent forks array
-    //             if (parentProgram != null) {
-    //                 programs.updateOne({ id: programData.parent }, {$push: {
-    //                     forks: {
-    //                         id: programData.id,
-    //                         created: programData.created,
-    //                         likeCount: programData.likeCount
-    //                     }
-    //                 }});
-    //             }
+                programData["id"] = programId;
 
-    //             // add program to user's profile
-    //             await users.updateOne({ id: programData.author.id }, {$push: {
-    //                 projects: programData.id
-    //             }});
+                // convert base64 thumbnail to binary for better storage efficiency
+                final thumbnailData = json["thumbnail"] is String 
+                    ? BsonBinary.from(base64.decode(json["thumbnail"].substring(json["thumbnail"].indexOf(",") + 1))) 
+                    : null;
+                json["thumbnail"] = thumbnailData;
 
-    //             // save program to database
-    //             await programs.insertOne(programData);
-    //         }
+                // update parent forks array
+                if (parentProgram != null) {
+                    programs.updateOne({ "id": programData["parent"] }, {"\$push": {
+                        "forks": {
+                            "id": programData["id"],
+                            "created": programData["created"],
+                            "likeCount": programData["likeCount"]
+                        }
+                    }});
+                }
 
-    //         // send program id to user
-    //         if (creationError != false) {
-    //             out.write(creationError);
-    //         } else {
-    //             out.write(programId);
-    //         }
-    //     },
-    //     "save_program": (AP path, AO out, AD data) async {
-    //         // save program endpoint
-    //         var json = parseJSON(data["postData"]);
-    //         if (json == null) {
-    //             out.write("error");
-    //             return;
-    //         }
+                // add program to user's profile
+                userCache[programData["author"]["id"]]!.projects.add(programData["id"]);
+                await users.updateOne({ "id": programData["author"]["id"] }, {"\$push": {
+                    "projects": programData["id"]
+                }});
 
-    //         var creationError = false;
+                // save program to database
+                await programs.insertOne(programData);
+            }
 
-    //         if (!data["userData"] || (!data["userData"].projects.contains(json.id) && !data["userData"].isAdmin)) {
-    //             data["hasPermission"] = false;
-    //         }
+            // send program id to user
+            if (creationError != null) {
+                out.write(creationError);
+            } else {
+                out.write(programId);
+            }
+        },
+        "save_program": (AP path, AO out, AD data) async {
+            var json = parseJSON(data["postBody"]!);
+            if (json == null || json is! Map) {
+                out.write("error: invalid json");
+                return;
+            }
 
-    //         if (!data["hasPermission"] || !data["allowRequest"]) {
-    //             out.write("error: access denied");
-    //             return;
-    //         }
+            String? creationError = null;
 
-    //         // check if dir exists
-    //         var programData = await programs.findOne({ id: json.id });
-    //         if (programData == null) {
-    //             creationError = "error: program non-existent";
-    //         }
+            final userData = data["userData"] as UserData?;
+            if (
+                (userData == null) ||
+                (!userData.projects.contains(json["id"])/* && !userData.isAdmin*/)
+            ) {
+                data["hasPermission"] = false;
+            }
 
-    //         // temp obj for program data
-    //         programData.title = json.title;
-    //         programData.lastSaved = millis();
-    //         programData.width = json.width;
-    //         programData.height = json.height;
-    //         programData.fileNames = Object.keys(json.files);
-    //         programData.files = json.files;
-    //         programData.thumbnail = json.thumbnail;
+            if (!data["hasPermission"] || !data["allowRequest"]) {
+                out.write("error: access denied");
+                return;
+            }
 
-    //         // validate input
-    //         var programCheck = validateProgramData(programData);
-    //         if (programCheck != "OK") creationError = programCheck;
+            // check if dir exists
+            Map<String, dynamic>? programData = await programs.findOne({ "id": json["id"] });
+            if (programData == null) {
+                creationError = "error: program non-existent";
+            } else {
+                // temp obj for program data
+                programData["title"] = json["title"];
+                programData["lastSaved"] = millis();
+                programData["width"] = json["width"];
+                programData["height"] = json["height"];
+                programData["fileNames"] = json["files"].keys.toList();
+                programData["files"] = json["files"];
+                programData["thumbnail"] = json["thumbnail"];
 
-    //         // update program in database
-    //         if (!creationError) {
-    //             programs.updateOne({ id: json.id }, {$set: {
-    //                 title: json.title,
-    //                 lastSaved: millis(),
-    //                 width: json.width,
-    //                 height: json.height,
-    //                 fileNames: Object.keys(json.files),
-    //                 files: json.files,
-    //                 thumbnail: json.thumbnail ? new bson.Binary(Buffer.from(json.thumbnail.slice(json.thumbnail.indexOf(",") + 1), 'base64')) : null
-    //             }});
-    //         }
+                // validate input
+                var programCheck = validateProgramData(programData);
+                if (programCheck != "OK") creationError = programCheck;
+            }
 
-    //         // send program id to user
-    //         if (creationError != false) {
-    //             out.write(creationError);
-    //         } else {
-    //             out.write("OK");
-    //         }
-    //     },
-    //     "delete_program": (AP path, AO out, AD data) async {
-    //         // delete program endpoint
+            // update program in database
+            if (creationError == null) {
+                final thumbnailData = json["thumbnail"] is String 
+                    ? BsonBinary.from(base64.decode(json["thumbnail"].substring(json["thumbnail"].indexOf(",") + 1))) 
+                    : null;
 
-    //         var programData = await programs.findOne({ id: data["postData"] });
+                programs.updateOne({ "id": json["id"] }, {"\$set": {
+                    "title": json["title"],
+                    "lastSaved": millis(),
+                    "width": json["width"],
+                    "height": json["height"],
+                    "fileNames": json["files"].keys.toList(),
+                    "files": json["files"],
+                    "thumbnail": thumbnailData
+                }});
+            }
 
-    //         // check if program exists
-    //         if (programData == null) {
-    //             out.write("error: program doesn't exist");
-    //             return;
-    //         }
+            // send program id to user
+            if (creationError != null) {
+                out.write(creationError);
+            } else {
+                out.write("OK");
+            }
+        },
+        "delete_program": (AP path, AO out, AD data) async {
+            // delete program endpoint
+            var idToDelete = data["postBody"];
+            if (idToDelete is! String) {
+                out.write("error: invalid id");
+                return;
+            }
 
-    //         // check if has permission to delete data
-    //         try {
-    //             if (programData.author.id != data["userData"].id) {
-    //                 data["hasPermission"] = false;
-    //             }
-    //         } catch (e) {
-    //             out.write("error: error while deleting program");
-    //             return;
-    //         }
+            UserData? userData = data["userData"];
+            if (userData == null) {
+                out.write("error: access denied");
+                return;
+            }
 
-    //         if (!data["hasPermission"] || !data["allowRequest"]) {
-    //             out.write("error: access denied");
-    //             return;
-    //         }
+            var programData = await programs.findOne({ "id": idToDelete });
 
-    //         // remove from parent forks array
-    //         if (programData.parent != null && programData.parent.length > 0) {
-    //             var parentData = await programs.findOne({ id: programData.parent });
-    //             if (parentData != null) {
-    //                 programs.updateOne({ id: programData.parent }, {$pull: {
-    //                     forks: programData.id
-    //                 }});
-    //             }
-    //         }
+            // check if program exists
+            if (programData == null) {
+                out.write("error: program doesn't exist");
+                return;
+            }
+
+            // check if has permission to delete data
+            try {
+                if (programData["author"]["id"] != userData.id) {
+                    data["hasPermission"] = false;
+                }
+            } catch (e) {
+                out.write("error: error while deleting program");
+                return;
+            }
+
+            if (!data["hasPermission"] || !data["allowRequest"]) {
+                out.write("error: access denied");
+                return;
+            }
+
+            // remove from parent forks array
+            if (programData["parent"] != null && programData["parent"].length > 0) {
+                var parentData = await programs.findOne({ "id": programData["parent"] });
+                if (parentData != null) {
+                    programs.updateOne({ "id": programData["parent"] }, {"\$pull": {
+                        "forks": programData["id"]
+                    }});
+                }
+            }
             
-    //         // remove program from user's profile
-    //         users.updateOne({ id: data["userData"].id }, {$pull: {
-    //             projects: data["postData"]
-    //         }});
+            // remove program from user's profile
+            userCache[userData.id]!.projects.firstWhere((projectId) {
+                return projectId == idToDelete;
+            });
+            users.updateOne({ "id": userData.id }, {"\$pull": {
+                "projects": idToDelete
+            }});
 
-    //         // delete program from storage
-    //         await programs.deleteOne({ id: data["postData"] });
-    //         out.write("OK");
-    //     },
+            // delete program from storage
+            await programs.deleteOne({ "id": idToDelete });
+            out.write("OK");
+        },
     //     "like_program": (AP path, AO out, AD data) async {
     //         // like program endpoint
     //         if (!data["hasPermission"] || !data["allowRequest"]) {
@@ -633,167 +671,186 @@ final routeTree_API = {
     //             return;
     //         }
     //     },
-    //     "clear_notifs": (AP path, AO out, AD data) async {
-    //         // mark notifs as read endpoint
-    //         if (!data["hasPermission"] || !data["allowRequest"]) {
-    //             out.write("error: access denied");
-    //             return;
-    //         }
+        "clear_notifs": (AP path, AO out, AD data) async {
+            // mark notifs as read endpoint
+            if (!data["hasPermission"] || !data["allowRequest"]) {
+                out.write("error: access denied");
+                return;
+            }
 
-    //         // clear notifs
-    //         users.updateOne({ id: data["userData"].id }, {$set: {
-    //             newNotifs: 0
-    //         }});
+            final userId = data["userData"].id;
 
-    //         out.write("OK");
-    //     },
-    //     "update_profile": (AP path, AO out, AD data) async {
-    //         // change nickname endpoint
-    //         var json = parseJSON(data["postData"]);
-    //         if (json == null) {
-    //             out.write("error");
-    //             return;
-    //         }
+            userCache[userId]!.newNotifs = 0;
+            users.updateOne({ "id": userId }, {"\$set": {
+                "newNotifs": 0
+            }});
 
-    //         if (!data["hasPermission"] || !data["allowRequest"]) {
-    //             out.write("error: access denied");
-    //             return;
-    //         }
+            out.write("OK");
+        },
+        "update_profile": (AP path, AO out, AD data) async {
+            var json = parseJSON(data["postBody"]!);
+            if (json == null || json is! Map) {
+                out.write("error: invalid json");
+                return;
+            }
 
-    //         final validAvatars = ["bobert-cool","bobert-pixelated","boberta","bobert-approved","bobert-chad","bobert-cringe","bobert-flexing","bobert-hacker","bobert-high","bobert-troll-nose","bobert-troll","bobert-wide","bobert","rock-thonk","floof1","floof2","floof3","floof4","floof5","pyro1","pyro2","pyro3","pyro4","pyro5"];
-    //         final validBackgrounds = ["blue","bobert","cosmos","cyber","electric-blue","fbm","fractal-1","green","julia-rainbow","julia","magenta","photon-1","photon-2","transparent"];
+            if (!data["hasPermission"] || !data["allowRequest"]) {
+                out.write("error: access denied");
+                return;
+            }
+
+            final validAvatars = ["bobert-cool","bobert-pixelated","boberta","bobert-approved","bobert-chad","bobert-cringe","bobert-flexing","bobert-hacker","bobert-high","bobert-troll-nose","bobert-troll","bobert-wide","bobert","rock-thonk","floof1","floof2","floof3","floof4","floof5","pyro1","pyro2","pyro3","pyro4","pyro5"];
+            final validBackgrounds = ["blue","bobert","cosmos","cyber","electric-blue","fbm","fractal-1","green","julia-rainbow","julia","magenta","photon-1","photon-2","transparent"];
             
-    //         // validate input
-    //         if (json.nickname && validateNickname(json.nickname) != "OK") {
-    //             out.write("error: 400");
-    //             return;
-    //         }
-    //         if (json.username && validateUsername(json.username) != "OK") {
-    //             out.write("error: 400");
-    //             return;
-    //         }
-    //         for (var id in userCache) {
-    //             if (userCache[id].username.toLowerCase() == json.username.toLowerCase()) {
-    //                 out.write("error: that username is already taken");
-    //                 return;
-    //             }
-    //         }
-    //         if (json.bio && validateBio(json.bio) != "OK") {
-    //             out.write("error: 400");
-    //             return;
-    //         }
-    //         if (json.avatar && !validAvatars.contains(json.avatar)) {
-    //             out.write("error: 400");
-    //             return;
-    //         }
-    //         if (json.background && !validBackgrounds.contains(json.background)) {
-    //             out.write("error: 400");
-    //             return;
-    //         }
+            final userData = data["userData"] as UserData?;
 
-    //         final id = data["userData"].id;
-    //         var updateQuery = {};
+            // validate input
+            if (json.containsKey("nickname") && validateNickname(json["nickname"]) != "OK") {
+                out.write("error: invalid nickname");
+                return;
+            }
+            
+            if (json.containsKey("username") && validateUsername(json["username"]) != "OK") {
+                out.write("error: invalid username");
+                return;
+            }
 
-    //         // update info
-    //         if (json.nickname) {
-    //             updateQuery.nickname = json.nickname;
-    //             userCache[id].nickname = json.nickname;
-    //         }
-    //         if (json.username) {
-    //             updateQuery.username = json.username;
-    //             userCache[id].username = json.username;
-    //         }
-    //         if (json.bio) {
-    //             updateQuery.bio = json.bio;
-    //         }
-    //         if (json.avatar) {
-    //             updateQuery.avatar = json.avatar;
-    //         }
-    //         if (json.background) {
-    //             updateQuery.background = json.background;
-    //         }
+            // if new username is different from current
+            if (json.containsKey("username") && json["username"].toLowerCase() != userData!.username.toLowerCase()) {
+                // check if username is already in use
+                for (var id in userCache.keys) {
+                    if (userCache[id]!.username.toLowerCase() == json["username"].toLowerCase()) {
+                        out.write("error: that username is already taken");
+                        return;
+                    }
+                }
+            }
+            
+            if (json.containsKey("bio") && validateBio(json["bio"]) != "OK") {
+                out.write("error: invalid bio");
+                return;
+            }
+            
+            if (json.containsKey("avatar") && !validAvatars.contains(json["avatar"])) {
+                out.write("error: invalid avatar");
+                return;
+            }
 
-    //         await users.updateOne({ id }, {$set: updateQuery});
+            if (json.containsKey("background") && !validBackgrounds.contains(json["background"])) {
+                out.write("error: invalid background");
+                return;
+            }
 
-    //         out.write("OK");
-    //     },
-    //     // "compile_cpp": async (path, out, data) => {
-    //     //     var escapedCode = encodeURIComponent(data["postData"]);
-    //     //     var res = await fetch("https://wasmexplorer-service.herokuapp.com/service.php", {
-    //     //         "headers": {
-    //     //         "accept": "*/*",
-    //     //         "accept-language": "en-US,en;q=0.9",
-    //     //         "content-type": "application/x-www-form-urlencoded",
-    //     //         "prefer": "safe",
-    //     //         "sec-ch-ua": "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Microsoft Edge\";v=\"116\"",
-    //     //         "sec-ch-ua-mobile": "?0",
-    //     //         "sec-ch-ua-platform": "\"Windows\"",
-    //     //         "sec-fetch-dest": "empty",
-    //     //         "sec-fetch-mode": "cors",
-    //     //         "sec-fetch-site": "cross-site"
-    //     //         },
-    //     //         "referrer": "https://mbebenita.github.io/",
-    //     //         "referrerPolicy": "strict-origin-when-cross-origin",
-    //     //         "body": "input=" + escapedCode + "&action=cpp2wast&options=-std%3Dc%2B%2B11%20-Os",
-    //     //         "method": "POST",
-    //     //         "mode": "cors",
-    //     //         "credentials": "omit"
-    //     //     });
-    //     //     var body = await res.text();
-    //     //     out.write(body);
-    //     // },
-    //     // "compile_zig": async (path, out, data) => {
-    //     //     var sourceCode = parseJSON(data["postData"]);
-    //     //     if (sourceCode && sourceCode["main.zig"]) {
-    //     //         if (!fs.existsSync("./program-zig-out")) {
-    //     //             fs.mkdirSync("./program-zig-out");
-    //     //         }
+            final id = userData!.id;
+            var updateQuery = {};
 
-    //     //         final id = Math.random().toString().replace(".", "");
-    //     //         final path = `./program-zig-out/${id}`;
-    //     //         fs.mkdirSync(path);
+            // generate update query
+            if (json.containsKey("nickname")) {
+                updateQuery["nickname"] = json["nickname"];
+                userCache[id]!.nickname = json["nickname"];
+            }
 
-    //     //         var checkName = false;
-    //     //         for (final fileName in sourceCode) {
-    //     //             checkName = validateFileName(fileName);
-    //     //             if (checkName == "OK") {
-    //     //                 fs.writeFileSync(`${path}/${fileName}`, sourceCode[fileName]);
-    //     //             } else {
-    //     //                 break;
-    //     //             }
-    //     //         }
+            if (json.containsKey("username")) {
+                updateQuery["username"] = json["username"];
+                userCache[id]!.username = json["username"];
+            }
 
-    //     //         if (checkName == "OK") {
-    //     //             final zigCompiler = new BashShell("ZigCompiler");
-    //     //             zigCompiler.handler = function(event) {
-    //     //                 final printData = event.data.split("\n").map(ln => "    " + ln).join("\n");
-    //     //                 if (event.type == "err") {
-    //     //                     out.write(printData);
-    //     //                 } else {
-    //     //                     console.log(printData);
-    //     //                 }
-    //     //             };
-    //     //             zigCompiler.send(`cd program-zig-out/${id}`);
-    //     //             var res = await zigCompiler.send(`zig build-exe -fno-entry -rdynamic -O ReleaseSmall -target wasm32-freestanding --name ${id} main.zig`, 5000);
-    //     //             console.log("MYRES", id, res)
+            if (json.containsKey("bio")) {
+                updateQuery["bio"] = json["bio"];
+            }
+
+            if (json.containsKey("avatar")) {
+                updateQuery["avatar"] = json["avatar"];
+            }
+            
+            if (json.containsKey("background")) {
+                updateQuery["background"] = json["background"];
+            }
+
+            // update
+            await users.updateOne({ "id": id }, {"\$set": updateQuery});
+            final newUserData = await users.findOne({ "id": id });
+            userCache[id] = UserData.fromMap(newUserData!);
+
+            out.write("OK");
+        },
+        // "compile_cpp": async (path, out, data) => {
+        //     var escapedCode = encodeURIComponent(data["postData"]);
+        //     var res = await fetch("https://wasmexplorer-service.herokuapp.com/service.php", {
+        //         "headers": {
+        //         "accept": "*/*",
+        //         "accept-language": "en-US,en;q=0.9",
+        //         "content-type": "application/x-www-form-urlencoded",
+        //         "prefer": "safe",
+        //         "sec-ch-ua": "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Microsoft Edge\";v=\"116\"",
+        //         "sec-ch-ua-mobile": "?0",
+        //         "sec-ch-ua-platform": "\"Windows\"",
+        //         "sec-fetch-dest": "empty",
+        //         "sec-fetch-mode": "cors",
+        //         "sec-fetch-site": "cross-site"
+        //         },
+        //         "referrer": "https://mbebenita.github.io/",
+        //         "referrerPolicy": "strict-origin-when-cross-origin",
+        //         "body": "input=" + escapedCode + "&action=cpp2wast&options=-std%3Dc%2B%2B11%20-Os",
+        //         "method": "POST",
+        //         "mode": "cors",
+        //         "credentials": "omit"
+        //     });
+        //     var body = await res.text();
+        //     out.write(body);
+        // },
+        // "compile_zig": async (path, out, data) => {
+        //     var sourceCode = parseJSON(data["postData"]);
+        //     if (sourceCode && sourceCode["main.zig"]) {
+        //         if (!fs.existsSync("./program-zig-out")) {
+        //             fs.mkdirSync("./program-zig-out");
+        //         }
+
+        //         final id = Math.random().toString().replace(".", "");
+        //         final path = `./program-zig-out/${id}`;
+        //         fs.mkdirSync(path);
+
+        //         var checkName = false;
+        //         for (final fileName in sourceCode) {
+        //             checkName = validateFileName(fileName);
+        //             if (checkName == "OK") {
+        //                 fs.writeFileSync(`${path}/${fileName}`, sourceCode[fileName]);
+        //             } else {
+        //                 break;
+        //             }
+        //         }
+
+        //         if (checkName == "OK") {
+        //             final zigCompiler = new BashShell("ZigCompiler");
+        //             zigCompiler.handler = function(event) {
+        //                 final printData = event.data.split("\n").map(ln => "    " + ln).join("\n");
+        //                 if (event.type == "err") {
+        //                     out.write(printData);
+        //                 } else {
+        //                     console.log(printData);
+        //                 }
+        //             };
+        //             zigCompiler.send(`cd program-zig-out/${id}`);
+        //             var res = await zigCompiler.send(`zig build-exe -fno-entry -rdynamic -O ReleaseSmall -target wasm32-freestanding --name ${id} main.zig`, 5000);
+        //             console.log("MYRES", id, res)
                     
-    //     //             var output;
-    //     //             if (fs.existsSync(`${path}/${id}.wasm`)) {
-    //     //                 console.log("SUCESS")
-    //     //                 output = fs.readFileSync(`${path}/${id}.wasm`);
-    //     //                 out.writeHead(200, { 'Content-Type': 'application/wasm' });
-    //     //                 out.write(output);
-    //     //                 console.log(output)
-    //     //             }
+        //             var output;
+        //             if (fs.existsSync(`${path}/${id}.wasm`)) {
+        //                 console.log("SUCESS")
+        //                 output = fs.readFileSync(`${path}/${id}.wasm`);
+        //                 out.writeHead(200, { 'Content-Type': 'application/wasm' });
+        //                 out.write(output);
+        //                 console.log(output)
+        //             }
 
-    //     //             fs.rmSync(path, { recursive: true });
-    //     //         } else {
-    //     //             out.write(checkName);
-    //     //         }                    
-    //     //     } else {
-    //     //         out.write("error: invalid source code");
-    //     //     }
-    //     // },
+        //             fs.rmSync(path, { recursive: true });
+        //         } else {
+        //             out.write(checkName);
+        //         }                    
+        //     } else {
+        //         out.write("error: invalid source code");
+        //     }
+        // },
         "log_out": (AP path, AO out, AD data) async {
             // sign out endpoint
             if (!data["hasPermission"] || !data["allowRequest"]) {

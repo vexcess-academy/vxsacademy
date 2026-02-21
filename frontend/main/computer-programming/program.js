@@ -137,7 +137,7 @@ function saveProgram() {
                     thumbnail: programData.thumbnail
                 })
             }).then(res => res.text()).then(function (res) {
-                if (res.includes("error")) {
+                if (res.toLowerCase().includes("error")) {
                     alert(res);
                 } else {
                     saveButtonEL.$("*span")[0].text("Saved!");
@@ -160,7 +160,7 @@ function saveProgram() {
                     parent: programData.id
                 })
             }).then(res => res.text()).then(function (res) {
-                if (res.includes("error")) {
+                if (res.toLowerCase().includes("error")) {
                     alert(res);
                 } else {
                     window.location.href = "/computer-programming/" + res;
@@ -190,7 +190,7 @@ function saveProgram() {
                 thumbnail: programData.thumbnail
             })
         }).then(res => res.text()).then(function (res) {
-            if (res.includes("error")) {
+            if (res.toLowerCase().includes("error")) {
                 alert(res);
             } else {
                 localStorage.removeItem(localStorageKey);
@@ -724,7 +724,7 @@ function main() {
                 method: "POST",
                 body: window.location.href.split("/")[4]
             }).then(res => res.text()).then(function (res) {
-                if (res.includes("error")) {
+                if (res.toLowerCase().includes("error")) {
                     alert(res);
                 } else if (res === "200") {
                     if (programData.hasLiked) {
@@ -753,7 +753,7 @@ function main() {
                     method: "POST",
                     body: window.location.href.split("/")[4]
                 }).then(res => res.text()).then(function (res) {
-                    if (res.includes("error")) {
+                    if (res.toLowerCase().includes("error")) {
                         alert(res);
                     } else {
                         window.location.href = "/computer-programming/";

@@ -162,7 +162,7 @@ function updateProgramAbout() {
                 method: "POST",
                 body: PROGRAM_ID
             }).then(res => res.text()).then(function (res) {
-                if (res.includes("error")) {
+                if (res.toLowerCase().includes("error")) {
                     alert(res);
                 } else if (res === "200") {
                     if (programData.hasLiked) {
@@ -193,7 +193,7 @@ function updateProgramAbout() {
                         method: "POST",
                         body: PROGRAM_ID
                     }).then(res => res.text()).then(function (res) {
-                        if (res.includes("error")) {
+                        if (res.toLowerCase().includes("error")) {
                             alert(res);
                         } else {
                             window.location.href = "/computer-programming/";

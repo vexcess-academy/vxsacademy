@@ -386,7 +386,7 @@
                         },
                         body: JSON.stringify(sendObj)
                     }).then(res => res.text()).then(function (res) {
-                        if (res.includes("error")) {
+                        if (res.toLowerCase().includes("error")) {
                             alert(res);
                         } else {
                             if (settingsMode === "text") {

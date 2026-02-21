@@ -34,6 +34,8 @@ const LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const NUMBERS = "0123456789";
 const ALPHANUMERIC = LETTERS + NUMBERS;
 
+const SALT_SIZE = 16;
+
 final PRNG = new Math.Random();
 
 // for spam detection
@@ -155,9 +157,11 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
             for (final token in user.tokens) {
                 final encryptedTokenBytes = base64.decode(token);
                 final decryptedTokenBytes = AESDecrypt(encryptedTokenBytes, masterKeyBytes);
-                const SALT_SIZE = 16;
-                if (decryptedTokenBytes != null && utf8.decode(decryptedTokenBytes).substring(SALT_SIZE) == userToken) {
-                    userData = user;
+                if (decryptedTokenBytes != null) {
+                    final decryptedToken = utf8.decode(decryptedTokenBytes).substring(SALT_SIZE);
+                    if (decryptedToken == userToken) {
+                        userData = user;
+                    }
                 }
             }
         }
@@ -209,15 +213,6 @@ late Mongo.DbCollection  discussions;
 
 void main() async {
     print("Starting Web Server...");
-
-    // print("AAAAAAAAAAAAAAAAAAAAAAAAAAA");
-    // final a = base64.encode(AESEncrypt("Hello" + "World!", base64.decode(secrets.MASTER_KEY)));
-    // print(a);
-    // final encryptedTokenBytes = base64.decode(a);
-    // final decryptedTokenBytes = AESDecrypt(encryptedTokenBytes, base64.decode(secrets.MASTER_KEY));
-    // final b = decryptedTokenBytes!;
-    // print(b);
-    // print("BBBBBBBBBBBBBBBBBBBBBBBb");
 
     // connect to mongodb
     if (secrets.MONGO_PASSWORD != null) {

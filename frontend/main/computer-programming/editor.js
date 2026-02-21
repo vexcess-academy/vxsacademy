@@ -1396,7 +1396,7 @@ class VXSEditor {
                 body: JSON.stringify(myProgramDataToSend)
             });
             const txt = await res.text();
-            if (txt.includes("error")) {
+            if (txt.toLowerCase().includes("error")) {
                 alert(txt);
             } else {
                 // when you save the program it gets removed from localStorage
@@ -1434,7 +1434,7 @@ class VXSEditor {
                     },
                     body: JSON.stringify(programDataToSend)
                 }).then(res => res.text()).then(txt => {
-                    if (txt.includes("error")) {
+                    if (txt.toLowerCase().includes("error")) {
                         alert(txt);
                     } else {
                         self.saveBtnEl.$("*span")[0].text("Saved!");
