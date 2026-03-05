@@ -50,6 +50,7 @@
         ["CylenceScythe", "https://khanacademy.org/profile/SharleyBoo", "Created Pyro avatar graphics"],
         ["Leslie",        "https://khanacademy.org/profile/ForeverFrostine", "Created Floof avatar graphics"],
         ["Elias Murcray", "https://github.com/eliasmurcray", "Debugging"],
+        ["Kestron", "https://github.com/Kestron06", "Bobert background"],
     ];
 
     const envStatuses = [

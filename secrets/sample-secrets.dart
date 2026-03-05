@@ -1,6 +1,7 @@
 class secrets {
     static final bool USE_PROXY = false;
     static final String MASTER_KEY = "PASSWORD1";
+    static final String RECAPTCHA_PUBLIC_KEY = "6LdgZYAsAAAAAHDhk9tlgzWIecDFvQBBPCXbQmpM";
     static final String RECAPTCHA_KEY = "PASSWORD2";
     static final String? KEY_PATH = "./secrets/server.key";
     static final String? CERT_PATH = "./secrets/server.cert";

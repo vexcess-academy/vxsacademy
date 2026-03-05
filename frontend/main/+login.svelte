@@ -207,7 +207,7 @@
 
             <br><br>
 
-            <div class="g-recaptcha" style="transform: translate(0px, 50px);" data-callback="recaptchaCallback" data-sitekey="6Lf2sFchAAAAAFKx_gep0Nz8qFwImwZ5rJK9VWuH"></div>
+            <div class="g-recaptcha" style="transform: translate(0px, 50px);" data-callback="recaptchaCallback" data-sitekey="6LdgZYAsAAAAAHDhk9tlgzWIecDFvQBBPCXbQmpM"></div>
             
             <input id="signup-btn" class="button" style="position: relative; z-index: 10000;" type="submit" value="Sign Up!">
         </form>

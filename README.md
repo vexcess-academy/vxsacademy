@@ -21,3 +21,4 @@ You will need to create the `secrets.js` file for yourself. You can find a sampl
 [CylenceScythe](https://www.khanacademy.org/profile/SharleyBoo) - Created Pyro avatar graphics  
 [Leslie](https://www.khanacademy.org/profile/ForeverFrostine) - Created Floof avatar graphics  
 [Elias Murcray](https://github.com/eliasmurcray) - Debugging  
+[Kestron](https://github.com/Kestron06) - Bobert background  

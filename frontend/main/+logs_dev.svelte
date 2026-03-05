@@ -465,12 +465,25 @@
     Fix delete program endpoint;
 </p>
 
+<h2>3/5/26</h2>
+<p>
+    Improve browse projects number of programs per page;
+    Add Kestron to contributors;
+    Fix like program API endpoint;
+    Fix create discussion API endpoint;
+    Fix get discussions API endpoint;
+    Fix sign up API endpoint;
+</p>
+
 <h2>TODO</h2>
 <p>
     TODO: Implement sandbox unload detection;
     TODO: Add color picker to new editor;
     TODO: Fix profile displays;
     TODO: Finish Discussion features;
+    TODO: investigate String is not subtype of BsonBinary line 97 off route_CDN;
+    TODO: investigate int is not subtype of String route_API line 998;
+    TODO: investigate string contains invalid characters route_API line 984;
 </p>
 
 <style>
