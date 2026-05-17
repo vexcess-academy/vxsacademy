@@ -109,6 +109,10 @@ db.createUser({
 })
 ```
 
+## Installing the CAPTCHA
+Vexcess Academy uses Gotta CAPTCHA. Follow the instructions at
+[https://github.com/vExcess/gotta-captcha-em-all](https://github.com/vExcess/gotta-captcha-em-all)
+
 ## Installing Git
 To install Git run
 ```
