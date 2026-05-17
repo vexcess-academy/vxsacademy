@@ -1,45 +1,80 @@
 <script>
+    import { onMount } from "svelte";
+
+    async function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    async function loadDependencies(dependencies) {
+        return new Promise(async (resolve) => {
+            for (let i = 0; i < dependencies.length; i++) {
+                await loadScript(dependencies[i]);
+            }
+            resolve();
+        });
+    }
+
+    const loadPreDeps = loadDependencies([
+        "https://cdn.jsdelivr.net/gh/microslop-mirror/drawlite@main/javascript/drawlite.js",
+        "/captcha/client.js",
+    ]);
+
+    let loginBox;
+    let signupBox;
+
+    function loginCallback(res) {
+        // tokens last 1 week
+        document.cookie = 'token=' + res + '; max-age=' + 60*60*24*7 +'; Secure; path=/';
+        window.location.href = "/profile/me";
+    }
+
+    onMount(async () => {
+        await loadPreDeps;
+        
+        createCaptcha({
+            containerEl: document.getElementById("captcha"),
+            captchaServer: window.location.origin + "/captcha",
+            workerScriptPath: "/captcha/pow-worker.js",
+            onSuccess: (verifiedKey) => {
+                let username = signupBox.$("*input")[0].value;
+                let password = signupBox.$("*input")[1].value;
+                
+                fetch("/API/signup", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        recaptchaRes: verifiedKey
+                    })
+                }).then(res => res.text()).then(res => {
+                    if (res.toLowerCase().includes("error") || res.includes(" ")) {
+                        alert(res);
+                    } else {
+                        loginCallback(res);
+                    }
+                });
+            }
+        });
+    });
+
+
     addEventListener("DOMContentLoaded", () => {
         const $ = Q$;
 
-        let loginBox = $("#login-box");
-        let signupBox = $("#signup-box");
+        loginBox = $("#login-box");
+        signupBox = $("#signup-box");
                 
         let loginBtn = $("#login-btn");
         let signupBtn = $("#signup-btn");
-
-        function loginCallback(res) {
-            // tokens last 1 week
-            document.cookie = 'token=' + res + '; max-age=' + 60*60*24*7 +'; Secure; path=/';
-            window.location.href = "/profile/me";
-        }
-
-        function signupWithGoogle(res) {
-            
-        }
-
-        function recaptchaCallback () {
-            let username = signupBox.$("*input")[0].value;
-            let password = signupBox.$("*input")[1].value;
-            
-            fetch("/API/signup", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    username: username,
-                    password: password,
-                    recaptchaRes: grecaptcha.getResponse()
-                })
-            }).then(res => res.text()).then(res => {
-                if (res.toLowerCase().includes("error") || res.includes(" ")) {
-                    alert(res);
-                } else {
-                    loginCallback(res);
-                }
-            });
-        }
 
         function validateUsername(username) {
             if (typeof username !== "string") {
@@ -127,27 +162,14 @@
                 return false;
             }
 
-            $("script")
-                .attr({
-                    src: "https://www.google.com/recaptcha/api.js"
-                })
-                .appendTo(document.body)
-            
+            document.getElementById("captcha-container").style.display = "block";
+
             signupBtn.style.display = "none";
         });
-
-        // window.onload = function () {
-        //     google.accounts.id.initialize({
-        //         client_id: 'YOUR_GOOGLE_CLIENT_ID',
-        //         callback: handleCredentialResponse
-        //     });
-        //     google.accounts.id.prompt();
-        // };
     });
 </script>
 
 <div style="display: flex; margin: 1px;">
-    <script src="https://accounts.google.com/gsi/client" async></script>
     <div id="login-box">
         <h1>Login to Your Account</h1>
 
@@ -174,24 +196,6 @@
 
         <p style="margin-left: 15%; margin-right: 15%;">Create an account. <br>By creating an account you represent that you have read, understand, and agree to our <a href="/tos">Terms of Service</a> and <a href="/privacy-policy">Privacy Policy</a></p>
 
-        <!-- <div id="g_id_onload" style="margin: auto;"
-                data-client_id="740921512545-ijrl4772srtbbmfoasl6gajd9b80s003.apps.googleusercontent.com"
-                data-context="signup"
-                data-ux_mode="popup"
-                data-callback="signupWithGoogle"
-                data-nonce=""
-                data-auto_prompt="false">
-        </div>
-        
-        <div class="g_id_signin"
-                data-type="standard"
-                data-shape="rectangular"
-                data-theme="outline"
-                data-text="signup_with"
-                data-size="large"
-                data-logo_alignment="left">
-        </div> -->
-
         <p>Or continue with Username/Password</p>
         
         <form class="form" style="display: block;">
@@ -206,10 +210,14 @@
             <input type="password">
 
             <br><br>
-
-            <div class="g-recaptcha" style="transform: translate(0px, 50px);" data-callback="recaptchaCallback" data-sitekey="6LdgZYAsAAAAAHDhk9tlgzWIecDFvQBBPCXbQmpM"></div>
             
-            <input id="signup-btn" class="button" style="position: relative; z-index: 10000;" type="submit" value="Sign Up!">
+            <div id="captcha-container" style="display: block; height: 380px; display: none;">
+                <div style="position: absolute; background-color: white; padding: 6px;">
+                    <div id="captcha"></div>
+                </div>
+            </div>
+            
+            <input id="signup-btn" style="margin-top: 8px;" class="button" type="submit" value="Sign Up!">
         </form>
     </div>
 </div>

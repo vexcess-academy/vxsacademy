@@ -37,31 +37,39 @@ SecurityContext getServerSecurityContext(String certificatePath, String privateK
 }
 
 Future<void> forwardRequest(String destination, HttpRequest request) async {
-    // try {
-        final response = request.response;
+    final response = request.response;
 
-        if (request.protocolVersion == "1.0") {
-            response.statusCode = 426; // Upgrade Required
-        } else {
-            final headers = response.headers;
-
-            final remoteResponse = await HTTP.get(Uri.parse(destination));
-            final remoteHeaders = remoteResponse.headers;
-
-            response.statusCode = remoteResponse.statusCode;
-            for (String header in remoteHeaders.keys) {
-                headers.set(header, remoteHeaders[header]!);
-            }
-
-            response.add(remoteResponse.bodyBytes);
-        }
-
+    if (request.protocolVersion == "1.0") {
+        response.statusCode = HttpStatus.upgradeRequired; // 426
         await response.close();
-    // } catch (e) {
-    //     request.response.statusCode = 500;
-    //     request.response.write("Internal Server Error");
-    //     await request.response.close();
-    // }
+        return;
+    }
+
+    final client = HTTP.Client();
+    final remoteRequest = HTTP.Request(request.method, Uri.parse(destination));
+    
+    // copy incoming headers to proxy request
+    request.headers.forEach((name, values) {
+        remoteRequest.headers[name] = values.join(',');
+    });
+
+    final bodyBytes = await request.expand((chunk) => chunk).toList();
+    remoteRequest.bodyBytes = bodyBytes;
+
+    final streamedResponse = await client.send(remoteRequest);
+    final remoteResponse = await HTTP.Response.fromStream(streamedResponse);
+
+    // copy proxy request headers to outgoing response
+    final headers = response.headers;
+    remoteResponse.headers.forEach((key, value) {
+        headers.set(key, value);
+    });
+
+    response.statusCode = remoteResponse.statusCode;
+    response.add(remoteResponse.bodyBytes);
+
+    client.close();
+    await response.close();
 }
 
 String? getCookie(List<Cookie> cookies, String name) {

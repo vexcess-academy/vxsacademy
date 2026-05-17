@@ -177,6 +177,12 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
             url += "?${request.uri.query}";
         }
 
+        if (url.startsWith("/captcha/")) {
+            // route the captcha subdomain to the captcha server
+            await forwardRequest("http://127.0.0.1:${secrets.CAPTCHA_PORT}${url.substring("captcha/".length)}", request);
+            return;
+        }
+
         // handle the request
         var requestContext = {
             "request": request,

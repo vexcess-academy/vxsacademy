@@ -28,4 +28,9 @@ void main() async {
         mode: ProcessStartMode.inheritStdio
     );
 
+    final captchaServerProcess = await Process.start(
+        "npm", "start".split(" "),
+        workingDirectory: "./captcha",
+        mode: ProcessStartMode.inheritStdio
+    );
 }

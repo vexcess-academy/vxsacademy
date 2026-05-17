@@ -129,23 +129,17 @@ final routeTree_API = {
                     "notifications": [],
                     "discussions": [],
                     "comments": [],
-                    "background": "blue"
+                    "background": "blue",
+                    "newNotifs": 0
                 };
 
-                final googleRes = await HTTP.post(
-                    Uri.parse("https://www.google.com/recaptcha/api/siteverify?secret=${secrets.RECAPTCHA_KEY}&response=${requestJSON["recaptchaRes"]}"),
+                final captchaRes = await HTTP.post(
+                    Uri.parse("http://127.0.0.1:${secrets.CAPTCHA_PORT}/validateKey"),
                     headers: {},
-                    body: "",
+                    body: "verifierKey=${secrets.CAPTCHA_KEY}&key=${requestJSON["recaptchaRes"]}"
                 );
-                final captcha = json.decode(googleRes.body);
-                if (captcha["success"]) {
-                    userCache[userId] = UserData.fromMap({
-                        "username": profile["username"],
-                        "password": profile["password"],
-                        "tokens": profile["tokens"],
-                        "id": profile["id"],
-                        "nickname": profile["nickname"]
-                    });
+                if (captchaRes.body == "PASS") {
+                    userCache[userId] = UserData.fromMap(profile);
 
                     if (userIpData != null) {
                         userIpData["accounts"].push(userId);
@@ -167,7 +161,7 @@ final routeTree_API = {
                     // send user their auth token
                     out.write(userTok);
                 } else {
-                    out.write("error: recaptcha failed");
+                    out.write("error: captcha failed");
                 }
             } else {
                 out.write("error: 400");

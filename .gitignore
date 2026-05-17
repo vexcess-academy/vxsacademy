@@ -28,3 +28,6 @@ build
 .dart_tool/
 pubspec.lock
 *.exe
+
+# ignore sub repos
+.git
