@@ -104,7 +104,7 @@ final Map<String, dynamic> routeTree = {
     "/": (AP path, AO out, AD data) async {
         // main path
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("home", data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("home", data["userData"], DEFAULT_OG_TAGS)));
         out.close();
     },
     "/ping": (AP path, AO out, AD data) async {
@@ -116,37 +116,37 @@ final Map<String, dynamic> routeTree = {
     "/login": (AP path, AO out, AD data) async {
         // login page
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("login", data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("login", data["userData"], DEFAULT_OG_TAGS)));
     },
     "/change_password": (AP path, AO out, AD data) async {
         // login page
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("change_password", data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("change_password", data["userData"], DEFAULT_OG_TAGS)));
     },
     "/profile/": (AP path, AO out, AD data) async {
         // profile page
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("profile", data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("profile", data["userData"], DEFAULT_OG_TAGS)));
     },
     "/logs/": (AP path, AO out, AD data) async {
         // logs path
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("logs_" + path, data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("logs_" + path, data["userData"], DEFAULT_OG_TAGS)));
     },
     "/tos": (AP path, AO out, AD data) async {
         // tos path
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("tos" + path, data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("tos" + path, data["userData"], DEFAULT_OG_TAGS)));
     },
     "/privacy-policy": (AP path, AO out, AD data) async {
         // tos path
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("privacy-policy" + path, data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("privacy-policy" + path, data["userData"], DEFAULT_OG_TAGS)));
     },
     "/computer-programming": (AP path, AO out, AD data) async {
         // computer programming home
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("computer-programming", data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("computer-programming", data["userData"], DEFAULT_OG_TAGS)));
     },
     "/computer-programming/": routeTree_computerprogramming,
     "/API/": routeTree_API,

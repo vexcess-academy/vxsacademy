@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'route_.dart';
 import 'hotlist.dart' show getKAProgram;
 import 'main.dart' show programs;
@@ -6,40 +7,40 @@ final routeTree_computerprogramming = {
     "browse": (AP path, AO out, AD data) async {
         // browse projects
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("browse", data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("browse", data["userData"], DEFAULT_OG_TAGS)));
         out.close();
     },
     "ka-browse": (AP path, AO out, AD data) async {
         // browse projects
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("browse", data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("browse", data["userData"], DEFAULT_OG_TAGS)));
         out.close();
     },
     "javascript": (AP path, AO out, AD data) async {
         // return course page
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("course", data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("course", data["userData"], DEFAULT_OG_TAGS)));
         out.close();
         return;
     },
     "javascript/": (AP path, AO out, AD data) async {
         // return course page
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("course", data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("course", data["userData"], DEFAULT_OG_TAGS)));
         out.close();
         return;
     },
     "webgl": (AP path, AO out, AD data) async {
         // return course page
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("course", data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("course", data["userData"], DEFAULT_OG_TAGS)));
         out.close();
         return;
     },
     "webgl/": (AP path, AO out, AD data) async {
         // return course page
         out.headers.add('Content-Type', 'text/html');
-        out.write(await createHTMLPage("course", data["userData"], DEFAULT_OG_TAGS));
+        out.add(utf8.encode(await createHTMLPage("course", data["userData"], DEFAULT_OG_TAGS)));
         out.close();
         return;
     },
@@ -52,7 +53,7 @@ final routeTree_computerprogramming = {
             out.headers.add('Content-Type', 'text/html');
             // "Cross-Origin-Opener-Policy": "same-origin",
             // "Cross-Origin-Embedder-Policy": "require-corp"
-            out.write(webpageCode);
+            out.add(utf8.encode(webpageCode));
             out.close();
         }
     },
@@ -109,7 +110,7 @@ final routeTree_computerprogramming = {
                 out.headers.add('Content-Type', 'text/html');
                 // "Cross-Origin-Opener-Policy": "same-origin",
                 // "Cross-Origin-Embedder-Policy": "require-corp"
-                out.write(webpageCode);
+                out.add(utf8.encode(webpageCode));
                 out.close();
             }
         } catch (err) {

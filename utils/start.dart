@@ -29,7 +29,7 @@ void main() async {
     );
 
     final captchaServerProcess = await Process.start(
-        "npm", "start".split(" "),
+        "bun", "run server/server.js".split(" "),
         workingDirectory: "./captcha",
         mode: ProcessStartMode.inheritStdio
     );

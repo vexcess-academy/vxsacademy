@@ -61,6 +61,17 @@ List<T> castList<T>(List<dynamic> arr) {
     return newArr;
 }
 
+Map<String, dynamic> castDocumentToDartTypes(Map<String, dynamic> doc) {
+    for (final key in doc.keys) {
+        if (doc[key] is Int64) {
+            doc[key] = doc[key].toInt();
+        } else if (doc[key] is Map) {
+            doc[key] = castDocumentToDartTypes(doc[key]);
+        }
+    }
+    return doc;
+}
+
 Future<List<Map<String, dynamic>>> project(Stream<Map<String, dynamic>> stream, Map<String, int> mask) async {
     final data = await stream.toList();
     for (final item in data) {
@@ -74,6 +85,9 @@ Future<List<Map<String, dynamic>>> project(Stream<Map<String, dynamic>> stream, 
             item.remove(key);
         }
     }
+    for (var i = 0; i < data.length; i++) {
+        data[i] = castDocumentToDartTypes(data[i]);
+    }
     return data;
 }
 
@@ -85,7 +99,7 @@ Map<String, dynamic> projectOne(Map<String, dynamic> item, Map<String, int> mask
             masked[key] = item[key];
         }
     }
-    return masked;
+    return castDocumentToDartTypes(masked);
 }
 
 Uint8List bytesOf(Object obj) {

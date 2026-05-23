@@ -472,7 +472,20 @@
     Fix like program API endpoint;
     Fix create discussion API endpoint;
     Fix get discussions API endpoint;
+</p>
+
+<h2>5/17/26</h2>
+<p>
+    Implement Gotta CAPTCHA;
     Fix sign up API endpoint;
+</p>
+
+<h2>5/22/26</h2>
+<p>
+    Fix bug where the new programs list throws 500 Interal Server Error;
+    Fix bug where API requests containing emojis throw 500 Internal Server Error due to Dart using Latin1 instead of utf-8 by default;
+    Fix bug where new program's thumbnails don't get saved correctly.
+    Add tips&thanks section under KA programs.
 </p>
 
 <h2>TODO</h2>
