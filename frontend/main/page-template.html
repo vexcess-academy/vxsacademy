@@ -39,6 +39,21 @@
 </head>
 <body>
 
+    <script>
+        const rootElement = document.documentElement;
+        function applyTheme(theme) {
+            if (theme === 'light' || theme === 'dark') {
+                rootElement.setAttribute('data-theme', theme);
+            } else {
+                // If 'default', remove the attribute so the CSS media queries take over
+                rootElement.removeAttribute('data-theme');
+            }
+        }
+
+        let savedTheme = localStorage.getItem('theme') || 'default';
+        applyTheme(savedTheme);
+    </script>
+
     <div id="page-top-container">
         <!-- subjects -->
     	<div>

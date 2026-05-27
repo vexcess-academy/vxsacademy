@@ -3,6 +3,44 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as Path;
 import 'dart:convert';
 
+Future<IO.File?> openFile(String path, {bool elevatedPermissions=false}) async {
+    final absProjectPath = Path.normalize(IO.Directory.current.absolute.path);
+    
+    final file = IO.File(path);
+    String absFilePath = Path.normalize(file.absolute.path);
+    print("Reading: $absFilePath");
+
+    final whitelist = [
+        "/frontend/main/",
+        "/frontend/sandbox/",
+        "/frontend/build/",
+        "/lib/",
+    ];
+
+    if (absFilePath.startsWith(absProjectPath)) {
+        bool approved = false;
+        if (elevatedPermissions) {
+            approved = true;
+        } else {
+            final subFilePath = absFilePath.substring(absProjectPath.length);
+            for (String pattern in whitelist) {
+                if (subFilePath.startsWith(pattern)) {
+                    approved = true;
+                    break;
+                }
+            }
+        }
+        
+        if (approved) {
+            return file;
+        }
+        
+        throw "Permission denied while reading ${absFilePath}";
+    }
+
+    throw "Refused to read file outside of project directory";
+}
+
 Future<Uint8List?> readFile(String path, {bool elevatedPermissions=false}) async {
     final absProjectPath = Path.normalize(IO.Directory.current.absolute.path);
     

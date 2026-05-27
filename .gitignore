@@ -31,3 +31,6 @@ pubspec.lock
 
 # ignore sub repos
 .git
+
+# ignore logs
+requests.log

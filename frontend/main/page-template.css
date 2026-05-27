@@ -1,5 +1,6 @@
+/* default themes */
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
         --background: rgb(56, 56, 56);
         --background2: rgb(52, 52, 52);
         --background3: rgb(37, 37, 37);
@@ -20,7 +21,7 @@
     }
 }
 @media (prefers-color-scheme: light) {
-    :root {
+    :root:not([data-theme="dark"]) {
         --background: rgb(255, 255, 255);
         --background2: rgb(241, 241, 241);
         --background3: rgb(221, 221, 221);
@@ -39,6 +40,46 @@
         --dropdown-subjects-text-color: rgb(65, 65, 65);
         --dropdown-profile-text-color: rgb(0, 50, 50);
     }
+}
+
+/* user theme overrides */
+:root[data-theme="dark"] {
+    --background: rgb(56, 56, 56);
+    --background2: rgb(52, 52, 52);
+    --background3: rgb(37, 37, 37);
+    --transparent-background: rgb(255 255 255 / 15%);
+    --text-color: rgb(255 255 255);
+    --link-color: rgb(50, 120, 255);
+    --tile-background: rgb(17, 21, 20);
+    --borders: rgb(70, 70, 70);
+    --borders2: rgb(67 67 67);
+    --borders3: rgb(128, 128, 128);
+    --borders4: rgb(0 0 0);
+
+    --dropdown-back: rgb(17, 17, 17);
+    --dropdown-back-hover: rgb(10, 10, 10);
+    --dropdown-border: rgb(40, 40, 40);
+    --dropdown-subjects-text-color: rgb(150, 150, 150);
+    --dropdown-profile-text-color: rgb(21, 149, 69);
+}
+:root[data-theme="light"] {
+    --background: rgb(255, 255, 255);
+    --background2: rgb(241, 241, 241);
+    --background3: rgb(221, 221, 221);
+    --transparent-background: rgba(0, 0, 0, 0.15);
+    --text-color: rgb(45, 45, 45);
+    --link-color: rgb(50, 120, 255);
+    --tile-background: rgb(222, 222, 222);
+    --borders: rgb(207, 207, 207);
+    --borders2: rgb(235, 235, 235);
+    --borders3: rgb(128, 128, 128);
+    --borders4: rgb(160, 160, 160);
+
+    --dropdown-back: rgb(250, 250, 250);
+    --dropdown-back-hover: rgb(245, 245, 245);
+    --dropdown-border: rgb(215, 215, 215);
+    --dropdown-subjects-text-color: rgb(65, 65, 65);
+    --dropdown-profile-text-color: rgb(0, 50, 50);
 }
 
 /* custom scrollbar */

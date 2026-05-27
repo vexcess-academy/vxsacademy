@@ -301,8 +301,20 @@ void main() async {
     
     // listen for requests
     try {
+        final requestsLog = await openFile("requests.log", elevatedPermissions: true);
         await for (HttpRequest request in server) {
-            print("Request: ${request.method} ${request.uri.path}");
+            if (requestsLog != null) {
+                requestsLog.writeAsString("${DateTime.now().millisecondsSinceEpoch.toString()} Request: ${request.method} ${request.uri.path}\n", mode: IO.FileMode.append);
+                if (requestsLog.lengthSync() > 1024 * 1024 * 4) {
+                    List<String> lines = await requestsLog.readAsLines();
+                    int maxLines = (lines.length / 2).round();
+                    if (lines.length > maxLines) {
+                        final trimmedLines = lines.sublist(lines.length - maxLines);
+                        await requestsLog.writeAsString(trimmedLines.join('\n'));
+                        print('Log file trimmed to the last $maxLines lines.');
+                    }
+                }
+            }
             handleServerRequest(request, request.response);
         }
     } catch (e) {

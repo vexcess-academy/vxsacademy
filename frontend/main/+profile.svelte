@@ -449,6 +449,25 @@
         </div>
         <div style="margin-left: auto; order: 2; opacity: 0.8;">
             <button id="change-background-btn" style="display: none;" class="button">Change Background</button>
+            
+            <br><br>
+            <div style="background-color: var(--background); color: var(--text-color); padding: 4px; border-radius: 4px;">
+                <label for="theme-select">Theme:</label>
+                <select id="theme-select">
+                    <option value="default">Default (System)</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+            <script>
+                const themeSelect = document.getElementById('theme-select');
+                themeSelect.value = savedTheme;
+                themeSelect.addEventListener('change', (event) => {
+                    savedTheme = event.target.value;
+                    localStorage.setItem('theme', savedTheme);
+                    applyTheme(savedTheme);
+                });
+            </script>
         </div>
     </div>
 </div>

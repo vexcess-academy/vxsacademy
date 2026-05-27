@@ -1,3 +1,5 @@
+import 'dart:io' as IO;
+
 import 'dart:convert';
 
 import 'package:path/path.dart' as Path;
@@ -135,7 +137,6 @@ void main() async {
     // listen for requests
     try {
         await for (HttpRequest request in server) {
-            print("Request: ${request.method} ${request.uri.path}");
             handleServerRequest(request, request.response);
         }
     } catch (e) {

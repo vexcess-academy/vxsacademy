@@ -613,7 +613,12 @@ class VXSEditor {
         const self = this;
 
         // setup settings
-        const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        let prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === "dark") {
+            prefersDarkMode = true;
+        } else if (savedTheme === "light") {
+            prefersDarkMode = false;
+        }
         this.settings = {
             width: programData.width,
             height: programData.height,

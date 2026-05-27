@@ -19,3 +19,6 @@ dart pub get
 cd captcha
 npm install
 cd ..
+
+# build new start exe
+dart compile exe ./utils/start.dart
