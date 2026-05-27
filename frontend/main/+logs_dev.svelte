@@ -488,6 +488,16 @@
     Add tips&thanks section under KA programs.
 </p>
 
+<h2>5/23/26</h2>
+<p>
+    Port database restoration script to Dart;
+</p>
+
+<h2>5/26/26</h2>
+<p>
+    Fix code editor bugs.
+</p>
+
 <h2>TODO</h2>
 <p>
     TODO: Implement sandbox unload detection;

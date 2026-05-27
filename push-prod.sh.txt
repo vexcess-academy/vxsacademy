@@ -1,0 +1,21 @@
+# backup prod env
+dart run ./utils/backup-db.dart
+mv db-backup/ ../temp-vxsacademy-db-backup
+mv secrets/ ../temp-vxsacademy-secrets
+mv captcha/secrets.env ../temp-vxsacademy-captcha-secrets.env
+mv rathole ../temp-vxsacademy-rathole
+
+# user must manually copy over new files
+
+# restore prod env
+mv ../temp-vxsacademy-db-backup db-backup
+mv ../temp-vxsacademy-secrets secrets
+mv ../temp-vxsacademy-captcha-secrets.env captcha/secrets.env
+mv ../temp-vxsacademy-rathole rathole
+
+# install dependencies
+npm install
+dart pub get
+cd captcha
+npm install
+cd ..

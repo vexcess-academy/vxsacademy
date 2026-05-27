@@ -316,8 +316,10 @@ class Model {
             break;
             case "cpp":
                 this.highlightingType = "cpp";
+            break;
             case "zig":
                 this.highlightingType = "rust";
+            break;
             case "jitl":
                 this.highlightingType = "go";
             break;
@@ -412,13 +414,13 @@ class Tab {
                     self.fileName = newName;
 
                     // remove old file path
-                    const pathIdx = editor.filePaths.indexOf(self.filePath);
-                    editor.filePaths.splice(pathIdx, 1);
+                    const pathIdx = self.editor.filePaths.indexOf(self.filePath);
+                    self.editor.filePaths.splice(pathIdx, 1);
 
                     // add new file path
                     const temp = self.filePath.split("/");
                     self.filePath = temp.slice(0, temp.length - 1).join("/") + "/" + newName;
-                    editor.filePaths.push(self.filePath);
+                    self.editor.filePaths.push(self.filePath);
 
                     // update file name in file tree
                     programData.files[newName] = programData.files[formerName];
@@ -690,6 +692,7 @@ class VXSEditor {
         this.tabsBar.on("dragend", e => {
             e.preventDefault();
             self.tabsBar.replaceChild(e.target, dragTabPlaceholder);
+            self.tabs.sort((a, b) => a.div.offsetLeft - b.div.offsetLeft);
         });
 
         this.newTabBtn = this.tabsBar.$(".editor-new-tab-btn")[0];
@@ -1208,7 +1211,7 @@ class VXSEditor {
                 type: "text/css"
             });
         // window.cssTag = cssTag;
-        if (this,this.settings.theme === "vs-dark") {
+        if (this.settings.theme === "vs-dark") {
             cssTag.attr("href", "https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism-okaidia.min.css");
             if (typeof monaco !== "undefined" && monaco?.editor) {
                 monaco.editor.setTheme("vs-dark");
@@ -1313,7 +1316,7 @@ class VXSEditor {
         const entrypoint = getMainFilePath();
         var mainCode = getFileContents(programData.files, entrypoint);
         if (mainCode === null) {
-            myEditor.terminal.err("Failed to locate entrypoint");
+            this.terminal.err("Failed to locate entrypoint");
         } else {
             if (entrypoint === "/index.html" && mainCode.includes("<title>") && mainCode.includes("<\/title>")) {
                 this.setTitle(mainCode.split("<title>")[1].split("<\/title>")[0]);
@@ -1335,7 +1338,7 @@ class VXSEditor {
         ) {
             localStorage.setItem("cs-new-program-" + programData.type, JSON.stringify({
                 width: this.settings.width,
-                height: this.settings.width,
+                height: this.settings.height,
                 files: programData.files
             }));
         }

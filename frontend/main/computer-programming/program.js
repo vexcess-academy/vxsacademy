@@ -932,138 +932,138 @@ function main2() {
     // self explanatory
     let currentScrubber = null;
 
-    // Number Scrubber class
-    class NumberScrubber {
-        static newElement = $.createComponent("number-scrubber", $.html`
-            <div class="number-scrubber">
-                <span class="number-scrubber-left">
-                    <svg width="12px" height="12px" viewBox="-25, -25, 150, 150"><polygon points="0,50 100,0 100, 100" fill="white"></polygon></svg>
-                </span>
-                <span>
-                    <svg width="12px" height="12px" viewBox="-25, -25, 150, 150"><polygon points="50,0 100,50 50,100 0,50" fill="white"></polygon></svg>
-                </span>
-                <span class="number-scrubber-right">
-                    <svg width="12px" height="12px" viewBox="-25, -25, 150, 150"><polygon points="100,50 0,0 0, 100" fill="white"></polygon></svg>
-                </span>
-                <div class="number-scrubber-arrow"></div>
-            </div>
-        `);
+    // // Number Scrubber class
+    // class NumberScrubber {
+    //     static newElement = $.createComponent("number-scrubber", $.html`
+    //         <div class="number-scrubber">
+    //             <span class="number-scrubber-left">
+    //                 <svg width="12px" height="12px" viewBox="-25, -25, 150, 150"><polygon points="0,50 100,0 100, 100" fill="white"></polygon></svg>
+    //             </span>
+    //             <span>
+    //                 <svg width="12px" height="12px" viewBox="-25, -25, 150, 150"><polygon points="50,0 100,50 50,100 0,50" fill="white"></polygon></svg>
+    //             </span>
+    //             <span class="number-scrubber-right">
+    //                 <svg width="12px" height="12px" viewBox="-25, -25, 150, 150"><polygon points="100,50 0,0 0, 100" fill="white"></polygon></svg>
+    //             </span>
+    //             <div class="number-scrubber-arrow"></div>
+    //         </div>
+    //     `);
 
-        originX;
-        mouseOriginX;
-        x;
-        y;
-        rStart = 0;
-        rEnd = 0;
-        cStart = 0;
-        cEnd = 0;
-        element;
-        value = 0;
-        decimalPlaces = 0;
-        increment = 1;
-        isPressed = false;
-        isMoving = false;
-        moveInterval = null;
+    //     originX;
+    //     mouseOriginX;
+    //     x;
+    //     y;
+    //     rStart = 0;
+    //     rEnd = 0;
+    //     cStart = 0;
+    //     cEnd = 0;
+    //     element;
+    //     value = 0;
+    //     decimalPlaces = 0;
+    //     increment = 1;
+    //     isPressed = false;
+    //     isMoving = false;
+    //     moveInterval = null;
         
-        constructor(x, y, rStart, cStart, rEnd, cEnd, textContent) {
-            let self = this;
+    //     constructor(x, y, rStart, cStart, rEnd, cEnd, textContent) {
+    //         let self = this;
             
-            this.rStart = rStart;
-            this.cStart = cStart;
-            this.rEnd = rEnd;
-            this.cEnd = cEnd;
+    //         this.rStart = rStart;
+    //         this.cStart = cStart;
+    //         this.rEnd = rEnd;
+    //         this.cEnd = cEnd;
 
-            {
-                let spl = textContent.split(".");
-                if (spl[1]) {
-                    this.decimalPlaces = spl[1].length;
-                    this.increment = 1 / (10 ** this.decimalPlaces);
-                }
+    //         {
+    //             let spl = textContent.split(".");
+    //             if (spl[1]) {
+    //                 this.decimalPlaces = spl[1].length;
+    //                 this.increment = 1 / (10 ** this.decimalPlaces);
+    //             }
                 
-                let i = 0;
-                while ("-.0123456789".includes(textContent[i])) {
-                    i++;
-                }
-                this.value = Number(textContent.slice(0, i));
-            }
+    //             let i = 0;
+    //             while ("-.0123456789".includes(textContent[i])) {
+    //                 i++;
+    //             }
+    //             this.value = Number(textContent.slice(0, i));
+    //         }
             
-            this.element = NumberScrubber.newElement().appendTo(document.body);
-            let size = this.element.getBoundingClientRect();
-            this.originX = x;
-            this.x = this.originX - size.width / 2;
-            this.y = y - size.height - 14;
-            this.element.css({
-                left: this.x + "px",
-                top: this.y + "px"
-            });
+    //         this.element = NumberScrubber.newElement().appendTo(document.body);
+    //         let size = this.element.getBoundingClientRect();
+    //         this.originX = x;
+    //         this.x = this.originX - size.width / 2;
+    //         this.y = y - size.height - 14;
+    //         this.element.css({
+    //             left: this.x + "px",
+    //             top: this.y + "px"
+    //         });
 
-            this.element.on("mousedown", e => {
-                self.isPressed = true;
-                self.isMoving = false;
-                self.mouseOriginX = e.clientX;
-            });
+    //         this.element.on("mousedown", e => {
+    //             self.isPressed = true;
+    //             self.isMoving = false;
+    //             self.mouseOriginX = e.clientX;
+    //         });
 
-            this.element.on("mousemove", () => {
-                if (self.isPressed && !self.isMoving) {
-                    self.isMoving = true;
-                    self.moveInterval = setInterval(() => {
-                        if (!mouseIsPressed) {
-                            self.isPressed = false;
-                            clearInterval(self.moveInterval);
-                            self.moveInterval = null;
+    //         this.element.on("mousemove", () => {
+    //             if (self.isPressed && !self.isMoving) {
+    //                 self.isMoving = true;
+    //                 self.moveInterval = setInterval(() => {
+    //                     if (!mouseIsPressed) {
+    //                         self.isPressed = false;
+    //                         clearInterval(self.moveInterval);
+    //                         self.moveInterval = null;
             
-                            self.x = self.originX - size.width / 2;
-                            self.element.css({
-                                left: self.x + "px"
-                            });
-                        } else {
-                            self.x = mouseX - size.width / 2;
-                            self.element.css({
-                                left: self.x + "px"
-                            });
-                            self.update(Math.round(mouseX - self.mouseOriginX) * self.increment);
-                            self.mouseOriginX = mouseX;
-                        }
-                    }, 1000 / 120);
-                }
-            });
+    //                         self.x = self.originX - size.width / 2;
+    //                         self.element.css({
+    //                             left: self.x + "px"
+    //                         });
+    //                     } else {
+    //                         self.x = mouseX - size.width / 2;
+    //                         self.element.css({
+    //                             left: self.x + "px"
+    //                         });
+    //                         self.update(Math.round(mouseX - self.mouseOriginX) * self.increment);
+    //                         self.mouseOriginX = mouseX;
+    //                     }
+    //                 }, 1000 / 120);
+    //             }
+    //         });
     
-            this.element.$(".number-scrubber-left")[0].on("click", () => {
-                self.update(-self.increment);
-            });
+    //         this.element.$(".number-scrubber-left")[0].on("click", () => {
+    //             self.update(-self.increment);
+    //         });
     
-            this.element.$(".number-scrubber-right")[0].on("click", () => {
-                self.update(self.increment);
-            });
-        }
+    //         this.element.$(".number-scrubber-right")[0].on("click", () => {
+    //             self.update(self.increment);
+    //         });
+    //     }
 
-        getEditorText() {
-            let range = new monaco.Range(this.rStart, this.cStart, this.rEnd, this.cEnd);
-            return editor.getModel().getValueInRange(range);
-        }
+    //     getEditorText() {
+    //         let range = new monaco.Range(this.rStart, this.cStart, this.rEnd, this.cEnd);
+    //         return editor.getModel().getValueInRange(range);
+    //     }
 
-        update(amt) {
-            let strBefore = this.value.toFixed(this.decimalPlaces);
-            this.value += amt;
-            let strAfter = this.value.toFixed(this.decimalPlaces);
+    //     update(amt) {
+    //         let strBefore = this.value.toFixed(this.decimalPlaces);
+    //         this.value += amt;
+    //         let strAfter = this.value.toFixed(this.decimalPlaces);
             
-            editor.executeEdits('number-scrubber', [
-                {
-                    range: new monaco.Range(this.rStart, this.cStart, this.rEnd, this.cEnd),
-                    text: strAfter
-                }
-            ]);
+    //         editor.executeEdits('number-scrubber', [
+    //             {
+    //                 range: new monaco.Range(this.rStart, this.cStart, this.rEnd, this.cEnd),
+    //                 text: strAfter
+    //             }
+    //         ]);
 
-            this.cEnd += strAfter.length - strBefore.length;
-        }
+    //         this.cEnd += strAfter.length - strBefore.length;
+    //     }
 
-        free() {
-            this.element.remove();
-            if (this.moveInterval !== null) {
-                clearInterval(this.moveInterval);
-            }
-        }
-    }
+    //     free() {
+    //         this.element.remove();
+    //         if (this.moveInterval !== null) {
+    //             clearInterval(this.moveInterval);
+    //         }
+    //     }
+    // }
 
     // handle clicks to open number scrubber
     editorDiv.on("click", e => {

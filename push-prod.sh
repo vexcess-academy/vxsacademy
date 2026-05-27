@@ -1,1 +1,0 @@
-dart run ./utils/backup-db.dart

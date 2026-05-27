@@ -93,12 +93,12 @@
 
 <h2>Important</h2>
 <div>
-    Due to the data leak some API endpoints are temporarily disabled.
+    All API endpoints have been restored.
     <br>
     IF YOU HAVE NOT ALREADY, <a href="/change_password">RESET YOUR PASSWORD</a>
     
     <br><br>
-    In addition, I rewrote the code editor from the ground up. Unfortunately, the new editor still needs a lot of debugging. Please let me know what bugs you encounter with it. I am aware that tab creation/deletion/reordering is buggy.
+    Please let me know any bugs you encounter.
 </div>
 
 <h2>Start a new project or <a href="/computer-programming/browse">Browse Projects</a> or <a href="/computer-programming/ka-browse">Browse KA Projects</a></h2>
