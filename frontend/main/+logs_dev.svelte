@@ -496,6 +496,30 @@
 <h2>5/26/26</h2>
 <p>
     Fix code editor bugs.
+    Add theme overide toggle to profile page;
+</p>
+
+<h2>5/27/26</h2>
+<p>
+    Fix bug where CDN returned 200 status code for 404 responses;
+    Fix bug where server errored on broken thumbnails;
+</p>
+
+<h2>5/28/26</h2>
+<p>
+    Add search page;
+</p>
+
+<h2>6/5/26</h2>
+<p>
+    Fix "Converting object to an encodable object failed: Instance of 'Int64'" bug (thank you Polar);
+    Fix "Forked From: Deleted Program" bug;
+</p>
+
+<h2>6/6/26</h2>
+<p>
+    Make search bar able to find articles/lessons;
+    Format WebGL lessons code;
 </p>
 
 <h2>TODO</h2>
@@ -506,7 +530,6 @@
     TODO: Finish Discussion features;
     TODO: investigate String is not subtype of BsonBinary line 97 off route_CDN;
     TODO: investigate int is not subtype of String route_API line 998;
-    TODO: investigate string contains invalid characters route_API line 984;
 </p>
 
 <style>

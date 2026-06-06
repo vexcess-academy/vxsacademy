@@ -62,14 +62,31 @@ List<T> castList<T>(List<dynamic> arr) {
 }
 
 Map<String, dynamic> castDocumentToDartTypes(Map<String, dynamic> doc) {
-    for (final key in doc.keys) {
-        if (doc[key] is Int64) {
-            doc[key] = doc[key].toInt();
-        } else if (doc[key] is Map) {
-            doc[key] = castDocumentToDartTypes(doc[key]);
+    List<String> keys = doc.keys.toList();
+    for (final key in keys) {
+        final val = doc[key];
+        if (val is Int64) {
+            doc[key] = val.toInt();
+        } else if (val is Map) {
+            doc[key] = castDocumentToDartTypes(val.cast());
+        } else if (val is List) {
+            doc[key] = castListToDartTypes(val);
         }
     }
     return doc;
+}
+
+List<dynamic> castListToDartTypes(List<dynamic> list) {
+    return list.map((value) {
+        if (value is Int64) {
+            return value.toInt();
+        } else if (value is Map<String, dynamic>) {
+            return castDocumentToDartTypes(value);
+        } else if (value is List) {
+            return castListToDartTypes(value);
+        }
+        return value;
+    }).toList();
 }
 
 Future<List<Map<String, dynamic>>> project(Stream<Map<String, dynamic>> stream, Map<String, int> mask) async {

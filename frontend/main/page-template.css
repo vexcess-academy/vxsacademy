@@ -149,6 +149,9 @@ a {
     color: white;
     width: max(80px, 15vw);
 }
+#navbar-search:focus-within {
+    background-color: rgb(77, 202, 113);
+}
 #navbar-search input::placeholder {
     color: var(--c, rgba(255, 255, 255, 0.8));
 }

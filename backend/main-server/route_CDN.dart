@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:mongo_dart/mongo_dart.dart' as Mongo;
 import 'package:fixnum/fixnum.dart';
+import 'package:bson/bson.dart';
 
 import 'route_.dart';
 import 'ProgramData.dart';
@@ -82,18 +83,23 @@ void routeFn_CDN(AP path, AO out, AD data) async {
                 if (programData.containsKey("_id")) {
                     programData.remove("_id");
                 }
-                for (final key in programData.keys) {
-                    if (programData[key] is Int64) {
-                        programData[key] = programData[key].toInt();
-                    }
-                }
-                // print(programData);
-                dataOut = utf8.encode(json.encode(programData));
+                dataOut = utf8.encode(json.encode(castDocumentToDartTypes(programData)));
             }
         } else if (fetchPath.endsWith(".jpg")) {
-            var id = fetchPath.substring("./programs/".length, fetchPath.length - ".jpg".length);
+            final id = fetchPath.substring("./programs/".length, fetchPath.length - ".jpg".length);
             var programData = await programs.findOne({ "id": id });
             if (programData != null && programData["thumbnail"] != null) {
+                // fix broken thumbnails from bug
+                if (programData["thumbnail"] is String) {
+                    final thumbnailData = BsonBinary.from(base64.decode(programData["thumbnail"].substring(programData["thumbnail"].indexOf(",") + 1)));
+
+                    programs.updateOne({ "id": id }, {"\$set": {
+                        "thumbnail": thumbnailData
+                    }});
+
+                    programData["thumbnail"] = thumbnailData;
+                }
+
                 Mongo.BsonBinary thumbnail = programData["thumbnail"];
                 dataOut = thumbnail.byteList;
             }
@@ -123,6 +129,7 @@ void routeFn_CDN(AP path, AO out, AD data) async {
             throw "unreachable";
         }
     } else {
+        out.statusCode = 404;
         out.write("404 Not Found");
     }
     out.close();

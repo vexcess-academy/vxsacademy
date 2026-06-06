@@ -11,11 +11,11 @@ $.createComponent("editor-container", $.html`
                         <span>index.html</span>
                     </div>
                     <div>
-                        <img src="/CDN/images/language-icons/javascript.png">
+                        <!-- <img src="/CDN/images/language-icons/javascript.png"> -->
                         <span>index.js</span>
                     </div>
                     <div>
-                        <img src="/CDN/images/language-icons/css.png">
+                        <!-- <img src="/CDN/images/language-icons/css.png">  -->
                         <span>style.css</span>
                     </div>
                 </div>

@@ -55,6 +55,10 @@ Future<String> createHTMLPage(String pg, UserData? userData, String openGraphTag
     //     .replaceFirst("%svquery.body%", await fileCache.get(pg) ?? "");
 
     String pageHTML = (await fileCache.get("main"))!;
+    final queryIdx = pg.indexOf("?");
+    if (queryIdx != -1) {
+        pg = pg.substring(0, queryIdx);
+    }
     return pageHTML
         .replaceFirst("<!-- OPEN GRAPH INSERT -->", openGraphTags)
         .replaceFirst("<!-- USER DATA INSERT -->", "<script>\n\tlet userData = JSON.parse(new TextDecoder(\"utf-8\").decode(Base64.decode(\"${base64UserData}\")));\n</script>")
@@ -142,6 +146,11 @@ final Map<String, dynamic> routeTree = {
         // tos path
         out.headers.add('Content-Type', 'text/html');
         out.add(utf8.encode(await createHTMLPage("privacy-policy" + path, data["userData"], DEFAULT_OG_TAGS)));
+    },
+    "/search?": (AP path, AO out, AD data) async {
+        // tos path
+        out.headers.add('Content-Type', 'text/html');
+        out.add(utf8.encode(await createHTMLPage("search?" + path, data["userData"], DEFAULT_OG_TAGS)));
     },
     "/computer-programming": (AP path, AO out, AD data) async {
         // computer programming home

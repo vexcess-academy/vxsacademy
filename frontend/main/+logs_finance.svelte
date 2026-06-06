@@ -15,10 +15,9 @@
         ["BUY", "microSD card for Pi", 26.51],
         ["BUY", "micro HDMI cable for Pi", 6.29],
         ["BUY", "case for Pi", 11.25],
-        ["BUY", "Ionos Linux VPS for proxy in 2026 ($2/month)", 2 * 1],
+        ["BUY", "Ionos Linux VPS for proxy in 2026 ($2/month)", 2 * 5],
         ["BUY", "Renew vxsacademy.org domain", 15],
         
-
     ];
 
     let total = 0;

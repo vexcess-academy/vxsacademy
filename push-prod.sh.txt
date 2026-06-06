@@ -8,6 +8,10 @@ mv rathole ../temp-vxsacademy-rathole
 # user must manually copy over new files
 
 # restore prod env
+rm db-backup -r || true
+rm secrets -r || true
+rm captcha/secrets.env || true
+rm rathole || true
 mv ../temp-vxsacademy-db-backup db-backup
 mv ../temp-vxsacademy-secrets secrets
 mv ../temp-vxsacademy-captcha-secrets.env captcha/secrets.env

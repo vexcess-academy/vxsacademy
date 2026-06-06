@@ -1,11 +1,12 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' as IO;
 import 'dart:math' as Math;
 
 import 'package:http/http.dart' as HTTP;
 import 'package:bson/bson.dart';
 import 'package:fixnum/fixnum.dart';
 
+import '../lib/file-io.dart';
 import 'ProgramData.dart';
 import 'route_.dart';
 import '../lib/utils.dart';
@@ -40,7 +41,7 @@ final routeTree_API = {
         bool allowRequest = true;
 
         // ignore
-        HttpRequest request = data["request"];
+        IO.HttpRequest request = data["request"];
         final origin = request.headers.value("origin");
         final validOrigin = origin is String && (origin == "https://vxsacademy.org" || origin.startsWith("https://127.0.0.1") || origin.startsWith("http://127.0.0.1"));
         final sensitiveEndpoint = ["signup", "login", "create_program", "save_program", "delete_program", "like_program", "update_profile", "compile_cpp", "log_out", "compile_zig"].contains(path.substring(5));
@@ -1107,6 +1108,72 @@ final routeTree_API = {
                     out.write("error: 400");
                 }
             }
+        },
+        "search?": (AP path, AO out, AD data) async {
+            final query = parseQuery("?" + path);
+            final q = query["query"].toString().toLowerCase();
+
+            List<dynamic> results = [];
+
+            final startTime = DateTime.now().millisecondsSinceEpoch;
+            for (final program in vxsHotlist.allPrograms) {
+                String title = (program["title"] as String).toLowerCase();
+                String authorUsername = (program["author"]["username"] as String).toLowerCase();
+                String authorNickname = (program["author"]["nickname"] as String).toLowerCase();
+                String id = program["id"] as String;
+                if (title.contains(q) || authorUsername.contains(q) || authorNickname.contains(q)) {
+                    // expensive and dirty way to hide data from front end. refine this later
+                    Map<String, dynamic> clone = json.decode(json.encode(program));
+                    clone.remove("likes");
+                    results.add(clone);
+                }
+
+                if (results.length > 100) {
+                    break;
+                }
+            }
+
+            List<String> articlePaths = [];
+
+            IO.Directory("frontend/main/computer-programming/javascript/").listSync().forEach((IO.FileSystemEntity entity) {
+                if (entity is IO.File) {
+                    articlePaths.add(entity.absolute.path);
+                }
+            });
+
+            IO.Directory("frontend/main/computer-programming/webgl/").listSync().forEach((IO.FileSystemEntity entity) {
+                if (entity is IO.File) {
+                    articlePaths.add(entity.absolute.path);
+                }
+            });
+
+            for (final path in articlePaths) {
+                if (!path.endsWith("course.json")) {
+                    final relPath = path.substring(path.indexOf("frontend/main") + "frontend/main".length);
+                    final contents = await fileCache.get(relPath);
+                    if (contents != null) {
+                        final lowerContents = contents.toLowerCase();
+                        final idx = lowerContents.indexOf(q);
+                        if (idx != -1) {
+                            var out = relPath.replaceFirst(".md", "");
+                            final lastSlash = out.lastIndexOf("/");
+                            out = "${out.substring(0, lastSlash)}#${out.substring(lastSlash + 1)}";
+                            results.add({
+                                "isArticleResult": true,
+                                "url": out,
+                                "snippet": contents.substring(Math.max(idx - 40, 0), Math.min(idx + q.length + 40, contents.length))
+                            });
+                        }
+                    }
+                }
+            }
+
+            final endTime = DateTime.now().millisecondsSinceEpoch;
+
+            out.add(bytesOf(json.encode({
+                "time": endTime - startTime,
+                "results": results
+            })));
         },
     }
 };    
