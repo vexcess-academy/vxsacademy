@@ -1,11 +1,12 @@
 import "file-io.dart";
-
+import 'dart:convert';
+import 'dart:typed_data';
 import 'utils.dart';
 
 const int MAX_INT = 0x7FFFFFFFFFFFFFFF;
 
 class FileCache {
-    Map<String, String> files = new Map();
+    Map<String, Uint8List> files = new Map();
     Map<String, int> readTimestamps = new Map();
     Map<String, String> pathToFilePathMap = new Map();
     String rootPath;
@@ -35,18 +36,18 @@ class FileCache {
         return oldestPath;
     }
 
-    Future<String?> get(String path) async {
+    Future<Uint8List?> getBytes(String path) async {
         if (readTimestamps.containsKey(path)) {
             // update cache
             readTimestamps[path] = millis();
             return files[path]!;
         } else {
             // read file
-            String? fileContents;
+            Uint8List? fileContents;
             if (pathToFilePathMap[path] != null) {
-                fileContents = await readFileAsString(pathToFilePathMap[path]!);
+                fileContents = await readFile(pathToFilePathMap[path]!);
             } else {
-                fileContents = await readFileAsString(this.rootPath + path);
+                fileContents = await readFile(this.rootPath + path);
             }
 
             // doesn't exist
@@ -73,6 +74,11 @@ class FileCache {
             
             return fileContents;
         }
+    }
+
+    Future<String?> get(String path) async {
+        final bytes = await getBytes(path);
+        return bytes == null ? null : utf8.decode(bytes);
     }
 
     void clear() {

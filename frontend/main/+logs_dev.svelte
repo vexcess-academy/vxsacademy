@@ -520,6 +520,12 @@
 <p>
     Make search bar able to find articles/lessons;
     Format WebGL lessons code;
+    Fix notifications sorting bug;
+    Add stats to profile page;
+    Add discussions to profile page;
+    Improve file cache;
+    Make search bar able to find users;
+    Make search bar able to find discussions;
 </p>
 
 <h2>TODO</h2>

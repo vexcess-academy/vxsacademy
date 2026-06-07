@@ -34,7 +34,7 @@ var fileCache = new FileCache(
         // "finance-logs": "./frontend/main/pages/logs/finance.html",
         // "tos": "./frontend/main/pages/tos/tos.html",
         // "privacy-policy": "./frontend/main/pages/privacy-policy/privacy-policy.html",
-    }, 32
+    }, 1024
 );
 
 const DEFAULT_OG_TAGS = """

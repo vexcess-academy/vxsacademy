@@ -1,6 +1,123 @@
 <script>
-    addEventListener("DOMContentLoaded", () => {
-        var who = window.location.href.split("/")[4];
+    import ProjectIcon from "./ProjectIcon.svelte";
+    import { onMount } from 'svelte';
+
+    const avatars = {
+        "boberta": "Boberta",
+        "bobert-cool": "Cool Bobert",
+        "bobert-pixelated": "Pixel Bobert",
+        "bobert-approved": "Bobert Approved",
+        "bobert-chad": "Chad Bobert",
+        "bobert-cringe": "Cringing Bobert",
+        "bobert-flexing": "Flexing Bobert",
+        "bobert-high": "High Bobert",
+        "bobert-troll-nose": "Shipment's Troll Bobert",
+        "bobert-troll": "Troll Bobert",
+        "bobert-wide": "Wide Bobert",
+        "bobert": "Bobert",
+        "rock-thonk": "Rock Thonk",
+        "floof1": "Infant Floof",
+        "floof2": "Toddler Floof",
+        "floof3": "Child Floof",
+        "floof4": "Teen Floof",
+        "floof5": "Adult Floof",
+        "pyro1": "Infant Pyro",
+        "pyro2": "Toddler Pyro",
+        "pyro3": "Child Pyro",
+        "pyro4": "Teen Pyro",
+        "pyro5": "Adult Pyro",
+    };    
+
+    const backgrounds = {
+        "blue": ["Blue", 0],
+        "bobert":["Bobert", 0],
+        "cosmos": ["Cosmos", 0],
+        "cyber":["Cyber", 0],
+        "electric-blue": ["Electric Blue", 0],
+        "fbm": ["Fractal Brownian Motion", 1],
+        "fractal-1": ["Fractal 1", 0],
+        "green": ["Green", 0],
+        "julia-rainbow": ["Rainbow Julia Set", 1],
+        "julia": ["Julia Set", 0],
+        "magenta": ["Magenta", 0],
+        "photon-1": ["Photon 1", 0],
+        "photon-2": ["Photon 2", 0],
+        "transparent": ["None", 1],
+    };
+
+    let profileData = null;
+    let loadedProjects = [];
+    let loadedDiscussions = [];
+    let isOwner = false;
+
+    // settings states
+    let isSettingsOpen = false;
+    let settingsMode = ""; // 'text', 'avatar', 'background'
+    let currSelectedImage = "";
+    
+    // settings inputs
+    let editNickname = "";
+    let editUsername = "";
+    let editBio = "";
+
+    // reactive states
+    $: isDarkText = profileData && backgrounds[profileData.background] && backgrounds[profileData.background][1] === 1;
+    $: textClr = isDarkText ? "black" : "white";
+    $: shadowClr = isDarkText ? "white" : "black";
+    $: bgExtension = profileData?.background === "transparent" ? ".png" : ".jpg";
+
+    function sumOf(arr, ofFn) {
+        let sum = 0;
+        for (let i = 0; i < arr.length; i++) {
+            sum += ofFn(arr[i]);
+        }
+        return sum;
+    }
+
+    $: likesReceived = "...";
+    $: forksReceived = "...";
+    $: forksCount = "...";
+    $: avgLikes = "...";
+    $: avgForks = "...";
+
+    async function loadProjects() {
+        if (profileData?.projects?.length > 0) {
+            const promises = profileData.projects.map(async (id) => {
+                const res = await fetch(`/CDN/programs/${id}.json`);
+                const data = await res.json();
+                if (data["files"]) {
+                    delete data["files"];
+                }
+                if (data["thumbnail"]) {
+                    delete data["thumbnail"];
+                }
+                loadedProjects = [...loadedProjects, data];
+                return data;
+            });
+
+            loadedProjects = await Promise.all(promises);
+
+            likesReceived = sumOf(loadedProjects, (project) => project.likeCount);
+            forksReceived = sumOf(loadedProjects, (project) => project.forkCount);
+            forksCount = sumOf(loadedProjects, (project) => project.parent !== null ? 1 : 0);
+
+            avgLikes = profileData.projects.length === 0 ? 0 : (likesReceived / profileData.projects.length).toFixed(1);
+            avgForks = profileData.projects.length === 0 ? 0 : (forksReceived / profileData.projects.length).toFixed(1);
+        }
+    }
+
+    async function loadDiscussions() {
+        if (profileData?.discussions?.length > 0) {
+            const promises = profileData.discussions.forEach(async (id) => {
+                const res = await fetch(`/API/getDiscussions?ids=${id}`);
+                const arr = await res.json();
+                loadedDiscussions = [...loadedDiscussions, ...arr];
+            });
+        }
+    }
+
+    onMount(async () => {
+        let who = window.location.href.split("/")[4];
         if (who === "me") {
             if (userData !== null) {
                 who = "id_" + userData.id;
@@ -9,506 +126,462 @@
             }
         }
 
-        const avatars = {
-            "boberta": "Boberta",
-            "bobert-cool": "Cool Bobert",
-            "bobert-pixelated": "Pixel Bobert",
-            "bobert-approved": "Bobert Approved",
-            "bobert-chad": "Chad Bobert",
-            "bobert-cringe": "Cringing Bobert",
-            "bobert-flexing": "Flexing Bobert",
-            "bobert-high": "High Bobert",
-            "bobert-troll-nose": "Shipment's Troll Bobert",
-            "bobert-troll": "Troll Bobert",
-            "bobert-wide": "Wide Bobert",
-            "bobert": "Bobert",
-            "rock-thonk": "Rock Thonk",
-            "floof1": "Infant Floof",
-            "floof2": "Toddler Floof",
-            "floof3": "Child Floof",
-            "floof4": "Teen Floof",
-            "floof5": "Adult Floof",
-            "pyro1": "Infant Pyro",
-            "pyro2": "Toddler Pyro",
-            "pyro3": "Child Pyro",
-            "pyro4": "Teen Pyro",
-            "pyro5": "Adult Pyro",
-        };    
-
-        const backgrounds = {
-            "blue": ["Blue", 0],
-            "bobert":["Bobert", 0],
-            "cosmos": ["Cosmos", 0],
-            "cyber":["Cyber", 0],
-            "electric-blue": ["Electric Blue", 0],
-            "fbm": ["Fractal Brownian Motion", 1],
-            "fractal-1": ["Fractal 1", 0],
-            "green": ["Green", 0],
-            "julia-rainbow": ["Rainbow Julia Set", 1],
-            "julia": ["Julia Set", 0],
-            "magenta": ["Magenta", 0],
-            "photon-1": ["Photon 1", 0],
-            "photon-2": ["Photon 2", 0],
-            "transparent": ["None", 1],
-        };
-
-        let showcaseEl = Q$(".programs-grid")[0];
-        let profileData;
         if (who !== undefined) {
-            fetch("/API/getUserData?who=" + who).then(res => res.json()).then(res => {
-                profileData = res;
-
-                let pfp = Q$("#profile-img > *img")[0];
-                pfp.src = `/CDN/images/avatars/${profileData.avatar}.png`;
-                pfp.on("load", () => {
-                    if (pfp.width > pfp.height) {
-                        pfp.css({
-                            width: "90px",
-                            height: "unset",
-                            position: "relative",
-                            top: "50%",
-                            transform: "translateY(-50%)"
-                        });
-                    } else {
-                        pfp.css({
-                            width: "unset",
-                            height: "90px"
-                        });
-                    }
-                });
-                Q$("#background-container").css({
-                    backgroundImage: `url("/CDN/images/backgrounds/${profileData.background}${profileData.background === "transparent" ? ".png" : ".jpg"}")`
-                });
-                let textClr = backgrounds[profileData.background][1] === 1 ? "black" : "white";
-                let shadowClr = textClr === "white" ? "black" : "white";
-                Q$("#profile-nickname")
-                    .text(profileData.nickname)
-                    .css(`color: ${textClr}; text-shadow: 0px 0px 8px ${shadowClr};`);
-                Q$("#profile-username")
-                    .text(`@${profileData.username}`);
-                Q$("#profile-id")
-                    .text(`(${profileData.id})`)
-                    .css(`color: ${textClr}; text-shadow: 0px 0px 8px ${shadowClr};`);
-                Q$("#profile-bio")
-                    .text(profileData.bio)
-                    .css(`color: ${textClr}; text-shadow: 0px 0px 8px ${shadowClr};`);
-                
-                for (var i = 0; i < profileData.projects.length; i++) {
-                    let projectId = profileData.projects[i];
+            const res = await fetch("/API/getUserData?who=" + who);
+            profileData = await res.json();
             
-                    fetch(`/CDN/programs/${projectId}.json`)
-                        .then(res => res.json())
-                        .then(data => {
-                            Q$("program-element", {
-                                ...data,
-                                type: data.type === "webpage" ? "html" : data.type
-                            }).appendTo(showcaseEl)
-                        });
-                }
-            });
-        }
-
-        function validateNickname(nickname) {
-            if (typeof nickname !== "string") {
-                return "nickname must be a string";
+            // check if viewer is owner
+            if (userData && (who === "id_" + userData.id || who === userData.username)) {
+                isOwner = true;
             }
-            if (nickname.length > 32) {
-                return "nickname can't be longer than 32 characters";
-            }
-            if (nickname.length <= 0) {
-                return "nickname can't be empty";
-            }
-            return "OK";
-        }
-        function validateUsername(username) {
-            if (typeof username !== "string") {
-                return "username must be a string";
-            }
-            if (username.length > 32) {
-                return "username can't be longer than 32 characters";
-            }
-            if (!(/^[a-zA-Z0-9\_]+$/.test(username))) {
-                return "username can only contain letters, numbers, and underscores";
-            }
-            if (username.length < 3) {
-                return "username can't be shorter than 3 characters";
-            }
-            return "OK";
-        }
-        function validateBio(bio) {
-            if (typeof bio !== "string") {
-                return "bio must be a string";
-            }
-            if (bio.length > 160) {
-                return "bio can't be longer than 160 characters";
-            }
-            return "OK";
-        }
 
-        if (userData !== null && (who === "id_" + userData.id || who === userData.username)) {
-            const settingsEl = Q$("#profile-settings");
-            const pageDarkenEl = Q$("#page-darken");
-            
-            const settingsCloseBtn = Q$("#profile-settings > *button")[0];
-            const settingsSaveBtn = Q$("#profile-settings > *button")[1];
-
-            let currSelectedImage = "";
-            let settingsMode = "";
-
-            Q$.createComponent("text-settings", Q$.html`
-                <div>
-                    <div style="display: flex;">
-                        <div style="width: 100px; padding-top: 8px; color: gray;">
-                            NICKNAME
-                        </div>
-                        <div style="width: calc(100% - 130px);">
-                            <input id="nickname-input" type="text" style="width: 100%; padding: 8px; border-radius: 3px; border: 1px solid #ccc;">
-                            <div style="font-size: 14px; color: gray; margin-top: 10px;">This is how your name will appear around Vexcess Academy.</div>
-                        </div>
-                    </div>
-            
-                    <br><br>
-            
-                    <div style="display: flex;">
-                        <div style="width: 100px; padding-top: 8px; color: gray;">
-                            USERNAME
-                        </div>
-                        <div style="width: calc(100% - 130px);">
-                            <input id="username-input" type="text" style="width: 100%; padding: 8px; border-radius: 3px; border: 1px solid #ccc;">
-                            <div style="font-size: 14px; color: gray; margin-top: 10px;">Your username will appear in your Vexcess Academy address.<br> http://vxsacademy.org/profile/YOUR_USERNAME</div>
-                        </div>
-                    </div>
-            
-                    <br><br>
-            
-                    <div style="display: flex;">
-                        <div style="width: 100px; padding-top: 8px; color: gray;">
-                            BIO
-                        </div>
-                        <div style="width: calc(100% - 130px);">
-                            <textarea id="bio-input" type="text" style="width: 100%; padding: 8px; border-radius: 3px; border: 1px solid #ccc;"></textarea>
-                            <div id="bio-chars-left" style="font-size: 14px; color: gray; margin-top: 10px;"></div>
-                        </div>
-                    </div>
-                </div>
-            `);
-
-            // handle avatar settings
-            Q$.createComponent("avatar-settings", Q$.html`
-                <div>
-                    <div class="avatars-grid"></div>
-                </div>
-            `, function() {
-                Q$.createComponent("avatar", Q$.html`
-                    <div class="avatar-box">
-                        <img src="/CDN/images/avatars/\{name}.png" height="80">
-                        <br>
-                        <span>\{display_name}</span>
-                    </div>
-                `, function(info) {
-                    let avatarBox = this;
-                    this.on("click", () => {
-                        Q$(".avatar-box").forEach(el => {
-                            el.style.border = "2px solid rgba(0, 0, 0, 0.1)";
-                        })
-                        currSelectedImage = info.name;
-                        avatarBox.style.border = "2px solid black";
-                    });
-                });        
-
-                let grid = this.$(".avatars-grid")[0];
-                for (let avatar in avatars) {
-                    let el = Q$("avatar", {
-                        name: avatar,
-                        display_name: avatars[avatar]
-                    }).appendTo(grid);
-                    if (avatar === userData.avatar) {
-                        el.style.border = "2px solid black";
-                    }
-                }
-
-                Q$.deleteComponent("avatar");
-            });
-
-            // handle background settings
-            Q$.createComponent("background-settings", Q$.html`
-                <div>
-                    <div class="backgrounds-grid"></div>
-                </div>
-            `, function() {
-                Q$.createComponent("background", Q$.html`
-                    <div class="background-box">
-                        <img src="/CDN/images/backgrounds/\{name}\{ext}" style="width: 100%;">
-                        <br>
-                        <span>\{display_name}</span>
-                    </div>
-                `, function(info) {
-                    let backgroundBox = this;
-                    this.on("click", () => {
-                        Q$(".background-box").forEach(el => {
-                            el.style.border = "2px solid rgba(0, 0, 0, 0.1)";
-                        })
-                        currSelectedImage = info.name;
-                        backgroundBox.style.border = "2px solid black";
-                    });
-                });
-
-                let grid = this.$(".backgrounds-grid")[0];
-                for (let background in backgrounds) {
-                    let el = Q$("background", {
-                        name: background,
-                        display_name: backgrounds[background][0],
-                        ext: background === "transparent" ? ".png" : ".jpg"
-                    }).appendTo(grid);
-                    if (background === userData.background) {
-                        el.style.border = "2px solid black";
-                    }
-                }
-
-                Q$.deleteComponent("background");
-            });
-            
-            Q$("#profile-img")
-                .css("cursor: pointer;")
-                .on("mouseup", function() {
-                    Q$("#settings-content").html("").append(Q$("avatar-settings"));
-                    settingsMode = "avatar";
-                    settingsEl.$("*h1")[0].text("Avatars");
-                    
-                    pageDarkenEl.css("display: block");
-                    settingsEl.css("display: block");
-                });
-
-            Q$("#change-background-btn")
-                .css("display: inline-block")
-                .on("mouseup", function() {
-                    Q$("#settings-content").html("").append(Q$("background-settings"));
-                    settingsMode = "background";
-                    settingsEl.$("*h1")[0].text("Backgrounds");
-                    
-                    pageDarkenEl.css("display: block");
-                    settingsEl.css("display: block");
-                });
-
-            // handle text settings
-            Q$("#profile-about-text-container")
-                .css("cursor: pointer;")
-                .on("mouseup", function() {
-                    Q$("#settings-content").html("").append(Q$("text-settings"));
-                    settingsMode = "text";
-                    settingsEl.$("*h1")[0].text("Profile Information");
-                    
-                    const nicknameInput = Q$("#nickname-input");
-                    const usernameInput = Q$("#username-input");
-                    const bioInput = Q$("#bio-input");
-                    const bioCharsLeftEl = Q$("#bio-chars-left");
-
-                    bioInput.on("input", function() {
-                        bioInput.value = bioInput.value.slice(0, 160);
-                        bioCharsLeftEl.text(`${160 - bioInput.value.length} characters left`);
-                    });
-                    
-                    nicknameInput.value = userData.nickname;
-                    usernameInput.value = userData.username;
-                    bioInput.value = userData.bio;
-
-                    bioCharsLeftEl.text(`${160 - bioInput.value.length} characters left`);
-
-                    pageDarkenEl.css("display: block");
-                    settingsEl.css("display: block");
-                });
-
-            settingsCloseBtn.on("click", function() {
-                pageDarkenEl.css("display: none");
-                settingsEl.css("display: none");
-            });
-
-            settingsSaveBtn.on("click", function() {
-                let hadError = false;
-                let newNickname = "";
-                let newUsername = "";
-                let newBio = "";
-            
-                if (settingsMode === "text") {
-                    const nicknameInput = Q$("#nickname-input");
-                    const usernameInput = Q$("#username-input");
-                    const bioInput = Q$("#bio-input");
-                    const bioCharsLeftEl = Q$("#bio-chars-left");
-                        
-                    newNickname = nicknameInput.value;
-                    newUsername = usernameInput.value;
-                    newBio = bioInput.value;
-                    
-                    let checkNickname = validateNickname(newNickname);
-                    let checkUsername = validateUsername(newUsername);
-                    let checkBio = validateBio(newBio);
-                
-                    if (checkNickname !== "OK") {
-                        alert(checkNickname);
-                        hadError = true;
-                    }
-                    if (checkUsername !== "OK") {
-                        alert(checkUsername);
-                        hadError = true;
-                    }
-                    if (checkBio !== "OK") {
-                        alert(checkBio);
-                        hadError = true;
-                    }
-                }
-
-                if (!hadError) {
-                    let sendObj;
-                    switch (settingsMode) {
-                        case "text":
-                            sendObj = {
-                                nickname: newNickname,
-                                username: newUsername,
-                                bio: newBio
-                            };
-                            break;
-                        case "avatar":
-                            sendObj = {
-                                avatar: currSelectedImage
-                            };
-                            break;
-                        case "background":
-                            sendObj = {
-                                background: currSelectedImage
-                            };
-                            break;
-                    }
-                    
-                    fetch("/API/update_profile", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify(sendObj)
-                    }).then(res => res.text()).then(function (res) {
-                        if (res.toLowerCase().includes("error")) {
-                            alert(res);
-                        } else {
-                            if (settingsMode === "text") {
-                                // update internal
-                                userData.nickname = newNickname;
-                                userData.username = newUsername;
-                                userData.bio = newBio;
-                                
-                                // update display
-                                Q$("#profile-nickname").text(newNickname);
-                                Q$("#profile-username").text(`@${newUsername}`);
-                                Q$("#profile-bio").text(newBio);
-                                profileDropDownBtn.$("*span")[0].text(userData.nickname);                        
-                            } else if (settingsMode === "avatar") {
-                                // update pfp
-                                userData.avatar = currSelectedImage;
-                                let pfp = Q$("#profile-img > *img")[0];
-                                pfp.src = `/CDN/images/avatars/${currSelectedImage}.png`;
-                            } else if (settingsMode === "background") {
-                                // update background
-                                userData.background = currSelectedImage;
-                                Q$("#background-container").css({
-                                    backgroundImage: `url("/CDN/images/backgrounds/${userData.background}${userData.background === "transparent" ? ".png" : ".jpg"}")`
-                                });
-
-                                let textClr = backgrounds[userData.background][1] === 1 ? "black" : "white";
-                                let shadowClr = textClr === "white" ? "black" : "white";
-                                Q$("#profile-nickname")
-                                    .css(`color: ${textClr}; text-shadow: 0px 0px 8px ${shadowClr};`);
-                                Q$("#profile-id")
-                                    .css(`color: ${textClr}; text-shadow: 0px 0px 8px ${shadowClr};`);
-                                Q$("#profile-bio")
-                                    .css(`color: ${textClr}; text-shadow: 0px 0px 8px ${shadowClr};`);
-                            }
-
-                            // close settings
-                            pageDarkenEl.css("display: none");
-                            settingsEl.css("display: none");
-                        }
-                    });
-                }
-            });
+            loadProjects();
+            loadDiscussions();
         }
     });
+
+    // Validation Functions
+    function validateNickname(nickname) {
+        if (typeof nickname !== "string") return "nickname must be a string";
+        if (nickname.length > 32) return "nickname can't be longer than 32 characters";
+        if (nickname.length <= 0) return "nickname can't be empty";
+        return "OK";
+    }
+
+    function validateUsername(username) {
+        if (typeof username !== "string") return "username must be a string";
+        if (username.length > 32) return "username can't be longer than 32 characters";
+        if (!(/^[a-zA-Z0-9\_]+$/.test(username))) return "username can only contain letters, numbers, and underscores";
+        if (username.length < 3) return "username can't be shorter than 3 characters";
+        return "OK";
+    }
+
+    function validateBio(bio) {
+        if (typeof bio !== "string") return "bio must be a string";
+        if (bio.length > 160) return "bio can't be longer than 160 characters";
+        return "OK";
+    }
+
+    function openSettings(mode) {
+        settingsMode = mode;
+        if (mode === 'text') {
+            editNickname = profileData.nickname;
+            editUsername = profileData.username;
+            editBio = profileData.bio;
+        } else if (mode === 'avatar') {
+            currSelectedImage = profileData.avatar;
+        } else if (mode === 'background') {
+            currSelectedImage = profileData.background;
+        }
+        isSettingsOpen = true;
+    }
+
+    async function saveSettings() {
+        let sendObj = {};
+        
+        if (settingsMode === "text") {
+            const checkNickname = validateNickname(editNickname);
+            const checkUsername = validateUsername(editUsername);
+            const checkBio = validateBio(editBio);
+
+            if (checkNickname !== "OK") return alert(checkNickname);
+            if (checkUsername !== "OK") return alert(checkUsername);
+            if (checkBio !== "OK") return alert(checkBio);
+
+            sendObj = { nickname: editNickname, username: editUsername, bio: editBio };
+        } else if (settingsMode === "avatar") {
+            sendObj = { avatar: currSelectedImage };
+        } else if (settingsMode === "background") {
+            sendObj = { background: currSelectedImage };
+        }
+
+        const res = await fetch("/API/update_profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(sendObj)
+        });
+        const resultText = await res.text();
+
+        if (resultText.toLowerCase().includes("error")) {
+            alert(resultText);
+        } else {
+            profileData = { ...profileData, ...sendObj };
+            if (userData) {
+                userData = { ...userData, ...sendObj };
+            }
+            isSettingsOpen = false;
+        }
+    }
+
+    function handleThemeChange(event) {
+        window.savedTheme = event.target.value;
+        localStorage.setItem('theme', window.savedTheme);
+        window.applyTheme(savedTheme);
+    }
+
+    function timeAgo(timestamp) {
+        const now = Date.now();
+        const msPerMinute = 60 * 1000;
+        const msPerHour = msPerMinute * 60;
+        const msPerDay = msPerHour * 24;
+        const msPerMonth = msPerDay * 30.44; // Average days in a month
+        const msPerYear = msPerDay * 365.25; // Account for leap years
+
+        const elapsed = now - timestamp;
+        if (elapsed < 0) {
+            return "just now";
+        }
+
+        const units = [
+            { max: msPerMinute, value: 1, name: 'second' },
+            { max: msPerHour, value: msPerMinute, name: 'minute' },
+            { max: msPerDay, value: msPerHour, name: 'hour' },
+            { max: msPerMonth, value: msPerDay, name: 'day' },
+            { max: msPerYear, value: msPerMonth, name: 'month' },
+            { max: Infinity, value: msPerYear, name: 'year' }
+        ];
+        for (let i = 0; i < units.length; i++) {
+            const unit = units[i];
+            if (elapsed < unit.max) {
+                const count = Math.floor(elapsed / unit.value);
+                return `${count} ${unit.name}${count === 1 ? '' : 's'} ago`;
+            }
+        }
+    }
 </script>
 
-<link rel="stylesheet" href="/CDN/pages/profile/profile.css" type="text/css">
+<!-- <link rel="stylesheet" href="/CDN/pages/profile/profile.css" type="text/css"> -->
 
-<!-- top background area -->
-<div id="background-container">
-    <div id="profile-about-container">
-        <div id="profile-img">
-            <img src="" alt="profile">
-        </div>
-        <div id="profile-about-text-container">
-            <strong id="profile-nickname" style="cursor: pointer; font-size: 28px; display: block; margin-bottom: 6px;"></strong>
-            <strong id="profile-username" style="font-size: 16px; color: black; background: rgba(255, 255, 255, 0.8); padding: 6px; border-radius: 100px; padding-top: 4px;"></strong>
-            <span id="profile-id" style="font-size: 16px; opacity: 0.8;"></span>
-            <div id="profile-bio" style="cursor: pointer; font-size: 16px; margin-top: 18px;"></div>
-        </div>
-        <div style="margin-left: auto; order: 2; opacity: 0.8;">
-            <button id="change-background-btn" style="display: none;" class="button">Change Background</button>
-            
-            <br><br>
-            <div style="background-color: var(--background); color: var(--text-color); padding: 4px; border-radius: 4px;">
-                <label for="theme-select">Theme:</label>
-                <select id="theme-select">
-                    <option value="default">Default (System)</option>
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                </select>
+{#if profileData}
+    <div id="background-container" style="background-image: url('/CDN/images/backgrounds/{profileData.background}{bgExtension}')">
+        <div id="profile-about-container">
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div id="profile-img" on:click={() => isOwner && openSettings('avatar')} style="cursor: {isOwner ? 'pointer' : 'default'}">
+                <img 
+                    src="/CDN/images/avatars/{profileData.avatar}.png" 
+                    alt="profile avatar"
+                    on:load={(e) => {
+                        const img = e.target;
+                        if (img.naturalWidth > img.naturalHeight) {
+                            img.style.width = '90px';
+                            img.style.height = 'unset';
+                            img.style.position = 'relative';
+                            img.style.top = '50%';
+                            img.style.transform = 'translateY(-50%)';
+                        } else {
+                            img.style.width = 'unset';
+                            img.style.height = '90px';
+                        }
+                    }}
+                >
             </div>
-            <script>
-                const themeSelect = document.getElementById('theme-select');
-                themeSelect.value = savedTheme;
-                themeSelect.addEventListener('change', (event) => {
-                    savedTheme = event.target.value;
-                    localStorage.setItem('theme', savedTheme);
-                    applyTheme(savedTheme);
-                });
-            </script>
+            
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div id="profile-about-text-container" on:click={() => isOwner && openSettings('text')} style="cursor: {isOwner ? 'pointer' : 'default'}">
+                <strong id="profile-nickname" style="color: {textClr}; text-shadow: 0px 0px 8px {shadowClr};">{profileData.nickname}</strong>
+                <strong id="profile-username">@{profileData.username}</strong>
+                <span id="profile-id" style="color: {textClr}; text-shadow: 0px 0px 8px {shadowClr};">({profileData.id})</span>
+                <div id="profile-bio" style="color: {textClr}; text-shadow: 0px 0px 4px {shadowClr}, 0px 0px 8px {shadowClr};">{profileData.bio}</div>
+            </div>
+
+            <div class="header-controls">
+                {#if isOwner}
+                    <button class="button" on:click={() => openSettings('background')}>Change Background</button>
+
+                    <div class="theme-selector">
+                        <label for="theme-select">Theme:</label>
+                        <select id="theme-select" bind:value={window.savedTheme} on:change={handleThemeChange}>
+                            <option value="default">Default (System)</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+                {/if}
+            </div>
         </div>
     </div>
-</div>
 
-<!-- main profile info area -->
-<div style="padding: 20px;">
-    <h2>User Statistics</h2>
-    <div class="profile-content"></div>
-</div>
+    <div class="profile-layout-wrapper">
+        <div class="section stats-section">
+            <h2>User Statistics</h2>
+            <div class="profile-content stats-grid">
+                <div class="stat-box">
+                    <h3>Joined</h3>
+                    <p title="{new Date(profileData?.created).toDateString()}" style="text-decoration: underline dotted;">{profileData.created ? timeAgo(profileData.created) : 0}</p>
+                </div>
 
-<div style="padding: 20px;">
-    <h2>Projects</h2>
-    <div class="profile-content">
-        <div class="programs-grid"></div>
+                <div class="stat-box">
+                    <h3>Projects</h3>
+                    <p>{profileData.projects?.length || 0}</p>
+                </div>
+
+                <div class="stat-box">
+                    <h3>Forks</h3>
+                    <p>{forksCount || 0}</p>
+                </div>
+
+                <div class="stat-box">
+                    <h3>Posts</h3>
+                    <p>{profileData.discussions?.length || 0}</p>
+                </div>
+
+                <div class="stat-box">
+                    <h3>Likes Received</h3>
+                    <p>{likesReceived}</p>
+                </div>
+
+                <div class="stat-box">
+                    <h3>Forks Received</h3>
+                    <p>{forksReceived}</p>
+                </div>
+
+                <div class="stat-box">
+                    <h3>Average Likes Received</h3>
+                    <p>{avgLikes}</p>
+                </div>
+
+                <div class="stat-box">
+                    <h3>Average Forks Received</h3>
+                    <p>{avgForks}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="split-view">
+            <div class="section column-projects">
+                <h2>Projects</h2>
+                <div class="profile-content programs-grid">
+                    {#if loadedProjects.length > 0}
+                        {#each loadedProjects as project (project.id)}
+                            <ProjectIcon {...project}/>
+                        {/each}
+                    {:else}
+                        <p>No projects to display.</p>
+                    {/if}
+                </div>
+            </div>
+
+            <div class="section column-discussion">
+                <h2>Discussion</h2>
+                <div class="profile-content discussion-grid">
+                    {#if loadedDiscussions.length > 0}
+                        {#each loadedDiscussions as discussion (discussion.id)}
+                            <div class="post">
+                                <div class="dicussion-body">
+                                    <div class="author-wrapper">
+                                        <a href="/computer-programming/{discussion.program}" target="_blank" class="post-timestamp">{new Date(discussion.created).toDateString()}</a>
+                                    </div>
+                                    <div class="content">{discussion.content}</div>
+                                    <div class="discussion-stats">
+                                        <span><img src="/CDN/images/icons/like.svg" style="transform: translate(0px, 1px) scale(1.25);" alt="like"></span>
+                                        <span>{discussion.likeCount}</span>
+                                        <span><img src="/CDN/images/icons/like.svg" style="transform: translate(0px, 3px) scale(1.25, -1.25);" alt="dislike"></span>
+                                        <span><img src="/CDN/images/icons/report.svg" style="transform: translate(3px, 2px) scale(1.25);" alt="flag"> Report</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {/each}
+                    {:else}
+                        <p>No discussion to display.</p>
+                    {/if}
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+{/if}
 
-<div style="padding: 20px;">
-    <h2>Discussion</h2>
-    <div class="profile-content"></div>
-</div>
+{#if isSettingsOpen}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div id="page-darken" on:click={() => isSettingsOpen = false}></div>
+    <div id="profile-settings">
+        <h1>
+            {#if settingsMode === 'text'}Profile Information
+            {:else if settingsMode === 'avatar'}Avatars
+            {:else if settingsMode === 'background'}Backgrounds{/if}
+        </h1>
+        <hr />
 
-<!-- Profile Settings Div -->
-<div id="page-darken" style="display: none;"></div>
-<div id="profile-settings">
-    <h1>...</h1>
-    
-    <p></p>
-        
-    <div id="settings-content"></div>
+        <div id="settings-content">
+            {#if settingsMode === 'text'}
+                <div class="settings-row">
+                    <div class="settings-label">NICKNAME</div>
+                    <div class="settings-input-wrapper">
+                        <input type="text" bind:value={editNickname}>
+                        <div class="settings-hint">This is how your name will appear around Vexcess Academy.</div>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-label">USERNAME</div>
+                    <div class="settings-input-wrapper">
+                        <input type="text" bind:value={editUsername}>
+                        <div class="settings-hint">Your username will appear in your address.<br> http://vxsacademy.org/profile/YOUR_USERNAME</div>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-label">BIO</div>
+                    <div class="settings-input-wrapper">
+                        <textarea bind:value={editBio} maxlength="160"></textarea>
+                        <div class="settings-hint">{160 - editBio.length} characters left</div>
+                    </div>
+                </div>
 
-    <p></p>
-    
-    <button class="button">Cancel</button>
-    <button class="button">Save</button>
-</div>
+            {:else if settingsMode === 'avatar'}
+                <div class="avatars-grid">
+                    {#each Object.entries(avatars) as [key, name]}
+                        <!-- svelte-ignore a11y_click_events_have_key_events -->
+                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                        <div class="avatar-box {currSelectedImage === key ? 'selected' : ''}" on:click={() => currSelectedImage = key}>
+                            <img src="/CDN/images/avatars/{key}.png" height="80" alt="{name}">
+                            <br><span>{name}</span>
+                        </div>
+                    {/each}
+                </div>
+
+            {:else if settingsMode === 'background'}
+                <div class="backgrounds-grid">
+                    {#each Object.entries(backgrounds) as [key, info]}
+                        <!-- svelte-ignore a11y_click_events_have_key_events -->
+                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                        <div class="background-box {currSelectedImage === key ? 'selected' : ''}" on:click={() => currSelectedImage = key}>
+                            <img src="/CDN/images/backgrounds/{key}{key === 'transparent' ? '.png' : '.jpg'}" style="width: 100%;" alt="{info[0]}">
+                            <br><span>{info[0]}</span>
+                        </div>
+                    {/each}
+                </div>
+            {/if}
+        </div>
+
+        <hr />
+        <div class="modal-actions">
+            <button class="button" on:click={() => isSettingsOpen = false}>Cancel</button>
+            <button class="button" on:click={saveSettings}>Save</button>
+        </div>
+    </div>
+{/if}
 
 <style>
-    :global(#page-middle-container) {
-        padding: 0px;
-        margin-bottom: 50px;
+    .post {
+        display: flex;
+        /* width: 60%; */
+        margin: auto;
+        margin-bottom: 28px;
+
+        .dicussion-body {
+            margin-left: 10px;
+            width: 70%;
+        }
+        .author-wrapper {
+            display: flex;
+            gap: 1em;
+            align-items: center;
+        }
+        /* .avatar-wrapper {
+            display: inline-block;
+            border: 2px solid gray;
+            border-radius: 100px;
+            padding: 10px;
+            width: 40px;
+            vertical-align: middle;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            vertical-align: middle;
+        }
+        .nickname {
+            font-weight: 600;
+        } */
+        .post-timestamp {
+            opacity: 0.8;
+        }
+        .discussion-stats {
+            display: flex;
+            gap: 1em;
+            overflow: hidden;
+        }
+        .discussion-stats span {
+            display: inline-block;
+            margin-top: 8px;
+        }
+        .content {
+            text-align: left;
+            margin-bottom: 14px;
+        }
+    }
+
+    /* Scope wrapper for page limits */
+    .profile-layout-wrapper {
+        padding: 20px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    .section {
+        margin-bottom: 30px;
+    }
+
+    /* Stat Box Styling */
+    .stats-grid {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    .stat-box {
+        background: rgba(0,0,0,0.05);
+        padding: 15px;
+        border-radius: 8px;
+        min-width: 150px;
+        text-align: center;
+    }
+    .stat-box h3 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        color: gray;
+        text-transform: uppercase;
+    }
+    .stat-box p {
+        margin: 0;
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    /* Responsive Side-by-Side View */
+    .split-view {
+        display: flex;
+        flex-direction: column; /* Stacks on mobile */
+        gap: 20px;
+    }
+
+    /* Desktop View */
+    @media (min-width: 768px) {
+        .split-view {
+            flex-direction: row; /* Side-by-side on desktop */
+        }
+        .column-projects, .column-discussion {
+            flex: 1; /* Takes up 50% width each */
+        }
+    }
+
+    /* Header Controls */
+    .header-controls {
+        margin-left: auto;
+        order: 2;
+        opacity: 0.9;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 15px;
+    }
+
+    .theme-selector {
+        background-color: var(--background, #fff);
+        color: var(--text-color, #000);
+        padding: 6px;
+        border-radius: 4px;
     }
 
     #background-container {
@@ -516,25 +589,31 @@
         background-size: cover;
         padding: 10px;
         color: var(--background);
+        transition: background-image 0.3s ease;
     }
 
     #profile-about-container {
         width: 90%;
         margin: auto;
         display: flex;
+        align-items: center;
+        flex-wrap: wrap;
     }
 
     #profile-about-text-container {
-        margin: 0;
-        position: relative;
-        top: 50%;
-        transform: translate(25px, 0px);
+        margin: 0 20px;
         border-radius: 9px;
         padding: 10px;
+        transition: background 0.2s;
     }
     #profile-about-text-container:hover {
         background: rgba(255, 255, 255, 0.3);
     }
+
+    #profile-nickname { font-size: 28px; display: block; margin-bottom: 6px; }
+    #profile-username { font-size: 16px; color: black; background: rgba(255, 255, 255, 0.8); padding: 4px 6px; border-radius: 100px; }
+    #profile-id { font-size: 16px; opacity: 0.8; margin-left: 5px; }
+    #profile-bio { font-size: 16px; margin-top: 18px; }
 
     #profile-img {
         background-color: rgba(0, 0, 0, 0.5);
@@ -550,102 +629,112 @@
         background: rgba(255, 255, 255, 0.25);
     }
 
-    /* #program-showcase {
-        background-color: var(--background2);
-        border: 2px solid var(--borders2);
-        border-radius: 5px;
-        display: flex;
-        padding: 8px;
-    } */
-
-    :global(.avatars-grid), :global(.backgrounds-grid) {
-        display: grid;
-        padding: 10px;
-        justify-content: center;
-    }
-    :global(.avatars-grid) {
-        grid-template-columns: repeat(auto-fill, 225px);
-    }
-    :global(.backgrounds-grid) {
-        grid-template-columns: repeat(auto-fill, 50%);
-    }
-    :global(.avatar-box), :global(.background-box) {
-        border-radius: 5px;
-        border: 2px solid rgba(0, 0, 0, 0.1);
-        margin: 10px;
-        padding: 10px;
-        font-size: 18px;
-        text-align: center;
-        cursor: pointer;
-    }
-    :global(.avatar-box:hover), :global(.background-box:hover) {
-        background-color: rgba(0, 0, 0, 0.2);
-    }
-
     .profile-content {
-        background-color: var(--background2);
-        border: 2px solid var(--borders2);
+        background-color: var(--background2, #f9f9f9);
+        border: 2px solid var(--borders2, #ddd);
         border-radius: 5px;
-        display: flex;
-        flex-direction: column;
-        padding: 8px;
+        padding: 15px;
         min-height: 100px;
     }
-/* 
-    .program-display-box {
-        overflow: hidden;
-        width: 200px;
-        border: 1px solid gray;
-        border-radius: 2px;
-        margin: 8px;
-        cursor: pointer;
-        text-align: center;
-        font-size: 14px;
-    } */
+
+    /* Settings Modal Styles */
+    #page-darken {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+    }
 
     #profile-settings {
-        background-color: var(--background);
+        background-color: var(--background, #fff);
+        color: var(--text-color, #000);
         position: fixed;
-        width: 75%;
+        width: 90%;
+        max-width: 800px;
         max-height: 90vh;
-        left: 12.5%;
+        left: 50%;
         top: 50%;
-        transform: translateY(-50%);
-        color: var(--text-color);
-        border: 1px solid var(--border);
+        transform: translate(-50%, -50%);
+        border: 1px solid var(--border, #ccc);
         border-radius: 10px;
         padding: 20px;
-        padding-top: 0px;
-        font-size: 16px;
         overflow: auto;
         z-index: 1001;
-        display: none;
     }
-    #profile-settings p {
-        background-color: rgb(100, 100, 100);
-        height: 0.5px;
+
+    .settings-row {
+        display: flex;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
     }
-    /* #profile-settings input, #profile-settings textarea {
-        background-color: var(--background);
-        color: var(--text-color);
-    } */
+    
+    .settings-label {
+        width: 100px;
+        padding-top: 8px;
+        color: gray;
+        font-weight: bold;
+    }
+
+    .settings-input-wrapper {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .settings-input-wrapper input, .settings-input-wrapper textarea {
+        width: 100%;
+        padding: 8px;
+        border-radius: 3px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+    }
+    .settings-hint {
+        font-size: 14px;
+        color: gray;
+        margin-top: 5px;
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .avatars-grid, .backgrounds-grid {
+        display: grid;
+        gap: 15px;
+        justify-content: center;
+    }
+    .avatars-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .backgrounds-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+    .avatar-box, .background-box {
+        border-radius: 5px;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .avatar-box:hover, .background-box:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    .avatar-box.selected, .background-box.selected {
+        border-color: black;
+        box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
 
     .button {
         background-color: rgb(13, 146, 63);
-        border: 0px solid white;
+        border: none;
         border-radius: 4px;
         margin-right: 8px;
-        padding: 8px;
-        padding-left: 14px;
-        padding-right: 14px;
+        padding: 8px 14px;
         color: white;
-        font-size: 17px;
-        font-weight: 400;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.2s;
     }
     .button:hover {
         background-color: rgb(10, 130, 50);
-        /*border: 2px rgb(0, 80, 0) solid;*/
-        box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.9);
-        cursor: pointer;
+        box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.3);
     }
 </style>

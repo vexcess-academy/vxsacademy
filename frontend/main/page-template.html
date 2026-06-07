@@ -186,7 +186,7 @@
                             notifEls.push(notificationEl);
                         }
 
-                        notifEls.sort((a, b) => b.created - a.created);
+                        notifEls.sort((a, b) => b.timestamp - a.timestamp);
                         notifEls.forEach(el => el.appendTo(notifsContainer));
                     });
                 }

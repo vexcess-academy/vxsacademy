@@ -107,9 +107,9 @@ void routeFn_CDN(AP path, AO out, AD data) async {
     } else {
         try {
             if (fetchPath.startsWith("./lib")) {
-                dataOut = await readFile(fetchPath);
+                dataOut = await fileCache.getBytes("../../${fetchPath}");
             } else {
-                dataOut = await readFile("./frontend/main/" + fetchPath);
+                dataOut = await fileCache.getBytes("./${fetchPath}");
             }
         } catch (e) {
             // file doesn't exist

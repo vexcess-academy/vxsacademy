@@ -8,6 +8,10 @@ mv rathole ../temp-vxsacademy-rathole
 # user must manually copy over new files
 
 # restore prod env
+rm .git -rf || true
+rm .dart_tool -r || true
+rm node_modules -r || true
+rm captcha/node_modules -r || true
 rm db-backup -r || true
 rm secrets -r || true
 rm captcha/secrets.env || true

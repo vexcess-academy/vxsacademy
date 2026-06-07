@@ -245,6 +245,17 @@ void main() async {
         }
     }
 
+    // sync user discussions
+    // not sure how it got out of sync
+    for (final userId in userCache.keys) {
+        final arr = await discussions.find({ "author.id": userId }).toList();
+        final discussionIds = arr.map((e) => e["id"]).toList();
+        await users.updateOne({ "id": userId }, {"\$set": {
+            "discussions": discussionIds
+        }});
+    }
+    print("Synced discussions");
+
     // !!! DANGER BELOW !!! for manually updating each item in a collection
     // {
     //     final useCollection = users;

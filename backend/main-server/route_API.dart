@@ -1115,6 +1115,7 @@ final routeTree_API = {
 
             List<dynamic> results = [];
 
+            // search programs
             final startTime = DateTime.now().millisecondsSinceEpoch;
             for (final program in vxsHotlist.allPrograms) {
                 String title = (program["title"] as String).toLowerCase();
@@ -1125,7 +1126,9 @@ final routeTree_API = {
                     // expensive and dirty way to hide data from front end. refine this later
                     Map<String, dynamic> clone = json.decode(json.encode(program));
                     clone.remove("likes");
-                    results.add(clone);
+                    clone.remove("files");
+                    clone.remove("thumbnail");
+                    results.add(castDocumentToDartTypes(clone));
                 }
 
                 if (results.length > 100) {
@@ -1133,20 +1136,18 @@ final routeTree_API = {
                 }
             }
 
+            // search articles
             List<String> articlePaths = [];
-
             IO.Directory("frontend/main/computer-programming/javascript/").listSync().forEach((IO.FileSystemEntity entity) {
                 if (entity is IO.File) {
                     articlePaths.add(entity.absolute.path);
                 }
             });
-
             IO.Directory("frontend/main/computer-programming/webgl/").listSync().forEach((IO.FileSystemEntity entity) {
                 if (entity is IO.File) {
                     articlePaths.add(entity.absolute.path);
                 }
             });
-
             for (final path in articlePaths) {
                 if (!path.endsWith("course.json")) {
                     final relPath = path.substring(path.indexOf("frontend/main") + "frontend/main".length);
@@ -1166,6 +1167,27 @@ final routeTree_API = {
                         }
                     }
                 }
+            }
+
+            // search users
+            for (final user in userCache.values) {
+                if (user.nickname.toLowerCase().contains(q) || user.username.toLowerCase().contains(q)) {
+                    results.add({
+                        "isUserResult": true,
+                        "username": user.username,
+                        "nickname": user.nickname
+                    });
+                }
+            }
+
+            // search discussions
+            final safeQuery = RegExp.escape(q);
+            final matches = await discussions.find({ 
+                "content": { "\$regex": safeQuery, "\$options": "i" } 
+            }).toList();
+            for (final match in matches) {
+                match["isDiscussionResult"] = true;
+                results.add(castDocumentToDartTypes(match));
             }
 
             final endTime = DateTime.now().millisecondsSinceEpoch;

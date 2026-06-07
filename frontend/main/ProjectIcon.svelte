@@ -15,6 +15,8 @@
     let thumbnailImage;
     let authorLink;
 
+    let imgType = type === "webpage" ? "html" : type;
+
     onMount(() => {
         let loadIcon = loadIconManager.new(200).addClass("program_thumbnail");
         Q$(programThumbnailWrapper).append(loadIcon);
@@ -47,7 +49,7 @@
         <img bind:this={thumbnailImage} src="" alt="Program Thumbnail" class="program_thumbnail">
     </a>
     <div style="display: flex; padding-top: .4rem;">
-        <img src="/CDN/images/language-icons/{type}.png" height="45" alt="language icon">
+        <img src="/CDN/images/language-icons/{imgType}.png" height="45" alt="language icon">
         <div style="margin-left: .3rem;">
             <div class="program_metadata-wrapper">
                 <span class="program_likes">{likeCount}</span>
