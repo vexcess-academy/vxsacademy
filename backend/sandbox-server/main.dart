@@ -79,9 +79,19 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
             if (dataType == "text/html") {
                 response.headers.add("Origin-Agent-Cluster", "?1");
                 
-                if (reqQuery["allowAll"] != true) {
-                    allowList.add(base64FromString("javac.vexcess.repl.co"));
-                    allowList.add(base64FromString("sandbox.vexcess.repl.co"));
+                if (reqQuery["allowAll"].toString() == "true") {
+                    response.headers.add("Content-Security-Policy", """default-src * data: mediastream: blob: filesystem: about: ws: wss: 'unsafe-eval' 'wasm-unsafe-eval' 'unsafe-inline'; 
+script-src * data: blob: 'unsafe-inline' 'unsafe-eval'; 
+script-src-elem * data: blob: 'unsafe-inline' 'unsafe-eval';
+connect-src * data: blob: 'unsafe-inline'; 
+img-src * data: blob: 'unsafe-inline'; 
+media-src * data: blob: 'unsafe-inline'; 
+frame-src * data: blob: ; 
+style-src * data: blob: 'unsafe-inline';
+font-src * data: blob: 'unsafe-inline';
+frame-ancestors * data: blob:;
+""".split("\n").join(" "));
+                } else {
                     allowList.add(base64FromString("cdn.jsdelivr.net"));
 
                     // remove blacklisted domains
@@ -101,7 +111,6 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
 
                     response.headers.add("Content-Security-Policy", "default-src data: blob: 'self' 'unsafe-inline' 'unsafe-eval' ${allowList   .join(" ")};");
                 }
-                
             }
 
             final fileContents = await fileCache.get(fetchPath);

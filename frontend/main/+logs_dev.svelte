@@ -528,6 +528,26 @@
     Make search bar able to find discussions;
 </p>
 
+<h2>7/4/26</h2>
+<p>
+    Work on fixing class parsing bug;
+</p>
+
+<h2>7/26/26</h2>
+<p>
+    Work on fixing class parsing bug;
+</p>
+
+<h2>7/31/26</h2>
+<p>
+    Work on fixing class parsing bug;
+</p>
+
+<h2>8/1/26</h2>
+<p>
+    Work on fixing class parsing bug;
+</p>
+
 <h2>TODO</h2>
 <p>
     TODO: Implement sandbox unload detection;

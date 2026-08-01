@@ -318,6 +318,235 @@ function preprocessJS(code, options) {
     return topScope ? (catchStr1 + code + catchStr2) : code;
 }
 
+// Incomplete ES6 class to ES5 prototype converter for VExcess' exec env
+// Not currently in use, sikn's khanpjs-next provides better support
+function convertClassesToPrototypes(code) {
+    function consumeString(str, startIdx) {
+        const quote = str[startIdx];
+        let i = startIdx + 1;
+        let text = quote;
+        while (i < str.length) {
+            text += str[i];
+            // Stop if matching quote is found and it's not escaped
+            if (str[i] === quote && str[i - 1] !== '\\') {
+                i++;
+                break;
+            }
+            i++;
+        }
+        return { endIdx: i, text };
+    }
+
+    function consumeLineComment(str, startIdx) {
+        let i = startIdx;
+        let text = "";
+        while (i < str.length && str[i] !== '\n') {
+            text += str[i];
+            i++;
+        }
+        return { endIdx: i, text };
+    }
+
+    function consumeMultiComment(str, startIdx) {
+        let text = str[startIdx] + str[startIdx + 1]; // "/*"
+        let i = startIdx + 2;
+        while (i < str.length) {
+            text += str[i];
+            // Stop if closing tag is found
+            if (str[i] === '/' && str[i - 1] === '*') {
+                i++;
+                break;
+            }
+            i++;
+        }
+        return { endIdx: i, text };
+    }
+
+    function findScopeEndSafe(str) {
+        let i = 1, scopeLvl = 1;
+        while (scopeLvl > 0 && i < str.length) {
+            let char = str[i];
+            if (char === '"' || char === "'" || char === "`") {
+                i = consumeString(str, i).endIdx;
+                continue;
+            }
+            if (char === '/' && str[i + 1] === '/') {
+                i = consumeLineComment(str, i).endIdx;
+                continue;
+            }
+            if (char === '/' && str[i + 1] === '*') {
+                i = consumeMultiComment(str, i).endIdx;
+                continue;
+            }
+
+            if (char === "{") scopeLvl++;
+            else if (char === "}") scopeLvl--;
+
+            if (scopeLvl > 0) i++;
+        }
+        return i + 1; // Return the full length of the block including {}
+    }
+
+    function parseMethods(bodyCode, className, superClass) {
+        let i = 0, parenScope = 0;
+        let constructorCode = null, methodsCode = "", buffer = "";
+
+        while (i < bodyCode.length) {
+            let char = bodyCode[i];
+
+            // Skip strings and comments while searching for methods
+            if (char === '"' || char === "'" || char === "`") {
+                let res = consumeString(bodyCode, i);
+                buffer += res.text; i = res.endIdx; continue;
+            }
+            if (char === '/' && bodyCode[i + 1] === '/') {
+                let res = consumeLineComment(bodyCode, i);
+                buffer += res.text; i = res.endIdx; continue;
+            }
+            if (char === '/' && bodyCode[i + 1] === '*') {
+                let res = consumeMultiComment(bodyCode, i);
+                buffer += res.text; i = res.endIdx; continue;
+            }
+
+            // Track parenthesis scope to avoid tripping on { inside default arguments
+            if (char === '(') { parenScope++; buffer += char; i++; continue; }
+            if (char === ')') { parenScope--; buffer += char; i++; continue; }
+
+            // Method body found
+            if (char === '{' && parenScope === 0) {
+                let scopeLen = findScopeEndSafe(bodyCode.substring(i));
+                let methodBody = bodyCode.substring(i, i + scopeLen);
+                
+                // Clean the signature of trailing spaces and stray comments
+                let sig = buffer.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').trim();
+                
+                if (sig) {
+                    let isStatic = false, isGet = false, isSet = false;
+                    
+                    if (sig.startsWith("static ")) { isStatic = true; sig = sig.substring(7).trim(); }
+                    if (sig.startsWith("get ")) { isGet = true; sig = sig.substring(4).trim(); }
+                    if (sig.startsWith("set ")) { isSet = true; sig = sig.substring(4).trim(); }
+
+                    // Extract method name and arguments
+                    let match = sig.match(/^([a-zA-Z0-9_$]+)\s*\(([\s\S]*)\)$/);
+                    if (match) {
+                        let name = match[1], args = match[2];
+                        let target = isStatic ? className : `${className}.prototype`;
+
+                        if (name === "constructor" && !isStatic) {
+                            if (superClass) {
+                                // Basic mapping of ES6 super() to ES5 call()
+                                methodBody = methodBody.replace(/\bsuper\s*\(/g, `${superClass}.call(this, `);
+                            }
+                            constructorCode = `function ${className}(${args}) ${methodBody}`;
+                        } else if (isGet || isSet) {
+                            methodsCode += `Object.defineProperty(${target}, "${name}", { ${isGet ? 'get' : 'set'}: function(${args}) ${methodBody}, configurable: true });\n`;
+                        } else {
+                            methodsCode += `${target}.${name} = function(${args}) ${methodBody};\n`;
+                        }
+                    }
+                }
+                i += scopeLen; buffer = ""; continue;
+            }
+            
+            if (char === ';') buffer = ""; // Clear buffer on semicolons (class properties)
+            else buffer += char;
+            
+            i++;
+        }
+        return { constructorCode, methodsCode };
+    }
+
+    function parseClass(str, startIdx) {
+        let j = startIdx + 5, headerCode = "";
+        
+        // Extract the class header (up to '{')
+        while (j < str.length) {
+            let char = str[j];
+            if (char === '"' || char === "'" || char === "`") {
+                let res = consumeString(str, j);
+                headerCode += res.text; j = res.endIdx; continue;
+            }
+            if (char === '/' && str[j + 1] === '/') {
+                let res = consumeLineComment(str, j);
+                headerCode += res.text; j = res.endIdx; continue;
+            }
+            if (char === '/' && str[j + 1] === '*') {
+                let res = consumeMultiComment(str, j);
+                headerCode += res.text; j = res.endIdx; continue;
+            }
+            if (char === '{') break;
+            headerCode += char; j++;
+        }
+
+        // remove comments from header
+        let headerClean = headerCode.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').trim();
+        let parts = headerClean.split(/\s+extends\s+/);
+        let className = parts[0] ? parts[0].trim() : "AnonymousClass"; // Fallback for edge cases
+        let superClass = parts[1] ? parts[1].trim() : null;
+
+        let scopeLen = findScopeEndSafe(str.substring(j));
+        let classBodyCode = str.substring(j + 1, j + scopeLen - 1); // Extract everything inside {}
+        let methods = parseMethods(classBodyCode, className, superClass);
+
+        let es5 = `\n`;
+        
+        // Setup Constructor
+        if (methods.constructorCode) {
+            es5 += methods.constructorCode + "\n";
+        } else {
+            if (superClass) {
+                es5 += `function ${className}() {\n    if (${superClass}) return ${superClass}.apply(this, arguments) || this;\n}\n`;
+            } else {
+                es5 += `function ${className}() {}\n`;
+            }
+        }
+
+        // Setup Inheritance
+        if (superClass) {
+            es5 += `${className}.prototype = Object.create(${superClass}.prototype);\n`;
+            es5 += `${className}.prototype.constructor = ${className};\n`;
+        }
+
+        // Append Methods
+        es5 += methods.methodsCode;
+
+        return { endIdx: j + scopeLen, es5Code: es5 };
+    }
+
+    let i = 0, result = "";
+    while (i < code.length) {
+        let char = code[i];
+        
+        // Pass over strings and comments in the global scope
+        if (char === '"' || char === "'" || char === "`") {
+            let res = consumeString(code, i);
+            result += res.text; i = res.endIdx; continue;
+        }
+        if (char === '/' && code[i + 1] === '/') {
+            let res = consumeLineComment(code, i);
+            result += res.text; i = res.endIdx; continue;
+        }
+        if (char === '/' && code[i + 1] === '*') {
+            let res = consumeMultiComment(code, i);
+            result += res.text; i = res.endIdx; continue;
+        }
+        
+        // Detect "class " keyword (ensure it's not a prefix/suffix like `myclass`)
+        if (code.substring(i, i + 5) === "class" && /\s/.test(code[i + 5]) && (i === 0 || !/[a-zA-Z0-9_$]/.test(code[i - 1]))) {
+            let classParse = parseClass(code, i);
+            result += classParse.es5Code; 
+            i = classParse.endIdx; 
+            continue;
+        }
+        
+        result += char; 
+        i++;
+    }
+    
+    return result;
+}
+
 // thumbnail generator
 function sendThumnailFromCanvas(canvas) {
     // get screenshot

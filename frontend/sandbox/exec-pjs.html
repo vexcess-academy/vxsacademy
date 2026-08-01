@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <link rel="stylesheet" href="/sandbox.css" type="text/css">
-    <script src="/khanpjs.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/Khan/processing-js@master/processing.js"></script>
+    <script src="/khanpjs-next.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/gh/Khan/processing-js@master/processing.js"></script> -->
     <script src="/eslint.js"></script>
 </head>
 <body>
@@ -17,6 +17,14 @@
     <script src="/sandbox.js"></script>
 
     <script>
+const khanpjs = new KhanPJS({
+    enableLoopProtect: true,
+    infiniteLoopCallback: function(error){console.log("INF LOOP", error)},
+    startupTimeout: 2000,
+    programTimeout: 500,
+    loopCheck: 1000,
+});
+
 const Process = {
     processingInstance: null,
     width: 400,
@@ -44,13 +52,8 @@ const Process = {
     },
     audioCache: {},
     imageCache: {},
-    injector: new KhanPJS({
-        enableLoopProtect: true,
-        infiniteLoopCallback: function(error){console.log("INF LOOP", error)},
-        startupTimeout: 2000,
-        programTimeout: 500,
-        loopCheck: 1000,
-    }).injector
+    khanpjs: khanpjs,
+    injector: khanpjs.injector
 };
         
 // avoid polluting global namespace
@@ -288,12 +291,11 @@ let runStartInterval = setInterval(function() {
             let code = msg.data;
             const isExpression = checkIsExpression(code);
             if (!isExpression) {
-                code = Process.injector.transformCode(code.replace(/class[^\{]*\{[^\(]*/ig, str => {
-                    return str.slice(0, str.indexOf("{")+1) + str.slice(str.lastIndexOf(" "))
-                }), Process.processingInstance, null);
-                code = code.replace(/__env__\.[^ =\(]*\([^)]*\) *\{/ig, str => {
-                    return str.replace("__env__.", "");
-                })
+                // COMMENT OUT FOR KHANPJS-NEXT
+                // code = Process.injector.transformCode(code, Process.processingInstance, null);
+                // code = code.replace(/__env__\.[^ =\(]*\([^)]*\) *\{/ig, str => {
+                //     return str.replace("__env__.", "");
+                // })
                 code = generateCode(Process.width, Process.height, code, true);
             } else {
                 let keys = Object.keys(Process.processingInstance).sort((a, b) => b.length - a.length);
@@ -432,12 +434,11 @@ let runStartInterval = setInterval(function() {
                         });
                         break;
                     case "sikn":
-                        Process.code = Process.injector.transformCode(Process.sourceCode.replace(/class[^\{]*\{[^\(]*/ig, str => {
-                            return str.slice(0, str.indexOf("{")+1) + str.slice(str.lastIndexOf(" "))
-                        }), Process.processingInstance, null);
-                        Process.code = Process.code.replace(/__env__\.[^ =\(]*\([^)]*\) *\{/ig, str => {
-                            return str.replace("__env__.", "");
-                        });
+                        // COMMENT OUT FOR KHANPJS-NEXT
+                        // Process.code = Process.injector.transformCode(Process.sourceCode, Process.processingInstance, null);
+                        // Process.code = Process.code.replace(/__env__\.[^ =\(]*\([^)]*\) *\{/ig, str => {
+                        //     return str.replace("__env__.", "");
+                        // });
                         break;
                     default:
                         Process.code = Process.sourceCode;
@@ -450,7 +451,8 @@ let runStartInterval = setInterval(function() {
             // run new code
             let runFxn;
             try {
-                eval(generateCode(Process.width, Process.height, Process.code));
+                Process.khanpjs.runCode(generateCode(Process.width, Process.height, Process.code), error=>console.log(error));
+                // eval(generateCode(Process.width, Process.height, Process.code));
             } catch (err) {
                 console.log(err);
                 createWarning(err);
