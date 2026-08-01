@@ -17,14 +17,6 @@
     <script src="/sandbox.js"></script>
 
     <script>
-const khanpjs = new KhanPJS({
-    enableLoopProtect: true,
-    infiniteLoopCallback: function(error){console.log("INF LOOP", error)},
-    startupTimeout: 2000,
-    programTimeout: 500,
-    loopCheck: 1000,
-});
-
 const Process = {
     processingInstance: null,
     width: 400,
@@ -33,6 +25,7 @@ const Process = {
     code: "",
     codeInjector: "sikn",
     lintingOn: true,
+    loopProtectOn: true,
     restart: function () { 
         window.postMessage({
             width: Process.width,
@@ -52,8 +45,9 @@ const Process = {
     },
     audioCache: {},
     imageCache: {},
-    khanpjs: khanpjs,
-    injector: khanpjs.injector
+    khanpjs: null,
+    injector: null,
+    ESNext: true
 };
         
 // avoid polluting global namespace
@@ -88,6 +82,143 @@ const Process = {
             processingInstance.background(0xFFF);
             processingInstance._clearLogs();
         `;
+
+        if (Process.ESNext) {
+            return `
+window.parent = window;
+
+const processingInstance = Process.processingInstance;
+
+// Polyfills for Khan Academy programs
+var getImage = function (file) { 
+    file = 'https://cdn.kastatic.org/third_party/javascript-khansrc/live-editor/build/images/' + file + '.png';
+
+    let PImageCache = processingInstance.externals.sketch.imageCache;
+
+    let pimg;
+    
+    if (PImageCache.images[file]) {
+        pimg = new processingInstance.PImage(PImageCache.images[file]);
+        pimg.loaded = true;
+        Process.preload.imagesLoaded++;
+    } else if (Process.imageCache[file]) {
+        PImageCache.add(file, Process.imageCache[file]);
+        pimg = new processingInstance.PImage(PImageCache.images[file]);
+        pimg.loaded = true;
+        Process.preload.imagesLoaded++;
+    } else {
+        let img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = file;
+
+        pimg = new processingInstance.PImage();
+        pimg.sourceImg = img;
+        
+        img.onload = function () {
+            // change the <img> object into a PImage now that its loaded
+            pimg.fromHTMLImageData(img);
+            pimg.loaded = true;
+            PImageCache.add(file, img);
+            Process.imageCache[file] = img;
+            Process.preload.imagesLoaded++;
+        };
+
+        img.onerror = function () {
+            createWarning("Error loading image from " + file);
+            Process.preload.imagesLoaded++;
+        };
+    }
+
+    return pimg;
+};
+
+var getSound = function(file) {
+    file = "https://cdn.kastatic.org/third_party/javascript-khansrc/live-editor/sounds/" + file + ".mp3";
+    
+    if (!Process.audioCache[file]) {
+        let aud = new Audio(file);
+        
+        Process.audioCache[file] = {
+            audio: aud
+        };
+        
+        aud.onload = function () {
+            Process.preload.audiosLoaded++;
+        };
+
+        aud.onerror = function () {
+            createWarning("Error loading audio from " + file);
+            Process.preload.audiosLoaded++;
+        };
+    }
+    
+    return Process.audioCache[file];
+};
+
+var playSound = function(e) {
+    if (!(e && e.audio && e.audio.play)) {
+        throw {
+            message: "No sound file provided."
+        };
+    }
+    e.audio.currentTime = 0;
+    e.audio.play();
+};
+
+${preservePJS ? "" : resetCode}
+
+Process.preload.imagesLoaded = 0;
+Process.preload.imagesExpected = 0;
+for (let i = 0; i < Process.preload.imageAccessors.length; i++) {
+    let s = Process.preload.imageAccessors[i];
+    if (Process.code.includes(s)) {
+        Process.preload.imagesExpected++;
+        getImage(s);
+    }
+}
+
+processingInstance.getImage = getImage;
+processingInstance.getSound = getSound;
+processingInstance.playSound = playSound;
+
+processingInstance.KAInfiniteLoopMaxTime = 500;
+processingInstance.loopCounts = [];
+
+// for KA compatability
+processingInstance.Program = {
+    restart() {
+        Process.restart();
+    }
+};
+processingInstance.debug = console.log;
+
+let runStartInterval = setInterval(function() {
+    if (Process.preload.imagesLoaded >= Process.preload.imagesExpected) {
+        clearInterval(runStartInterval);
+
+        with (processingInstance) {
+            // vvvvv USER SUPPLIED CODE vvvvv
+            ${code}
+            // ^^^^^ USER SUPPLIED CODE ^^^^^
+
+            if (typeof draw !== 'undefined') processingInstance.draw = draw;
+            if (typeof keyReleased !== 'undefined') processingInstance.keyReleased = keyReleased;
+            if (typeof keyPressed !== 'undefined') processingInstance.keyPressed = keyPressed;
+            if (typeof keyTyped !== 'undefined') processingInstance.keyTyped = keyTyped;
+            if (typeof mouseClicked !== 'undefined') processingInstance.mouseClicked = mouseClicked;
+            if (typeof mouseReleased !== 'undefined') processingInstance.mouseReleased = mouseReleased;
+            if (typeof mouseDragged !== 'undefined') processingInstance.mouseDragged = mouseDragged;
+            if (typeof mouseOut !== 'undefined') processingInstance.mouseOut = mouseOut;
+            if (typeof mousePressed !== 'undefined') processingInstance.mousePressed = mousePressed;
+            if (typeof mouseMoved !== 'undefined') processingInstance.mouseMoved = mouseMoved;
+            if (typeof mouseOver !== 'undefined') processingInstance.mouseOver = mouseOver;
+        }
+    } else {
+        console.log("Loading Images: " + Process.preload.imagesLoaded + "/" + Process.preload.imagesExpected)
+    }
+});
+            `;
+        }
 
         return `
 window.parent = window;
@@ -245,7 +376,7 @@ let runStartInterval = setInterval(function() {
         console.log("Loading Images: " + Process.preload.imagesLoaded + "/" + Process.preload.imagesExpected)
     }
 });
-        `
+        `;
     }
     
     window.addEventListener("message", event => {
@@ -291,11 +422,12 @@ let runStartInterval = setInterval(function() {
             let code = msg.data;
             const isExpression = checkIsExpression(code);
             if (!isExpression) {
-                // COMMENT OUT FOR KHANPJS-NEXT
-                // code = Process.injector.transformCode(code, Process.processingInstance, null);
-                // code = code.replace(/__env__\.[^ =\(]*\([^)]*\) *\{/ig, str => {
-                //     return str.replace("__env__.", "");
-                // })
+                if (!Process.ESNext) {
+                    code = Process.injector.transformCode(code, Process.processingInstance, null);
+                    code = code.replace(/__env__\.[^ =\(]*\([^)]*\) *\{/ig, str => {
+                        return str.replace("__env__.", "");
+                    })
+                }
                 code = generateCode(Process.width, Process.height, code, true);
             } else {
                 let keys = Object.keys(Process.processingInstance).sort((a, b) => b.length - a.length);
@@ -434,11 +566,14 @@ let runStartInterval = setInterval(function() {
                         });
                         break;
                     case "sikn":
-                        // COMMENT OUT FOR KHANPJS-NEXT
-                        // Process.code = Process.injector.transformCode(Process.sourceCode, Process.processingInstance, null);
-                        // Process.code = Process.code.replace(/__env__\.[^ =\(]*\([^)]*\) *\{/ig, str => {
-                        //     return str.replace("__env__.", "");
-                        // });
+                        if (!Process.ESNext) {
+                            Process.code = Process.injector.transformCode(Process.sourceCode, Process.processingInstance, null);
+                            Process.code = Process.code.replace(/__env__\.[^ =\(]*\([^)]*\) *\{/ig, str => {
+                                return str.replace("__env__.", "");
+                            });
+                        } else {
+                            Process.code = Process.sourceCode;
+                        }
                         break;
                     default:
                         Process.code = Process.sourceCode;
@@ -451,8 +586,21 @@ let runStartInterval = setInterval(function() {
             // run new code
             let runFxn;
             try {
-                Process.khanpjs.runCode(generateCode(Process.width, Process.height, Process.code), error=>console.log(error));
-                // eval(generateCode(Process.width, Process.height, Process.code));
+                if (Process.ESNext) {
+                    Process.khanpjs = new KhanPJS({
+                        canvas: liveOutputCanvas,
+                        enableLoopProtect: Process.loopProtectOn,
+                        processingInstance: Process.processingInstance,
+                        infiniteLoopCallback: function(error){console.log("INF LOOP", error)},
+                        startupTimeout: 2000,
+                        programTimeout: 500,
+                        loopCheck: 1000,
+                    });
+                    Process.injector = Process.khanpjs.injector;
+                    Process.khanpjs.runCode(generateCode(Process.width, Process.height, Process.code), error=>console.log(error));
+                } else {
+                    eval(generateCode(Process.width, Process.height, Process.code));
+                }
             } catch (err) {
                 console.log(err);
                 createWarning(err);

@@ -545,7 +545,8 @@
 
 <h2>8/1/26</h2>
 <p>
-    Work on fixing class parsing bug;
+    Fixed class parsing bug;
+    Fix content security policy on new programs;
 </p>
 
 <h2>TODO</h2>
