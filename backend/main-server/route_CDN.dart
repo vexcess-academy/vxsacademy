@@ -89,17 +89,6 @@ void routeFn_CDN(AP path, AO out, AD data) async {
             final id = fetchPath.substring("./programs/".length, fetchPath.length - ".jpg".length);
             var programData = await programs.findOne({ "id": id });
             if (programData != null && programData["thumbnail"] != null) {
-                // fix broken thumbnails from bug
-                if (programData["thumbnail"] is String) {
-                    final thumbnailData = BsonBinary.from(base64.decode(programData["thumbnail"].substring(programData["thumbnail"].indexOf(",") + 1)));
-
-                    programs.updateOne({ "id": id }, {"\$set": {
-                        "thumbnail": thumbnailData
-                    }});
-
-                    programData["thumbnail"] = thumbnailData;
-                }
-
                 Mongo.BsonBinary thumbnail = programData["thumbnail"];
                 dataOut = thumbnail.byteList;
             }

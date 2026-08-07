@@ -547,6 +547,30 @@
 <p>
     Fixed class parsing bug;
     Fix content security policy on new programs;
+    Add profile locations;
+    Increased program size limit from 0.5 MB to 1 MB;
+    Change program storage limit from 64 programs to 10 MB;
+    Make string size function support utf-8;
+</p>
+
+<h2>8/2/26</h2>
+<p>
+    Finish implementing new storage limit changes;
+    Fix discussion database vs cache sync issues;
+    Fix program liking race condition;
+    Fix signup bug;
+    Fix fail to fetch singular discussion id bug;
+    Fix server crash on fetching a discussion from a deleted user;
+</p>
+
+<h2>8/3/26</h2>
+<p>
+    Working on adding Rust;
+</p>
+
+<h2>8/6/26</h2>
+<p>
+    Working on adding Rust;
 </p>
 
 <h2>TODO</h2>

@@ -28,11 +28,22 @@ String validatePassword(dynamic password) {
 }
 
 int estimateStringSz(String str) {
-    var sz = 0;
+    var bytes = 0;
     for (var i = 0; i < str.length; i++) {
-        sz += str.codeUnitAt(i) > 255 ? 2 : 1;
+        var value = str.codeUnitAt(i);
+        if (value <= 0x007F) {
+            bytes += 1;
+        } else if (value <= 0x07FF) {
+            bytes += 2;
+        } else if (value >= 0xD800 && value <= 0xDBFF) {
+            // High surrogate: pair encodes to a 4-byte UTF-8 sequence
+            bytes += 4;
+            i++; // Skip next code unit (low surrogate)
+        } else {
+            bytes += 3;
+        }
     }
-    return sz;
+    return bytes;
 }
 
 String validateFileName(String name) {
@@ -97,7 +108,6 @@ String validateProgramData(Map<String, dynamic> data) {
 
         // Validate thumbnail
         var thumbnail = data['thumbnail'];
-        print("VALIDATE ${thumbnail}");
         if (thumbnail == null) {
             // do nothing
         } else if (thumbnail is String) {
@@ -110,21 +120,6 @@ String validateProgramData(Map<String, dynamic> data) {
             }
             // validate size (128 KB)
             if (thumbnail.length > 128 * 1024) {
-                return e + "project thumbnail is too big; 128 KB allowed";
-            }
-        } else if (thumbnail is Map && thumbnail['buffer'] != null) {
-            // Assuming thumbnail['buffer'] is a List<int> (Uint8List)
-            var buffer = List<int>.from(thumbnail['buffer']);
-            
-            var isValidJpg = buffer.length >= 3 &&
-                                buffer[0] == 0xFF &&
-                                buffer[1] == 0xD8 &&
-                                buffer[2] == 0xFF;
-            if (!isValidJpg) {
-                return e + "project thumbnail must be a jpg/jpeg/jfif";
-            }
-            // validate size based on buffer length
-            if (buffer.length > 128 * 1024) {
                 return e + "project thumbnail is too big; 128 KB allowed";
             }
         } else {
@@ -157,11 +152,11 @@ String validateProgramData(Map<String, dynamic> data) {
                 return e + "project file data is corrupted";
             }
 
-            // programs can't be bigger than 0.5 MB
+            // programs can't be bigger than 1 MB
             // (assumes estimateStringSz is defined elsewhere)
             projectSize += estimateStringSz(fileContent);
-            if (projectSize > 1024 * 512) {
-                return e + "project is too big; 0.5 MB allowed";
+            if (projectSize > 1024 * 1000) {
+                return e + "project is too big; 1 MB allowed";
             }
         }
 

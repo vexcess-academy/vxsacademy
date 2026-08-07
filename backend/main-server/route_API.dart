@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io' as IO;
 import 'dart:math' as Math;
 
@@ -143,7 +144,7 @@ final routeTree_API = {
                     userCache[userId] = UserData.fromMap(profile);
 
                     if (userIpData != null) {
-                        userIpData["accounts"].push(userId);
+                        userIpData["accounts"].add(userId);
                     }
 
                     // fs.writeFile("./ip-data.json", JSON.stringify(IPMonitor), err => {
@@ -356,6 +357,22 @@ final routeTree_API = {
             var programCheck = validateProgramData(programData);
             if (programCheck != "OK") creationError = programCheck;
 
+            final files = programData["files"];
+            var projectSize = 0;
+            for (final filename in files.keys) {
+                final fileContent = files[filename];
+                projectSize += estimateStringSz(fileContent);
+            }
+            // allow thumbnail to exceed storage quota
+            if (userData.programStorageUse + projectSize > 10 * 1024 * 1000) {
+                creationError = "error: out of storage space";
+            }
+            final thumbnail = programData['thumbnail'];
+            if (thumbnail is String) {
+                projectSize += thumbnail.length;
+            }
+            programData["storageUse"] = projectSize;
+
             // check if parent exists
             var parentProgram = null;
             if (creationError == null) {
@@ -391,10 +408,17 @@ final routeTree_API = {
                 }
 
                 // add program to user's profile
-                userCache[programData["author"]["id"]]!.projects.add(programData["id"]);
-                await users.updateOne({ "id": programData["author"]["id"] }, {"\$push": {
-                    "projects": programData["id"]
-                }});
+                var cachedUserData = userCache[programData["author"]["id"]]!;
+                cachedUserData.projects.add(programData["id"]);
+                cachedUserData.programStorageUse += projectSize;
+                await users.updateOne({ "id": programData["author"]["id"] }, {
+                    "\$push": {
+                        "projects": programData["id"]
+                    },
+                    "\$set": {
+                        "programStorageUse": cachedUserData.programStorageUse
+                    }
+                });
 
                 // save program to database
                 await programs.insertOne(programData);
@@ -431,6 +455,8 @@ final routeTree_API = {
 
             // check if dir exists
             Map<String, dynamic>? programData = await programs.findOne({ "id": requestJSON["id"] });
+            int oldSize = 0;
+            int newSize = 0;
             if (programData == null) {
                 creationError = "error: program non-existent";
             } else {
@@ -446,6 +472,24 @@ final routeTree_API = {
                 // validate input
                 var programCheck = validateProgramData(programData);
                 if (programCheck != "OK") creationError = programCheck;
+
+                final oldProgram = await programs.findOne({ "id": requestJSON["id"] });
+                oldSize = oldProgram == null ? 0 : oldProgram["storageUse"] ?? 0;
+
+                final files = programData["files"];
+                for (final filename in files.keys) {
+                    final fileContent = files[filename];
+                    newSize += estimateStringSz(fileContent);
+                }
+                // allow thumbnail to exceed storage quota
+                if (userData!.programStorageUse - oldSize + newSize > 10 * 1024 * 1000) {
+                    creationError = "error: out of storage space";
+                }
+                final thumbnail = programData['thumbnail'];
+                if (thumbnail is String) {
+                    newSize += thumbnail.length;
+                }
+                programData["storageUse"] = newSize;
             }
 
             // update program in database
@@ -461,8 +505,18 @@ final routeTree_API = {
                     "height": requestJSON["height"],
                     "fileNames": requestJSON["files"].keys.toList(),
                     "files": requestJSON["files"],
-                    "thumbnail": thumbnailData
+                    "thumbnail": thumbnailData,
+                    "storageUse": newSize
                 }});
+
+                // add program to user's profile
+                var cachedUserData = userCache[programData!["author"]["id"]]!;
+                cachedUserData.programStorageUse += newSize - oldSize;
+                await users.updateOne({ "id": programData["author"]["id"] }, {
+                    "\$set": {
+                        "programStorageUse": cachedUserData.programStorageUse
+                    }
+                });
             }
 
             // send program id to user
@@ -518,14 +572,24 @@ final routeTree_API = {
                     }});
                 }
             }
+
+            final oldProgram = await programs.findOne({ "id": idToDelete });
+            int oldSize = oldProgram == null ? 0 : oldProgram["storageUse"] ?? 0;
             
             // remove program from user's profile
-            userCache[userData.id]!.projects.firstWhere((projectId) {
+            var cachedUserData = userCache[userData.id]!;
+            cachedUserData.projects.removeWhere((projectId) {
                 return projectId == idToDelete;
             });
-            users.updateOne({ "id": userData.id }, {"\$pull": {
-                "projects": idToDelete
-            }});
+            cachedUserData.programStorageUse -= oldSize;
+            users.updateOne({ "id": userData.id }, {
+                "\$pull": {
+                    "projects": idToDelete
+                },
+                "\$set": {
+                    "programStorageUse": cachedUserData.programStorageUse
+                }
+            });
 
             // delete program from storage
             await programs.deleteOne({ "id": idToDelete });
@@ -560,7 +624,10 @@ final routeTree_API = {
                 }
 
                 // update program data
-                if (!programData["likes"].contains(userData.id)) {
+                final userAlreadyLikedProgram = programData["likes"].contains(userData.id);
+                int likeCount = programData["likes"].length;
+                final newLikeCount = likeCount + (userAlreadyLikedProgram ? -1 : 1);
+                if (!userAlreadyLikedProgram) {
                     programs.updateOne({ "id": targetProgramId }, {
                         "\$push": {
                             "likes": data["userData"].id
@@ -586,16 +653,10 @@ final routeTree_API = {
                     // parent directory path
                     var parentProgram = await programs.findOne({ "id": parentId });
                     if (parentProgram != null) {
-                        for (var i = 0; i < parentProgram["forks"].length; i++) {
-                            Map<String, dynamic> fork = parentProgram["forks"][i];
-                            if (fork["id"] == programData["id"]) {
-                                fork["likeCount"] = programData["likeCount"];
-                            }
-                        }
-
-                        programs.updateOne({ "id": parentId }, {"\$set": {
-                            "forks": parentProgram["forks"]
-                        }});
+                        programs.updateOne(
+                            { "id": parentId, "forks.id": targetProgramId },
+                            { "\$inc": { "forks.\$.likeCount": (userAlreadyLikedProgram ? -1 : 1) } }
+                        );
                     }
                 }
 
@@ -680,11 +741,17 @@ final routeTree_API = {
                         }});
 
                         // add discussion to author profile
+                        userData.discussions.add(discussionData["id"]);
                         users.updateOne({ "id": userData.id }, {"\$push": {
                             "discussions": discussionData["id"]
                         }});
 
                         // notify program author
+                        final recipient = userCache[hostProgram["author"]["id"]];
+                        if (recipient != null) {
+                            recipient.notifications.add(discussionData["id"]);
+                            recipient.newNotifs += 1;
+                        }
                         users.updateOne({ "id": hostProgram["author"]["id"] }, {
                             "\$push": {
                                 "notifications": discussionData["id"]
@@ -779,6 +846,11 @@ final routeTree_API = {
                 return;
             }
 
+            if (requestJSON.containsKey("location") && (requestJSON["location"] is! String || requestJSON["location"].length > 33)) {
+                out.write("error: invalid location");
+                return;
+            }
+
             final id = userData!.id;
             var updateQuery = {};
 
@@ -803,6 +875,10 @@ final routeTree_API = {
             
             if (requestJSON.containsKey("background")) {
                 updateQuery["background"] = requestJSON["background"];
+            }
+
+            if (requestJSON.containsKey("location")) {
+                updateQuery["location"] = requestJSON["location"];
             }
 
             // update
@@ -1065,25 +1141,34 @@ final routeTree_API = {
                     out.add(bytesOf(json.encode([])));
                 }
             } else {
+                List<String> discussionIds = [];
                 if (query["id"] != null) {
-                    query["ids"] = [query["id"]];
+                    discussionIds = [query["id"]];
                 } else if (query["ids"] is String) {
-                    query["ids"] = query["ids"].split(",");
+                    discussionIds = query["ids"].split(",");
+                } else {
+                    out.write("error: 400");
+                    return;
+                }
 
-                    var output = [];
-                    for (int i = 0; i < query["ids"].length; i++) {
-                        final id = query["ids"][i];
-                        Map<String, dynamic>? discussionData = await discussions.findOne({ "id": id });
-                
-                        if (discussionData != null) {
-                            discussionData["likeCount"] = discussionData["likes"].length - discussionData["dislikes"].length;
-                            discussionData.remove("likes");
-                            discussionData.remove("dislikes");
+                var output = [];
+                for (int i = 0; i < discussionIds.length; i++) {
+                    final id = discussionIds[i];
+                    Map<String, dynamic>? discussionData = await discussions.findOne({ "id": id });
+            
+                    if (discussionData != null) {
+                        discussionData["likeCount"] = discussionData["likes"].length;
+                        if (discussionData["dislikes"] is List) {
+                            discussionData["likeCount"] -= discussionData["dislikes"].length;
+                        }
+                        discussionData.remove("likes");
+                        discussionData.remove("dislikes");
 
-                            Map<String, dynamic>? author = await users.findOne({
-                                "id": discussionData["author"]["id"]
-                            });
-                            author = projectOne(author!, {
+                        Map<String, dynamic>? author = await users.findOne({
+                            "id": discussionData["author"]["id"]
+                        });
+                        if (author != null) {
+                            author = projectOne(author, {
                                 "id": 1,
                                 "username": 1,
                                 "nickname": 1,
@@ -1092,21 +1177,19 @@ final routeTree_API = {
                             });
                             
                             discussionData["author"] = author;
-
-                            for (final prop in discussionData.keys) {
-                                if (discussionData[prop] is Int64) {
-                                    discussionData[prop] = discussionData[prop].toInt();
-                                }
-                            }
-
-                            output.add(discussionData);
                         }
+
+                        for (final prop in discussionData.keys) {
+                            if (discussionData[prop] is Int64) {
+                                discussionData[prop] = discussionData[prop].toInt();
+                            }
+                        }
+
+                        output.add(discussionData);
                     }
-                    
-                    out.add(bytesOf(json.encode(output)));
-                } else {
-                    out.write("error: 400");
                 }
+                
+                out.add(bytesOf(json.encode(output)));
             }
         },
         "search?": (AP path, AO out, AD data) async {

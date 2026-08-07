@@ -286,91 +286,91 @@ function validateFileName(name) {
     return "OK";
 }
 
-function validateProgramData(data) {
-    let e = "error: ";
-    if (
-        typeof data.files === "object" &&
-        typeof data.width === "number" &&
-        typeof data.height === "number" &&
-        typeof data.title === "string"
-    ) {
-        // check if program is a valid type
-        if (!["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(data.type)) {
-            return e + "invalid project type";
-        }
+// function validateProgramData(data) {
+//     let e = "error: ";
+//     if (
+//         typeof data.files === "object" &&
+//         typeof data.width === "number" &&
+//         typeof data.height === "number" &&
+//         typeof data.title === "string"
+//     ) {
+//         // check if program is a valid type
+//         if (!["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].includes(data.type)) {
+//             return e + "invalid project type";
+//         }
 
-        // validate forks
-        if (data.parent && data.parent !== null && typeof data.parent !== "string") {
-            return e + "invalid parent";
-        }
+//         // validate forks
+//         if (data.parent && data.parent !== null && typeof data.parent !== "string") {
+//             return e + "invalid parent";
+//         }
         
-        // limit size
-        if (data.width % 1 !== 0 || data.height % 1 !== 0) {
-            return e + "project dimensions must be integers";
-        }
-        if (data.width < 400 || data.height < 400) {
-            return e + "project dimensions can't be less than 400";
-        }
-        if (data.width > 16384 || data.height > 16384) {
-            return e + "project dimensions can't be larger than 16384";
-        }
+//         // limit size
+//         if (data.width % 1 !== 0 || data.height % 1 !== 0) {
+//             return e + "project dimensions must be integers";
+//         }
+//         if (data.width < 400 || data.height < 400) {
+//             return e + "project dimensions can't be less than 400";
+//         }
+//         if (data.width > 16384 || data.height > 16384) {
+//             return e + "project dimensions can't be larger than 16384";
+//         }
 
-        if (data.thumbnail === undefined) {
-            // do nothing
-        } else if (typeof data.thumbnail === "string") {
-            // validate thumbnail type
-            if (!(
-                data.thumbnail.startsWith("data:image/jpg;base64,") ||
-                data.thumbnail.startsWith("data:image/jpeg;base64,") ||
-                data.thumbnail.startsWith("data:image/jfif;base64,")
-            )) {
-                return e + "project thumbnail must be a jpg/jpeg/jfif";
-            }
-            // validate thumbnail size to 128 KB
-            if (data.thumbnail.length > 128 * 1024) {
-                return e + "project thumbnail is too big; 128 KB allowed";
-            }
-        } else {
-            return e + "project thumbnail is corrupted";
-        }
+//         if (data.thumbnail === undefined) {
+//             // do nothing
+//         } else if (typeof data.thumbnail === "string") {
+//             // validate thumbnail type
+//             if (!(
+//                 data.thumbnail.startsWith("data:image/jpg;base64,") ||
+//                 data.thumbnail.startsWith("data:image/jpeg;base64,") ||
+//                 data.thumbnail.startsWith("data:image/jfif;base64,")
+//             )) {
+//                 return e + "project thumbnail must be a jpg/jpeg/jfif";
+//             }
+//             // validate thumbnail size to 128 KB
+//             if (data.thumbnail.length > 128 * 1024) {
+//                 return e + "project thumbnail is too big; 128 KB allowed";
+//             }
+//         } else {
+//             return e + "project thumbnail is corrupted";
+//         }
 
-        // validate title
-        var checkTitle = validateFileName(data.title);
-        if (checkTitle !== "OK") {
-            return e + "project title " + checkTitle;
-        }
+//         // validate title
+//         var checkTitle = validateFileName(data.title);
+//         if (checkTitle !== "OK") {
+//             return e + "project title " + checkTitle;
+//         }
 
-        // 8 files allowed
-        if (Object.keys(data.files).length > 8) {
-            return e + "project has too many files; 8 allowed";
-        }
+//         // 8 files allowed
+//         if (Object.keys(data.files).length > 8) {
+//             return e + "project has too many files; 8 allowed";
+//         }
 
-        let projectSize = 0;
-        for (var filename in data.files) {
-            // validate file name
-            var checkName = validateFileName(data.title);
-            if (checkName !== "OK") {
-                return e + "file name " + checkName;
-            }
+//         let projectSize = 0;
+//         for (var filename in data.files) {
+//             // validate file name
+//             var checkName = validateFileName(data.title);
+//             if (checkName !== "OK") {
+//                 return e + "file name " + checkName;
+//             }
 
-            // check if file data is valid
-            var file = data.files[filename];
-            if (typeof file !== "string") {
-                return e + "project file data is corrupted";
-            }
+//             // check if file data is valid
+//             var file = data.files[filename];
+//             if (typeof file !== "string") {
+//                 return e + "project file data is corrupted";
+//             }
 
-            // programs can't be bigger than 0.5 MB
-            projectSize += calcStrSz(file.length);
-            if (projectSize > 1024 * 512) {
-                return e + "project is too big; 0.5 MB allowed";
-            }
-        }
+//             // programs can't be bigger than 0.5 MB
+//             projectSize += calcStrSz(file.length);
+//             if (projectSize > 1024 * 512) {
+//                 return e + "project is too big; 0.5 MB allowed";
+//             }
+//         }
 
-        return "OK";
-    } else {
-        return e + "project metadata is corrupted";
-    }
-}
+//         return "OK";
+//     } else {
+//         return e + "project metadata is corrupted";
+//     }
+// }
 
 function getFile(name)  {
     return programData.files[name];

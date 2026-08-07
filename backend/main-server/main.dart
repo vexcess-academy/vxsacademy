@@ -13,6 +13,7 @@ import 'package:http/http.dart' as HTTP;
 
 // database
 import 'package:mongo_dart/mongo_dart.dart' as Mongo;
+import 'package:bson/bson.dart';
 
 // custom modules
 import '../lib/file-io.dart';
@@ -255,6 +256,62 @@ void main() async {
         }});
     }
     print("Synced discussions");
+
+    // // fix program thumbnails from bug
+    // for (final userId in userCache.keys) {
+    //     final arr = await programs.find({ "author.id": userId }).toList();
+    //     for (final programData in arr) {
+    //         if (programData["thumbnail"] is String) {
+    //             final thumbnailData = BsonBinary.from(base64.decode(programData["thumbnail"].substring(programData["thumbnail"].indexOf(",") + 1)));
+
+    //             programs.updateOne({ "id": programData["id"] }, {"\$set": {
+    //                 "thumbnail": thumbnailData
+    //             }});
+    //         }   
+    //     }
+    // }
+
+    // update profile locations
+    // for (final userId in userCache.keys) {
+    //     if (userCache[userId]!.location == "") {
+    //         await users.updateOne({ "id": userId }, {"\$set": {
+    //             "location": ""
+    //         }});
+    //     }
+    // }
+
+    // update program storage usage
+    for (final userId in userCache.keys) {
+        final arr = await programs.find({ "author.id": userId }).toList();
+        int bytesUsed = 0;
+
+        for (final programData in arr) {
+            Map files = programData["files"];
+            final thumbnail = programData["thumbnail"];
+
+            int programBytesUsed = 0;
+
+            if (thumbnail is Mongo.BsonBinary) {
+                programBytesUsed += thumbnail.totalByteLength;
+            }
+
+            for (String fileContents in files.values) {
+                programBytesUsed += bytesOf(fileContents).length;
+            }
+
+            if (programData["storageUse"] != programBytesUsed) {
+                programs.updateOne({ "id": programData["id"] }, {"\$set": {
+                    "storageUse": programBytesUsed
+                }});
+            }
+
+            bytesUsed += programBytesUsed;
+        }
+
+        await users.updateOne({ "id": userId }, {"\$set": {
+            "programStorageUse": bytesUsed
+        }});
+    }
 
     // !!! DANGER BELOW !!! for manually updating each item in a collection
     // {

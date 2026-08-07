@@ -2,6 +2,271 @@
     import ProjectIcon from "./ProjectIcon.svelte";
     import { onMount } from 'svelte';
 
+    const locations = [
+        "undefined",
+        "United States of America",
+        "Alabama, U.S.A",
+        "Alaska, U.S.A",
+        "Arizona, U.S.A",
+        "Arkansas, U.S.A",
+        "California, U.S.A",
+        "Colorado, U.S.A",
+        "Connecticut, U.S.A",
+        "Delaware, U.S.A",
+        "Florida, U.S.A",
+        "Georgia, U.S.A",
+        "Hawaii, U.S.A",
+        "Idaho, U.S.A",
+        "Illinois, U.S.A",
+        "Indiana, U.S.A",
+        "Iowa, U.S.A",
+        "Kansas, U.S.A",
+        "Kentucky, U.S.A",
+        "Louisiana, U.S.A",
+        "Maine, U.S.A",
+        "Maryland, U.S.A",
+        "Massachusetts, U.S.A",
+        "Michigan, U.S.A",
+        "Minnesota, U.S.A",
+        "Mississippi, U.S.A",
+        "Missouri, U.S.A",
+        "Montana, U.S.A",
+        "Nebraska, U.S.A",
+        "Nevada, U.S.A",
+        "New Hampshire, U.S.A",
+        "New Jersey, U.S.A",
+        "New Mexico, U.S.A",
+        "New York, U.S.A",
+        "North Carolina, U.S.A",
+        "North Dakota, U.S.A",
+        "Ohio, U.S.A",
+        "Oklahoma, U.S.A",
+        "Oregon, U.S.A",
+        "Pennsylvania, U.S.A",
+        "Rhode Island, U.S.A",
+        "South Carolina, U.S.A",
+        "South Dakota, U.S.A",
+        "Tennessee, U.S.A",
+        "Texas, U.S.A",
+        "Utah, U.S.A",
+        "Vermont, U.S.A",
+        "Virginia, U.S.A",
+        "Washington, U.S.A",
+        "West Virginia, U.S.A",
+        "Wisconsin, U.S.A",
+        "Wyoming, U.S.A",
+        "Canada",
+        "Alberta, Canada",
+        "British Columbia, Canada",
+        "Manitoba, Canada",
+        "New Brunswick, Canada",
+        "Newfoundland and Labrador, Canada",
+        "Nova Scotia, Canada",
+        "Ontario, Canada",
+        "Prince Edward Island, Canada",
+        "Quebec, Canada",
+        "Saskatchewan, Canada",
+        "Northwest Territories, Canada",
+        "Nunavut, Canada",
+        "Yukon, Canada",
+        "Afghanistan",
+        "Albania",
+        "Algeria",
+        "Andorra",
+        "Angola",
+        "Antarctica",
+        "Antigua and Barbuda",
+        "Argentina",
+        "Armenia",
+        "Australia",
+        "Austria",
+        "Azerbaijan",
+        "Bahamas",
+        "Bahrain",
+        "Bangladesh",
+        "Barbados",
+        "Belarus",
+        "Belgium",
+        "Belize",
+        "Benin",
+        "Bhutan",
+        "Bolivia",
+        "Bosnia and Herzegovina",
+        "Botswana",
+        "Brazil",
+        "Brunei",
+        "Bulgaria",
+        "Burkina Faso",
+        "Burundi",
+        "Cabo Verde",
+        "Cambodia",
+        "Cameroon",
+        "Central African Republic",
+        "Chad",
+        "Chile",
+        "China",
+        "Colombia",
+        "Comoros",
+        "Congo (Congo-Brazzaville)",
+        "Costa Rica",
+        "Côte d'Ivoire",
+        "Croatia",
+        "Cuba",
+        "Cyprus",
+        "Czechia (Czech Republic)",
+        "Democratic Republic of the Congo",
+        "Denmark",
+        "Djibouti",
+        "Dominica",
+        "Dominican Republic",
+        "Ecuador",
+        "Egypt",
+        "El Salvador",
+        "Equatorial Guinea",
+        "Eritrea",
+        "Estonia",
+        "Eswatini",
+        "Ethiopia",
+        "Fiji",
+        "Finland",
+        "France",
+        "Gabon",
+        "Gambia",
+        "Georgia",
+        "Germany",
+        "Ghana",
+        "Greece",
+        "Grenada",
+        "Guatemala",
+        "Guinea",
+        "Guinea-Bissau",
+        "Guyana",
+        "Haiti",
+        "Honduras",
+        "Hungary",
+        "Iceland",
+        "India",
+        "Indonesia",
+        "Iran",
+        "Iraq",
+        "Ireland",
+        "Israel",
+        "Italy",
+        "Jamaica",
+        "Japan",
+        "Jordan",
+        "Kazakhstan",
+        "Kenya",
+        "Kiribati",
+        "Kuwait",
+        "Kyrgyzstan",
+        "Laos",
+        "Latvia",
+        "Lebanon",
+        "Lesotho",
+        "Liberia",
+        "Libya",
+        "Liechtenstein",
+        "Lithuania",
+        "Luxembourg",
+        "Madagascar",
+        "Malawi",
+        "Malaysia",
+        "Maldives",
+        "Mali",
+        "Malta",
+        "Marshall Islands",
+        "Mauritania",
+        "Mauritius",
+        "Mexico",
+        "Micronesia",
+        "Moldova",
+        "Monaco",
+        "Mongolia",
+        "Montenegro",
+        "Morocco",
+        "Mozambique",
+        "Myanmar",
+        "Namibia",
+        "Nauru",
+        "Nepal",
+        "Netherlands",
+        "New Zealand",
+        "Nicaragua",
+        "Niger",
+        "Nigeria",
+        "North Korea",
+        "North Macedonia",
+        "Norway",
+        "Oman",
+        "Pakistan",
+        "Palau",
+        "Palestine State",
+        "Panama",
+        "Papua New Guinea",
+        "Paraguay",
+        "Peru",
+        "Philippines",
+        "Poland",
+        "Portugal",
+        "Qatar",
+        "Romania",
+        "Russia",
+        "Rwanda",
+        "Saint Kitts and Nevis",
+        "Saint Lucia",
+        "Saint Vincent and the Grenadines",
+        "Samoa",
+        "San Marino",
+        "Sao Tome and Principe",
+        "Saudi Arabia",
+        "Senegal",
+        "Serbia",
+        "Seychelles",
+        "Sierra Leone",
+        "Singapore",
+        "Slovakia",
+        "Slovenia",
+        "Solomon Islands",
+        "Somalia",
+        "South Africa",
+        "South Korea",
+        "South Sudan",
+        "Spain",
+        "Sri Lanka",
+        "Sudan",
+        "Suriname",
+        "Sweden",
+        "Switzerland",
+        "Syria",
+        "Taiwan",
+        "Tajikistan",
+        "Tanzania",
+        "Thailand",
+        "Timor-Leste",
+        "Togo",
+        "Tonga",
+        "Trinidad and Tobago",
+        "Tunisia",
+        "Turkey",
+        "Turkmenistan",
+        "Tuvalu",
+        "Uganda",
+        "Ukraine",
+        "United Arab Emirates",
+        "United Kingdom",
+        "Uruguay",
+        "Uzbekistan",
+        "Vanuatu",
+        "Vatican City",
+        "Venezuela",
+        "Vietnam",
+        "Yemen",
+        "Zambia",
+        "Zimbabwe",
+        "Homeless",
+    ];
+
     const avatars = {
         "boberta": "Boberta",
         "bobert-cool": "Cool Bobert",
@@ -59,6 +324,71 @@
     let editNickname = "";
     let editUsername = "";
     let editBio = "";
+    let editLocation = "undefined";
+
+    // searchable dropdown state
+    let isLocationDropdownOpen = false;
+    let locationSearch = "";
+
+    $: filteredLocations = locations.filter((loc) =>
+        loc.toLowerCase().replaceAll(".", "").includes(locationSearch.toLowerCase().replaceAll(".", ""))
+    );
+
+    // dropdown navigation state
+    let highlightedIndex = -1;
+
+    // Reset highlight when filtering changes
+    $: if (filteredLocations) {
+        highlightedIndex = -1;
+    }
+
+    function selectLocation(loc) {
+        editLocation = loc;
+        locationSearch = loc;
+        isLocationDropdownOpen = false;
+        highlightedIndex = -1;
+    }
+
+    function handleKeydown(event) {
+        if (!isLocationDropdownOpen) {
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                isLocationDropdownOpen = true;
+                return;
+            }
+        }
+
+        if (event.key === "ArrowDown") {
+            event.preventDefault();
+            if (filteredLocations.length > 0) {
+                highlightedIndex = (highlightedIndex + 1) % filteredLocations.length;
+                scrollHighlightedIntoView();
+            }
+        } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            if (filteredLocations.length > 0) {
+                highlightedIndex =
+                    (highlightedIndex - 1 + filteredLocations.length) % filteredLocations.length;
+                scrollHighlightedIntoView();
+            }
+        } else if (event.key === "Enter") {
+            event.preventDefault();
+            if (highlightedIndex >= 0 && highlightedIndex < filteredLocations.length) {
+                selectLocation(filteredLocations[highlightedIndex]);
+            }
+        } else if (event.key === "Escape") {
+            isLocationDropdownOpen = false;
+            highlightedIndex = -1;
+        }
+    }
+
+    function scrollHighlightedIntoView() {
+        setTimeout(() => {
+            const activeEl = document.querySelector(".dropdown-list li.highlighted");
+            if (activeEl) {
+                activeEl.scrollIntoView({ block: "nearest" });
+            }
+        }, 0);
+    }
 
     // reactive states
     $: isDarkText = profileData && backgrounds[profileData.background] && backgrounds[profileData.background][1] === 1;
@@ -168,6 +498,9 @@
             editNickname = profileData.nickname;
             editUsername = profileData.username;
             editBio = profileData.bio;
+            editLocation = profileData.location || "undefined";
+            locationSearch = editLocation;
+            isLocationDropdownOpen = false;
         } else if (mode === 'avatar') {
             currSelectedImage = profileData.avatar;
         } else if (mode === 'background') {
@@ -188,7 +521,12 @@
             if (checkUsername !== "OK") return alert(checkUsername);
             if (checkBio !== "OK") return alert(checkBio);
 
-            sendObj = { nickname: editNickname, username: editUsername, bio: editBio };
+            sendObj = { 
+                nickname: editNickname, 
+                username: editUsername, 
+                bio: editBio,
+                location: editLocation 
+            };
         } else if (settingsMode === "avatar") {
             sendObj = { avatar: currSelectedImage };
         } else if (settingsMode === "background") {
@@ -284,6 +622,9 @@
                 <strong id="profile-username">@{profileData.username}</strong>
                 <span id="profile-id" style="color: {textClr}; text-shadow: 0px 0px 8px {shadowClr};">({profileData.id})</span>
                 <div id="profile-bio" style="color: {textClr}; text-shadow: 0px 0px 4px {shadowClr}, 0px 0px 8px {shadowClr};">{profileData.bio}</div>
+                {#if `${profileData?.location}` !== "undefined" && profileData?.location.length > 0}
+                    <div id="profile-location" style="color: {textClr}; text-shadow: 0px 0px 4px {shadowClr};">Location: {profileData.location}</div>
+                {/if}
             </div>
 
             <div class="header-controls">
@@ -352,6 +693,7 @@
         <div class="split-view">
             <div class="section column-projects">
                 <h2>Projects</h2>
+                <p>Project Storage Usage: {(profileData.programStorageUse / 1000 / 1000).toFixed(2)} MB of 10 MB</p>
                 <div class="profile-content programs-grid">
                     {#if loadedProjects.length > 0}
                         {#each loadedProjects as project (project.id)}
@@ -425,6 +767,38 @@
                     <div class="settings-input-wrapper">
                         <textarea bind:value={editBio} maxlength="160"></textarea>
                         <div class="settings-hint">{160 - editBio.length} characters left</div>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-label">LOCATION</div>
+                    <div class="settings-input-wrapper dropdown-wrapper">
+                        <input 
+                            type="text" 
+                            bind:value={locationSearch} 
+                            on:focus={() => isLocationDropdownOpen = true}
+                            on:input={() => isLocationDropdownOpen = true}
+                            on:keydown={handleKeydown}
+                            placeholder="Search location..."
+                        />
+                        {#if isLocationDropdownOpen}
+                            <ul class="dropdown-list">
+                                {#each filteredLocations as loc, i}
+                                    <!-- svelte-ignore a11y_click_events_have_key_events -->
+                                    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                                    <li 
+                                        class:selected={loc === editLocation}
+                                        class:highlighted={i === highlightedIndex}
+                                        on:mouseenter={() => highlightedIndex = i}
+                                        on:click={() => selectLocation(loc)}
+                                    >
+                                        {loc}
+                                    </li>
+                                {:else}
+                                    <li class="no-match">No matching location</li>
+                                {/each}
+                            </ul>
+                        {/if}
+                        <div class="settings-hint">Set to "undefined" to hide the location field on your profile.</div>
                     </div>
                 </div>
 
@@ -614,6 +988,48 @@
     #profile-username { font-size: 16px; color: black; background: rgba(255, 255, 255, 0.8); padding: 4px 6px; border-radius: 100px; }
     #profile-id { font-size: 16px; opacity: 0.8; margin-left: 5px; }
     #profile-bio { font-size: 16px; margin-top: 18px; }
+    #profile-location { font-size: 16px; margin-top: 18px; }
+
+    .dropdown-wrapper {
+        position: relative;
+    }
+    .dropdown-list {
+        position: absolute;
+        top: 38px;
+        left: 0;
+        right: 0;
+        max-height: 180px;
+        overflow-y: auto;
+        background-color: var(--background, #fff);
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        margin: 0;  
+        padding: 0;
+        list-style: none;
+        z-index: 1002;
+    }
+    .dropdown-list li {
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+    .dropdown-list li:hover {
+        background-color: rgba(0, 0, 0, 0.08);
+    }
+    .dropdown-list li.selected {
+        font-weight: bold;
+        background-color: rgba(13, 146, 63, 0.15);
+    }
+    .dropdown-list li.no-match {
+        color: gray;
+        cursor: default;
+        font-style: italic;
+    }
+    .dropdown-list li.highlighted {
+        background-color: rgba(13, 146, 63, 0.25);
+        outline: none;
+    }
 
     #profile-img {
         background-color: rgba(0, 0, 0, 0.5);

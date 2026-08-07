@@ -17,6 +17,8 @@ class UserData {
     late List<String> discussions;
     late List<String> notifications;
     late int newNotifs;
+    late int programStorageUse;
+    late String location;
 
     UserData({
         required this.nickname,
@@ -34,6 +36,8 @@ class UserData {
         required this.discussions,
         required this.notifications,
         required this.newNotifs,
+        required this.programStorageUse,
+        required this.location,
     });
 
     static UserData fromMap(Map<String, dynamic> data) {
@@ -53,6 +57,8 @@ class UserData {
             discussions: castList<String>(data["discussions"]),
             notifications: castList<String>(data["notifications"]),
             newNotifs: data["newNotifs"],
+            programStorageUse: data["programStorageUse"] ?? 0,
+            location: data["location"] ?? "",
         );
     }
 
@@ -73,6 +79,8 @@ class UserData {
             "discussions": this.discussions,
             "notifications": this.notifications,
             "newNotifs": this.newNotifs,
+            "programStorageUse": this.programStorageUse,
+            "location": this.location,
         };
     }
 
@@ -88,6 +96,8 @@ class UserData {
             "background": background,
             "comments": comments,
             "discussions": discussions,
+            "programStorageUse": programStorageUse,
+            "location": location
         });
     }
 }
