@@ -422,8 +422,8 @@ function runProgram() {
         case "python":
             mainCode = getFile("main.py");
         break;
-        case "jitlang":
-            mainCode = getFile("main.jitl");
+        case "rust":
+            mainCode = getFile("main.rs");
         break;
     }
 
@@ -797,8 +797,8 @@ function main2() {
                 type = "cpp";
             case "zig":
                 type = "rust";
-            case "jitl":
-                type = "go";
+            case "rs":
+                type = "rust";
             break;
         }
 

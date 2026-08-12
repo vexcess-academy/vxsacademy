@@ -113,10 +113,14 @@ frame-ancestors * data: blob:;
                 }
             }
 
-            final fileContents = await fileCache.get(fetchPath);
+            if (fetchPath.endsWith(".xz")) {
+                response.headers.add("Cache-Control", "public, max-age=${60 * 60 * 24 * 7}");
+            }
+            
+            final fileContents = await fileCache.getBytes(fetchPath);
             if (fileContents != null) {
                 response.statusCode = 200;
-                response.add(utf8.encode(fileContents));
+                response.add(fileContents);
             } else {
                 response.statusCode = 404;
             }

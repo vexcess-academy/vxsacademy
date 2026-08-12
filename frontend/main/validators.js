@@ -81,7 +81,7 @@ typeof data['height'] === "number" &&
 typeof data['title'] === "string") {
         
         // Check if program is a valid type
-        var validTypes = ["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"];
+        var validTypes = ["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig", "rust"];
         if (!validTypes.includes(data['type'])) {
             return e + "invalid project type";
         }

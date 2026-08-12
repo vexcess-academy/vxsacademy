@@ -573,6 +573,16 @@
     Working on adding Rust;
 </p>
 
+<h2>8/11/26</h2>
+<p>
+    Working on adding Rust;
+</p>
+
+<h2>8/12/26</h2>
+<p>
+    Rust is added;
+</p>
+
 <h2>TODO</h2>
 <p>
     TODO: Implement sandbox unload detection;

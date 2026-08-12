@@ -121,7 +121,12 @@ if (PROGRAM_ID === "new") {
                 // Output to screen
                 fragColor = vec4(col,1.0);
             }
-        `
+        `,
+        rust: `
+            fn main() {
+                println!("Hello from Rust!");
+            }
+        `,
     };
 
     // clean up boilerplates
@@ -158,14 +163,24 @@ if (PROGRAM_ID === "new") {
         type: window.location.pathname.split("/")[3]
     };
 
-    const savedProgram = localStorage.getItem("cs-new-program-" + programData.type);
+    const savedProgramString = localStorage.getItem("cs-new-program-" + programData.type);
+    let savedProgram = null;
+    let isEmptyProgram = true;
+    if (savedProgramString) {
+        savedProgram = JSON.parse(savedProgramString);
+        for (const fileName in savedProgram.files) {
+            if (savedProgram.files[fileName].length > 0) {
+                isEmptyProgram = false;
+                break;
+            }
+        }
+    }
 
     // setup files
-    if (savedProgram) {
-        const savedData = JSON.parse(savedProgram);
-        programData.width = savedData.width;
-        programData.height = savedData.height;
-        programData.files = savedData.files;
+    if (!isEmptyProgram) {
+        programData.width = savedProgram.width;
+        programData.height = savedProgram.height;
+        programData.files = savedProgram.files;
     } else {
         switch (programData.type) {
             case "webpage":
@@ -194,9 +209,9 @@ if (PROGRAM_ID === "new") {
                 };
                 break;
     
-            case "jitlang":
+            case "rust":
                 programData.files = {
-                    "main.jitl": "// JITLang"
+                    "main.rs": boilerplate.rust
                 };
                 break;
     

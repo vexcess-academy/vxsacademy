@@ -47,7 +47,7 @@ final routeTree_computerprogramming = {
     "new/": (AP path, AO out, AD data) async {
         // new program path
         final programType = path;
-        if (["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig"].contains(programType)) {
+        if (["webpage", "pjs", "python", "glsl", "jitlang", "cpp", "java", "zig", "rust"].contains(programType)) {
             String webpageCode = await createHTMLPage("program", data["userData"], DEFAULT_OG_TAGS);
 
             out.headers.add('Content-Type', 'text/html');

@@ -17,8 +17,14 @@ class Terminal {
         for (let prop in options) {
             el.style[prop] = options[prop];
         }
+
+        const isAtBottom = Math.abs(this.div.scrollTop - this.div.scrollHeight) < 150;
         
         this.div.appendChild(el);
+
+        // if (isAtBottom) {
+            this.div.scrollTop = this.div.scrollHeight;
+        // }
     }
 
     in() {

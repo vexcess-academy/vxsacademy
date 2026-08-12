@@ -52,8 +52,8 @@ function runProgram() {
         case "python":
             mainCode = getFile("main.py");
         break;
-        case "jitlang":
-            mainCode = getFile("main.jitl");
+        case "rust":
+            mainCode = getFile("main.rs");
         break;
     }
 

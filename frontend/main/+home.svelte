@@ -5,6 +5,7 @@
         ["pjs", "pjs", "Processing JS"],
         ["python", "python", "Python"],
         ["glsl", "glsl", "GLSL"],
+        ["rust", "rust", "Rust"],
         // ["zig", "zig", "Zig"],
         // ["jitlang", "jitlang", "JITLang"],
         // ["cpp", "cpp", "C++"],

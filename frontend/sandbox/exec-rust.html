@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/sandbox.css" type="text/css">
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="./terminal.js"></script>
+    <script src="./libs-rust/vendor/xz-decompress/xz-decompress.js"></script>
+    <!-- Rust compiler from https://github.com/AngelOnFira/weblings -->
+    <script type="module" src="./libs-rust/runner.js"></script>
+</head>
+<body>
+    
+    <!-- Live Output -->
+    <div id="live-output-container"></div>
+    <div id="warnings-container"></div>
+
+    <script src="/sandbox.js"></script>
+
+    <!-- Live Output Control Script -->
+    <script type="module">
+let terminal = new Terminal(document.getElementById("live-output-container"));
+
+const wait = () => new Promise(resolve => setTimeout(resolve, 1000));
+
+window.addEventListener("message", async event => {
+    const msg = event.data;
+
+    if (msg === "ping") {
+        window.top.postMessage({
+            "sender": "sandbox"
+        }, "*");
+        return;
+    }
+
+    if (msg === "thumbnail") {        
+        html2canvas(document.body, {
+            width: window.innerWidth,
+            height: window.innerHeight
+        }).then(sendThumnailFromCanvas);
+        return;
+    }
+
+    if (msg.event === "eval") {
+        const code = msg.data;
+
+        window.top.postMessage({
+            "sender": "sandbox",
+            "event": "evalResult",
+            data: "Rust doesn't support eval"
+        }, "*");
+        
+        return;
+    }
+
+    let files = msg.files;
+
+    if (!files) {
+        // something is making post messages to the sandbox and it's not the main webpage
+        // could be a browser extension. But we just ignore them.
+        return;
+    }
+
+    try {
+        warningsBox.innerHTML = "";
+        liveOutputContainer.style.width = msg.width + "px";
+        liveOutputContainer.style.height = msg.height + "px";
+        liveOutputContainer.innerHTML = "";
+        
+        const result = await window.compileAndRun(
+            files["main.rs"],
+            (t) => { terminal.out(t); }
+        );
+        let didPrint = false;
+        if (result.stdout) {
+            terminal.out(result.stdout);
+            didPrint = true;
+        }
+        if (result.stderr) {
+            terminal.err(result.stderr);
+            didPrint = true;
+        }
+        if (!didPrint) {
+            terminal.out(result.ok ? "(no output)" : "(failed)");
+        }
+        if (result.compileMs != null) {
+            terminal.out(`\n[compile ${result.compileMs.toFixed(0)} ms, run ${result.execMs.toFixed(0)} ms]`);
+        }
+        
+    } catch (e) {
+        terminal.err(e.message || String(e));
+    }
+});
+
+liveOutputContainer.style.width = 400 + "px";
+liveOutputContainer.style.height = 400 + "px";
+
+window.preloadRust((received, total) => {
+    const pct = total ? Math.min(100, (received / total) * 100) : 0;
+    const msg = `Loading toolchain: ${pct.toFixed(0)}% (${(received / 1e6).toFixed(0)} MB)`;
+    terminal.out(msg);
+}).then(() => {
+
+}).catch((e) => {
+    terminal.out("Load failed: " + (e.message || e));
+});
+
+terminal.out("Installing Rust...");
+    </script>
+
+</body>
+</html>

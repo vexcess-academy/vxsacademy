@@ -128,8 +128,8 @@ function getMainFilePath() {
             return "/main.zig";
         case "python":
             return "/main.py";
-        case "jitlang":
-            return "/main.jitl";
+        case "rust":
+            return "/main.rs";
     }
 }
 
@@ -320,8 +320,8 @@ class Model {
             case "zig":
                 this.highlightingType = "rust";
             break;
-            case "jitl":
-                this.highlightingType = "go";
+            case "rs":
+                this.highlightingType = "rust";
             break;
             case "json":
                 this.highlightingType = "json";
@@ -588,7 +588,7 @@ class Sandbox {
 
 class VXSEditor {
     static REPL_PROGRAM_TYPES = ["webpage", "pjs", "python"];
-    static COMPILED_PROGRAM_TYPES = ["java", "cpp", "zig"];
+    static COMPILED_PROGRAM_TYPES = ["java", "cpp", "zig", "rust"];
 
     container;
     monacoEditor;
