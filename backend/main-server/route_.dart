@@ -22,6 +22,7 @@ var fileCache = new FileCache(
     "./frontend/main/",
     {
         "main": "./frontend/main/page-template.html",
+        "main-minimal": "./frontend/main/page-template-minimal.html",
         // "computer-programming": "./frontend/main/pages/computer-programming/computer-programming.html",
         // "program": "./frontend/main/pages/computer-programming/program.html",
         // "program-fullscreen": "./frontend/main/pages/computer-programming/program-fullscreen.html",
@@ -62,6 +63,20 @@ Future<String> createHTMLPage(String pg, UserData? userData, String openGraphTag
     return pageHTML
         .replaceFirst("<!-- OPEN GRAPH INSERT -->", openGraphTags)
         .replaceFirst("<!-- USER DATA INSERT -->", "<script>\n\tlet userData = JSON.parse(new TextDecoder(\"utf-8\").decode(Base64.decode(\"${base64UserData}\")));\n</script>")
+        .replaceFirst("%svquery.body%", """
+            <script src="/CDN/build/${pg.split("/").last}.js" type="module"></script>
+            <link href="/CDN/build/${pg.split("/").last}.css" rel="stylesheet">
+        """);
+}
+
+Future<String> createMinimalHTMLPage(String pg, String openGraphTags) async {
+    String pageHTML = (await fileCache.get("main-minimal"))!;
+    final queryIdx = pg.indexOf("?");
+    if (queryIdx != -1) {
+        pg = pg.substring(0, queryIdx);
+    }
+    return pageHTML
+        .replaceFirst("<!-- OPEN GRAPH INSERT -->", openGraphTags)
         .replaceFirst("%svquery.body%", """
             <script src="/CDN/build/${pg.split("/").last}.js" type="module"></script>
             <link href="/CDN/build/${pg.split("/").last}.css" rel="stylesheet">

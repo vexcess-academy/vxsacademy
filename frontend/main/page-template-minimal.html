@@ -6,37 +6,29 @@
     <!-- For Social Media Embeds -->
     <!-- OPEN GRAPH INSERT -->
     <meta content="rgb(31, 171, 84)" data-react-helmet="true" name="theme-color" />
-    
+
     <title>VExcess Academy</title>
 
     <link rel="icon" type="image/x-icon" href="/CDN/images/logo.ico">
 
-    <!-- import Barbequery -->
-    <script src="/CDN/lib/barbequery.js"></script>
-
-    <!-- import components -->
-    <script src="/CDN/page-template-components.js"></script>
-
-    <!-- USER DATA INSERT -->
-
     <style>
-        body {
-            margin: 0px;
+        html, body {
+            margin: 0;
+            padding: 0;
             overflow: hidden;
+            width: 100%;
+            height: 100%;
         }
 
-        #output-frame {
+        #page-middle-container {
             width: 100%;
             height: 100%;
         }
     </style>
-    
 </head>
 <body>
-
-    <!-- Output Frame -->
-    <div id="output-frame"></div>
-
-    <script src="/CDN/computer-programming/program-fullscreen.js"></script>
+    <div id="page-middle-container">
+        %svquery.body%
+    </div>
 </body>
 </html>

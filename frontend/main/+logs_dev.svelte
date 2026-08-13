@@ -581,6 +581,7 @@
 <h2>8/12/26</h2>
 <p>
     Rust is added;
+    Fixed program fullscreen mode;
 </p>
 
 <h2>TODO</h2>

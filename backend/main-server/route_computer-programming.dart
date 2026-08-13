@@ -98,10 +98,7 @@ final routeTree_computerprogramming = {
                 """;
                 
                 if (isFullScreen) {
-                    final programFullscreenCode = await fileCache.get("program-fullscreen");
-                    webpageCode = programFullscreenCode!
-                        .replaceFirst("<!-- OPEN GRAPH INSERT -->", openGraphInsert);
-                        // .replace("<!-- USER DATA INSERT -->", `<script>\n\tvar userData = ${userData ? JSON.stringify(userData).replaceAll("</", "<\\/") : "null"}\n</script>`);
+                    webpageCode = await createMinimalHTMLPage("program-fullscreen", openGraphInsert);
                 } else {
                     webpageCode = await createHTMLPage("program", data["userData"], openGraphInsert);
                 }
