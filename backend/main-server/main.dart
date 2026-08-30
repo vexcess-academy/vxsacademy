@@ -194,12 +194,16 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
         };
         int status = await useTree(url, routeTree, requestContext, response);
         if (status == 404) {
-            response.statusCode = status;
-            response.write("Not Found");
+            try {
+                response.statusCode = status;
+                response.write("Not Found");
+            } catch (_) { /* catch fail to update status code if headers already sent*/ }
         }
         if (status == 500) {
-            response.statusCode = status;
-            response.write("Internal Server Error");
+            try {
+                response.statusCode = status;
+                response.write("Internal Server Error");
+            } catch (_) { /* catch fail to update status code if headers already sent*/ }
         }
         response.close();
     } catch (err, trace) {

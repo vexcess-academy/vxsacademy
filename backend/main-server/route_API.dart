@@ -132,7 +132,9 @@ final routeTree_API = {
                     "discussions": [],
                     "comments": [],
                     "background": "blue",
-                    "newNotifs": 0
+                    "newNotifs": 0,
+                    "programStorageUse": 0,
+                    "location": ""
                 };
 
                 final captchaRes = await HTTP.post(

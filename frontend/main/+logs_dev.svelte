@@ -584,6 +584,11 @@
     Fixed program fullscreen mode;
 </p>
 
+<h2>8/29/26</h2>
+<p>
+    Fix denial of service bug;
+</p>
+
 <h2>TODO</h2>
 <p>
     TODO: Implement sandbox unload detection;
