@@ -134,9 +134,11 @@ frame-ancestors * data: blob:;
     } catch (e, trace) {
         print(e);
         print(trace);
-        response.statusCode = 500;
-        response.write("Internal Server Error");
-        response.close();
+        try {
+            response.statusCode = 500;
+            response.write("Internal Server Error");
+            response.close();
+        } catch (_) { /* catch fail to update status code if headers already sent*/ }
     }
 }
 

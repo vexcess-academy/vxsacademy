@@ -589,6 +589,14 @@
     Fix denial of service bug;
 </p>
 
+<h2>10/31/26</h2>
+<p>
+    Fix bug where requests to non-existent endpoints threw a file permission error;
+    Fix Null is not a subtype of String error when fetching KA programs fails.
+    Fix bug where after a request fails it tries to update the request headers after they are already sent;
+    Add error handling for when KA's API fails.
+</p>
+
 <h2>TODO</h2>
 <p>
     TODO: Implement sandbox unload detection;

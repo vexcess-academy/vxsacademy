@@ -35,10 +35,12 @@ Future<IO.File?> openFile(String path, {bool elevatedPermissions=false}) async {
             return file;
         }
         
-        throw "Permission denied while reading ${absFilePath}";
+        print("Permission denied while reading ${absFilePath}");
+        return null;
     }
 
-    throw "Refused to read file outside of project directory";
+    print("Refused to read file outside of project directory");
+    return null;
 }
 
 Future<Uint8List?> readFile(String path, {bool elevatedPermissions=false}) async {
@@ -76,10 +78,12 @@ Future<Uint8List?> readFile(String path, {bool elevatedPermissions=false}) async
             return null;
         }
         
-        throw "Permission denied while reading ${absFilePath}";
+        print("Permission denied while reading ${absFilePath}");
+        return null;
     }
 
-    throw "Refused to read file outside of project directory";
+    print("Refused to read file outside of project directory");
+    return null;
 }
 
 Future<String?> readFileAsString(String path, {bool elevatedPermissions=false}) async {

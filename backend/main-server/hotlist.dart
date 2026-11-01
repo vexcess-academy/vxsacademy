@@ -26,116 +26,129 @@ Future<Map<String, dynamic>?> getKAProgram(String id) async {
                 },
                 body: "{\"operationName\":\"programQuery\",\"query\":\"query programQuery(\$programId: String!) {\\n  programById(id: \$programId) {\\n    byChild\\n    category\\n    created\\n    creatorProfile: author {\\n      id\\n      nickname\\n      profileRoot\\n      profile {\\n        accessLevel\\n        __typename\\n      }\\n      __typename\\n    }\\n    deleted\\n    description\\n    spinoffCount: displayableSpinoffCount\\n    docsUrlPath\\n    flags\\n    flaggedBy: flaggedByKaids\\n    flaggedByUser: isFlaggedByCurrentUser\\n    height\\n    hideFromHotlist\\n    id\\n    imagePath\\n    isProjectOrFork: originIsProject\\n    isOwner\\n    kaid: authorKaid\\n    key\\n    newUrlPath\\n    originScratchpad: originProgram {\\n      deleted\\n      translatedTitle\\n      url\\n      __typename\\n    }\\n    restrictPosting\\n    revision: latestRevision {\\n      id\\n      code\\n      configVersion\\n      created\\n      editorType\\n      folds\\n      __typename\\n    }\\n    slug\\n    sumVotesIncremented\\n    title\\n    topic: parentCurationNode {\\n      id\\n      nodeSlug: slug\\n      relativeUrl\\n      slug\\n      translatedTitle\\n      __typename\\n    }\\n    translatedTitle\\n    url\\n    userAuthoredContentType\\n    upVoted\\n    width\\n    __typename\\n  }\\n}\",\"variables\":{\"programId\":\"" + id.substring(3) + "\"}}",
             );
-            programJSON = json.decode(programRes.body)["data"]["programById"];
-        } catch (err) {
+            if (programRes.statusCode == 200) {
+                final jsonData = json.decode(programRes.body);
+                if (jsonData is Map && jsonData["data"] is Map) {
+                    programJSON = jsonData["data"]["programById"];
+                }
+            }
+        } catch (err, trace) {
             print(err);
+            print(trace);
         }
         
         if (programJSON != null) {
-            String? programType = null;
-            final KAprogramType = programJSON["userAuthoredContentType"];
-            switch (KAprogramType) {
-                case "WEBPAGE":
-                    programType = "webpage";
-                    break;
-                case "PJS":
-                    programType = "pjs";
-                    break;
-                case "PYTHON":
-                    programType = "python";
-                    break;
-            }
+            try {
+                String? programType = null;
+                final KAprogramType = programJSON["userAuthoredContentType"];
+                switch (KAprogramType) {
+                    case "WEBPAGE":
+                        programType = "webpage";
+                        break;
+                    case "PJS":
+                        programType = "pjs";
+                        break;
+                    case "PYTHON":
+                        programType = "python";
+                        break;
+                }
 
-            final profileRoot = programJSON["creatorProfile"]["profileRoot"];
-            final programCreated = DateTime.parse(programJSON["created"]).millisecondsSinceEpoch;
-            final programUpdated = DateTime.parse(programJSON["revision"]["created"]).millisecondsSinceEpoch;
-            final authorUsername = profileRoot is String ? profileRoot.split("/")[2] : null;
-            
-            List<String> fileNames = [];
-            Map<String, String> programFiles = {};
-            switch (programType) {
-                case "webpage":
-                    fileNames.add("index.html");
-                    programFiles["index.html"] = programJSON["revision"]["code"] ?? "";
-                    break;
-                case "pjs":
-                    fileNames.add("index.js");
-                    programFiles["index.js"] = programJSON["revision"]["code"] ?? "";
-                    break;
-                case "python":
-                    final pyFiles = json.decode(programJSON["revision"]["code"] ?? "{}")["files"];
-                    if (pyFiles is List) {
-                        for (int i = 0; i < pyFiles.length; i++) {
-                            final fileName = pyFiles[i]["filename"];
-                            fileNames.add(fileName);
-                            programFiles[fileName] = pyFiles[i]["code"];
+                final profileRoot = programJSON["creatorProfile"]["profileRoot"];
+                final programCreated = DateTime.parse(programJSON["created"]).millisecondsSinceEpoch;
+                final programUpdated = DateTime.parse(programJSON["revision"]["created"]).millisecondsSinceEpoch;
+                final authorUsername = profileRoot is String ? profileRoot.split("/")[2] : null;
+                
+                List<String> fileNames = [];
+                Map<String, String> programFiles = {};
+                switch (programType) {
+                    case "webpage":
+                        fileNames.add("index.html");
+                        programFiles["index.html"] = programJSON["revision"]["code"] ?? "";
+                        break;
+                    case "pjs":
+                        fileNames.add("index.js");
+                        programFiles["index.js"] = programJSON["revision"]["code"] ?? "";
+                        break;
+                    case "python":
+                        final pyFiles = json.decode(programJSON["revision"]["code"] ?? "{}")["files"];
+                        if (pyFiles is List) {
+                            for (int i = 0; i < pyFiles.length; i++) {
+                                final fileName = pyFiles[i]["filename"];
+                                if (fileName is String) {
+                                    fileNames.add(fileName);
+                                    programFiles[fileName] = pyFiles[i]["code"] ?? "";
+                                }
+                            }
                         }
-                    }
-                    break;
+                        break;
+                }
+
+                // KAProgramsCache[id] = new ProgramData(
+                //     id: id,
+                //     title: programJSON?.title ?? "",
+                //     type: programType as String,
+                //     forks: [],
+                //     created: programCreated,
+                //     lastSaved: programUpdated,
+                //     flags: [],
+                //     width: programType == "webpage" ? 600 : (programJSON?.width ?? 400),
+                //     height: programJSON?.height ?? 400,
+                //     author: new ProgramDataUserData(
+                //         username: authorUsername as String,
+                //         id: programJSON?.creatorProfile?.id,
+                //         nickname: programJSON?.creatorProfile?.nickname
+                //     ),
+                //     parent: null,
+                //     thumbnail: null,
+                //     fileNames: fileNames,
+                //     files: programFiles,
+                //     discussions: [],
+                //     likes: [],
+                //     likeCount: programJSON?.sumVotesIncremented,
+                //     forkCount: programJSON?.spinoffCount
+                // );
+
+                KAProgramsCache[id] = {
+                    "id": id,
+                    "title": programJSON["title"] ?? "",
+                    "type": programType,
+                    "forks": [
+                        // {
+                        //     "id": "osjamxlmp81jfs",
+                        //     "created": 1695061820584,
+                        //     "likeCount": 0
+                        // },
+                        // {
+                        //     "id": "5Kjhm6lonohkkn",
+                        //     "created": 1699322074718,
+                        //     "likeCount": 0
+                        // }
+                    ],
+                    "created": programCreated,
+                    "lastSaved": programUpdated,
+                    "flags": [],
+                    "width": programType == "webpage" ? 600 : (programJSON["width"] ?? 400),
+                    "height": programJSON["height"] ?? 400,
+                    "author": {
+                        "username": authorUsername,
+                        "id": programJSON["creatorProfile"]["id"],
+                        "nickname": programJSON["creatorProfile"]["nickname"] ?? ""
+                    },
+                    "parent": null,
+                    "thumbnail": null,
+                    "files": programFiles,
+                    "discussions": [
+                        // "vbEyWelsp8ecx0",
+                        // "TvM9Bhlsp8h23w",
+                        // "gOZmUglspjox79"
+                    ],
+                    "likeCount": programJSON["sumVotesIncremented"],
+                    "forkCount": programJSON["spinoffCount"]
+                };
+            } catch (err, trace) {
+                print(err);
+                print(trace);
             }
-
-            // KAProgramsCache[id] = new ProgramData(
-            //     id: id,
-            //     title: programJSON?.title ?? "",
-            //     type: programType as String,
-            //     forks: [],
-            //     created: programCreated,
-            //     lastSaved: programUpdated,
-            //     flags: [],
-            //     width: programType == "webpage" ? 600 : (programJSON?.width ?? 400),
-            //     height: programJSON?.height ?? 400,
-            //     author: new ProgramDataUserData(
-            //         username: authorUsername as String,
-            //         id: programJSON?.creatorProfile?.id,
-            //         nickname: programJSON?.creatorProfile?.nickname
-            //     ),
-            //     parent: null,
-            //     thumbnail: null,
-            //     fileNames: fileNames,
-            //     files: programFiles,
-            //     discussions: [],
-            //     likes: [],
-            //     likeCount: programJSON?.sumVotesIncremented,
-            //     forkCount: programJSON?.spinoffCount
-            // );
-
-            KAProgramsCache[id] = {
-                "id": id,
-                "title": programJSON["title"] ?? "",
-                "type": programType,
-                "forks": [
-                    // {
-                    //     "id": "osjamxlmp81jfs",
-                    //     "created": 1695061820584,
-                    //     "likeCount": 0
-                    // },
-                    // {
-                    //     "id": "5Kjhm6lonohkkn",
-                    //     "created": 1699322074718,
-                    //     "likeCount": 0
-                    // }
-                ],
-                "created": programCreated,
-                "lastSaved": programUpdated,
-                "flags": [],
-                "width": programType == "webpage" ? 600 : (programJSON["width"] ?? 400),
-                "height": programJSON["height"] ?? 400,
-                "author": {
-                    "username": authorUsername,
-                    "id": programJSON["creatorProfile"]["id"],
-                    "nickname": programJSON["creatorProfile"]["nickname"]
-                },
-                "parent": null,
-                "thumbnail": null,
-                "files": programFiles,
-                "discussions": [
-                    // "vbEyWelsp8ecx0",
-                    // "TvM9Bhlsp8h23w",
-                    // "gOZmUglspjox79"
-                ],
-                "likeCount": programJSON["sumVotesIncremented"],
-                "forkCount": programJSON["spinoffCount"]
-            };
         }
     }
 
@@ -229,10 +242,11 @@ void initLists(Mongo.Db db) {
                     ); // TODO: handle failed requests
                     if (res.statusCode == 200) {
                         final jsonData = json.decode(res.body);
-                        return jsonData["data"]["listTopPrograms"]["programs"];
-                    } else {
-                        return null;
+                        if (jsonData is Map && jsonData["data"] is Map && jsonData["data"]["listTopPrograms"] is Map) {
+                            return jsonData["data"]["listTopPrograms"]["programs"];
+                        }
                     }
+                    return null;
                 }
     
                 if (secrets.USE_PROXY) {
@@ -266,10 +280,16 @@ void initLists(Mongo.Db db) {
             }
             
             for (int i = 0; i < programs.length; i++) {
-                final program = programs[i];
-                final formattedProgram = await getKAProgram("KA_" + program["id"]);
-                
-                hl.allPrograms.add(formattedProgram!);
+                try {
+                    final program = programs[i];
+                    final formattedProgram = await getKAProgram("KA_" + program["id"]);
+                    if (formattedProgram != null) {
+                        hl.allPrograms.add(formattedProgram);
+                    }
+                } catch (err, trace) {
+                    print(err);
+                    print(trace);
+                }
 
                 // {
                 //     "id": formattedProgram.id,

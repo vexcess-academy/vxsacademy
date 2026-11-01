@@ -101,8 +101,9 @@ Future<int> useTree(String path, Map<String, dynamic> tree, Map<String, dynamic>
                 }
             }
         }
-    } catch (err) {
+    } catch (err, trace) {
         print(err);
+        print(trace);
         status = 500;
         rethrow;
     }
@@ -141,6 +142,7 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
             response.statusCode = 429;
             response.write("You've been temporarily blocked due to making too many requests");
             response.close();
+            return;
         }
     }
 
@@ -210,9 +212,11 @@ void handleServerRequest(HttpRequest request, HttpResponse response) async {
         print(request.uri);
         print(err);
         print(trace);
-        response.statusCode = 500;
-        response.write("Internal Server Error");
-        response.close();
+        try {
+            response.statusCode = 500;
+            response.write("Internal Server Error");
+            response.close();
+        } catch (_) { /* catch fail to update status code if headers already sent*/ }
     }
 }
 

@@ -78,7 +78,10 @@ final routeTree_computerprogramming = {
                 out.write("Not Found");
                 return out.close();
             } else {
-                String lazySanitize(String str) {
+                String lazySanitize(String? str) {
+                    if (str == null) {
+                        return "";
+                    }
                     const allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ";
                     String out = "";
                     for (int i = 0; i < str.length; i++) {
@@ -109,8 +112,9 @@ final routeTree_computerprogramming = {
                 out.add(utf8.encode(webpageCode));
                 out.close();
             }
-        } catch (err) {
+        } catch (err, trace) {
             print(err);
+            print(trace);
         }
     }
 };

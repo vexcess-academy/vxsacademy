@@ -1,0 +1,15 @@
+[Unit]
+Description=vxsacademy
+After=network.target
+After=mongod.service
+Wants=mongod.service
+
+[Service]
+User=serveruser
+WorkingDirectory=.../vxsacademy-prod
+ExecStart=.../start.exe
+Environment="PATH={PATH_TO_BUN}"
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
